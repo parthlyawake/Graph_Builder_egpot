@@ -2,6 +2,10 @@
 
 Implementation of the **GRAFT-CKG** framework for whole-repository code knowledge graph construction, multi-layer explainability, and deterministic context retrieval for software engineering agents.
 
+Current parser coverage: Python, JavaScript, JSX, TypeScript, and TSX. Python
+uses the standard-library AST; JavaScript and TypeScript use Tree-sitter and
+emit the same graph node and edge vocabulary.
+
 ---
 
 ## 1. Project Structure
@@ -39,6 +43,22 @@ pip install -r requirements.txt
 ```bash
 python graft_ckg.py /path/to/any/python/repo --verify
 ```
+
+### A.1 Run on a Mixed Python / JavaScript / TypeScript Repository
+```bash
+python graft_ckg.py /path/to/repository --verify
+```
+
+The polyglot layer covers files, classes, functions, imports, calls, explicit
+inheritance, function parameters, local variable definitions/uses, return flow,
+and assignments/updates to known local variables.
+It resolves relative ES-module imports, CommonJS `require()` aliases,
+TypeScript `paths` aliases, and local workspace package `main` / `exports`
+entries. It also binds literal `fetch()` and `axios.get/post/put/patch/delete()`
+calls to literal Flask-style `@app.get`, `@app.post`, and `@app.route` handlers
+found in the same repository. External `node_modules`, complex conditional
+exports, dynamic URLs, gateway rewrites, and JSX/TSX framework semantics remain
+intentionally unresolved.
 
 ### B. Interactive Query Shell (Fast Exploration)
 ```bash
@@ -86,6 +106,9 @@ python eval_ckg.py
 
 # Or evaluate a specific custom repository
 python eval_ckg.py --repo /path/to/any/repo
+
+# Verify the labelled Python + TypeScript fixture and its API bindings
+python eval_polyglot.py
 ```
 
 Metrics reported:

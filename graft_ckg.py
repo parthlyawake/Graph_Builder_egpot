@@ -25,6 +25,7 @@ import argparse
 import networkx as nx
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from polyglot import TreeSitterExtractor
 
 
 class HyperEdgeMetadata:
@@ -61,7 +62,14 @@ class CKGBuilder(ast.NodeVisitor):
         self.symbols_by_name = {}   # simple_name -> list of node_ids
         self.file_symbols = {}      # file_rel_path -> list of node_ids
         self.calls_to_resolve = []  # (caller_id, callee_name, scope_depth, id_ctx)
+        self.http_endpoints = {}    # (HTTP method, literal path) -> [handler node IDs]
+        self.http_calls_to_resolve = []  # (caller_id, literal path, method, id_ctx)
         self.imports_by_file = {}   # file_rel_path -> {alias: target_module_or_symbol}
+        self.module_to_file = {}    # dotted Python module -> repository-relative path
+        self.ts_path_aliases = []   # (pattern, target templates) from tsconfig.json
+        self.workspace_packages = {}  # package name -> package metadata
+        self.class_base_records = []  # (class_id, base_spelling, file, scope_depth)
+        self.class_bases = {}       # class_id -> resolved direct base class IDs
         self.var_defs = {}          # scope_id -> {var_name: node_id}
         self.raw_file_lines = {}    # file_rel_path -> list of lines
         self.total_loc = 0
@@ -82,6 +90,129 @@ class CKGBuilder(ast.NodeVisitor):
             return f"{self.current_file}:{name}"
         scope = ".".join(self.current_scope)
         return f"{self.current_file}:{scope}.{name}"
+
+    @staticmethod
+    def _module_name_for_file(rel_path):
+        """Return the importable module name for a repository-relative Python file."""
+        parts = rel_path.replace("\\", "/").split("/")
+        if not parts or os.path.splitext(parts[-1])[1] not in {".py", ".js", ".jsx", ".ts", ".tsx"}:
+            return ""
+        parts[-1] = os.path.splitext(parts[-1])[0]
+        if parts[-1] in {"__init__", "index"}:
+            parts.pop()
+        return ".".join(part for part in parts if part)
+
+    def _relative_import_module(self, module, level):
+        """Resolve ``from .x`` / ``from ..x`` against the current file module."""
+        if not level:
+            return module or ""
+        current_module = self._module_name_for_file(self.current_file)
+        package_parts = current_module.split(".")[:-1]
+        if level > 1:
+            package_parts = package_parts[: -(level - 1)] if level - 1 <= len(package_parts) else []
+        suffix = (module or "").split(".") if module else []
+        return ".".join(part for part in [*package_parts, *suffix] if part)
+
+    @staticmethod
+    def _module_key_for_path(path):
+        """Convert a repository-relative source path or extensionless target to a key."""
+        parts = path.replace("\\", "/").strip("/").split("/")
+        if not parts:
+            return ""
+        parts[-1] = os.path.splitext(parts[-1])[0]
+        if parts[-1] in {"__init__", "index"}:
+            parts.pop()
+        return ".".join(part for part in parts if part and part != ".")
+
+    def _load_module_configuration(self):
+        """Load local TypeScript aliases and workspace package entry metadata."""
+        tsconfig_path = os.path.join(self.repo_path, "tsconfig.json")
+        if os.path.isfile(tsconfig_path):
+            try:
+                with open(tsconfig_path, "r", encoding="utf-8") as config_file:
+                    compiler_options = json.load(config_file).get("compilerOptions", {})
+                self.ts_path_aliases = list(compiler_options.get("paths", {}).items())
+            except (OSError, ValueError) as exc:
+                print(f"[!] Warning: Could not read tsconfig.json paths: {exc}")
+
+        for root, directories, files in os.walk(self.repo_path):
+            directories[:] = [name for name in directories if name not in {"node_modules", ".git"}]
+            if "package.json" not in files:
+                continue
+            package_path = os.path.join(root, "package.json")
+            try:
+                with open(package_path, "r", encoding="utf-8") as package_file:
+                    package = json.load(package_file)
+                if package.get("name"):
+                    self.workspace_packages[package["name"]] = {
+                        "directory": os.path.relpath(root, self.repo_path).replace("\\", "/"),
+                        "exports": package.get("exports"),
+                        "main": package.get("module") or package.get("main") or package.get("types"),
+                    }
+            except (OSError, ValueError) as exc:
+                print(f"[!] Warning: Could not read {package_path}: {exc}")
+
+    @staticmethod
+    def _export_target(exports, subpath):
+        if isinstance(exports, str):
+            return exports if subpath == "." else None
+        if not isinstance(exports, dict):
+            return None
+        value = exports.get(subpath)
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            for condition in ("types", "import", "require", "default"):
+                if isinstance(value.get(condition), str):
+                    return value[condition]
+        return None
+
+    def resolve_js_module_specifier(self, rel_path, specifier):
+        """Resolve a JS/TS module specifier to a known local graph module key.
+
+        Supports relative paths, TypeScript ``compilerOptions.paths``, and
+        packages whose ``package.json`` exists inside the indexed repository.
+        Unknown packages are returned unchanged so they remain external.
+        """
+        if specifier.startswith("."):
+            base_parts = self._module_key_for_path(rel_path).split(".")[:-1]
+            for part in specifier.split("/"):
+                if part in ("", "."):
+                    continue
+                if part == "..":
+                    base_parts = base_parts[:-1]
+                else:
+                    base_parts.append(os.path.splitext(part)[0])
+            return ".".join(base_parts)
+
+        for pattern, targets in self.ts_path_aliases:
+            prefix, marker, suffix = pattern.partition("*")
+            if not specifier.startswith(prefix) or (suffix and not specifier.endswith(suffix)):
+                continue
+            wildcard = specifier[len(prefix): len(specifier) - len(suffix) if suffix else None]
+            for target in targets:
+                candidate = self._module_key_for_path(target.replace("*", wildcard))
+                if candidate in self.module_to_file:
+                    return candidate
+
+        for package_name in sorted(self.workspace_packages, key=len, reverse=True):
+            if specifier != package_name and not specifier.startswith(f"{package_name}/"):
+                continue
+            metadata = self.workspace_packages[package_name]
+            suffix = specifier[len(package_name):].lstrip("/")
+            export_key = "." if not suffix else f"./{suffix}"
+            target = self._export_target(metadata["exports"], export_key)
+            if not target and not suffix:
+                target = metadata["main"]
+            if not target and suffix:
+                target = suffix
+            if target:
+                candidate = self._module_key_for_path(
+                    f"{metadata['directory']}/{target.lstrip('./')}"
+                )
+                if candidate in self.module_to_file:
+                    return candidate
+        return specifier
 
     def register_symbol(self, node_id, simple_name):
         if simple_name not in self.symbols_by_name:
@@ -133,18 +264,31 @@ class CKGBuilder(ast.NodeVisitor):
         print(f"[*] Starting GRAFT-CKG 4-Layer Construction on: {self.repo_path}")
         
         # 1. Scan files
-        py_files = []
+        source_files = []
         for root, _, files in os.walk(self.repo_path):
             for file in files:
-                if file.endswith(".py"):
+                if os.path.splitext(file)[1] in {".py", *TreeSitterExtractor.EXTENSIONS}:
                     full_path = os.path.join(root, file)
                     rel_path = os.path.relpath(full_path, self.repo_path).replace("\\", "/")
-                    py_files.append((rel_path, full_path))
+                    source_files.append((rel_path, full_path))
 
-        print(f"[*] Found {len(py_files)} Python source files.")
+        print(f"[*] Found {len(source_files)} supported source files.")
+        self.module_to_file = {
+            self._module_name_for_file(rel_path): rel_path
+            for rel_path, _ in source_files
+            if self._module_name_for_file(rel_path)
+        }
+        self._load_module_configuration()
 
-        # Pass 1: Extract AST Containment (Lsyn), Local Imports & Def-Use (Lflow)
-        for rel_path, full_path in py_files:
+        # Pass 1: Extract language-specific syntax into the common graph schema.
+        for rel_path, full_path in source_files:
+            extension = os.path.splitext(full_path)[1]
+            if extension != ".py":
+                try:
+                    TreeSitterExtractor(extension).extract(self, rel_path, full_path)
+                except Exception as e:
+                    print(f"[!] Warning: Error parsing {rel_path}: {e}")
+                continue
             self.current_file = rel_path
             self.current_scope = []
             self.scope_depth = 0
@@ -180,8 +324,10 @@ class CKGBuilder(ast.NodeVisitor):
             except Exception as e:
                 print(f"[!] Warning: Error parsing {rel_path}: {e}")
 
-        # Pass 2: Resolve Dependency Layer (Ldep)
+        # Pass 2: Resolve inheritance before method calls, then dependencies.
+        self._resolve_inheritance()
         self._resolve_dependency_layer()
+        self._resolve_http_calls()
 
         # Pass 3: Construct Semantic Layer (Lsem)
         self._build_semantic_layer()
@@ -196,7 +342,7 @@ class CKGBuilder(ast.NodeVisitor):
     def visit_Import(self, node):
         for alias in node.names:
             imported_name = alias.name
-            as_name = alias.asname or imported_name
+            as_name = alias.asname or imported_name.split(".")[0]
             self.imports_by_file[self.current_file][as_name] = imported_name
             # Connect File to imported module in Ldep
             file_node = f"file::{self.current_file}"
@@ -208,7 +354,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node):
-        mod = node.module or ""
+        mod = self._relative_import_module(node.module, node.level)
         for alias in node.names:
             imported_symbol = alias.name
             as_name = alias.asname or imported_symbol
@@ -241,8 +387,9 @@ class CKGBuilder(ast.NodeVisitor):
         for base in node.bases:
             base_name = self._node_to_name(base)
             if base_name:
-                meta_base = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=0.9, id_ctx=self.current_file)
-                self.add_ckg_edge(class_id, f"symbol::{base_name}", relation="EXTENDS", layer="Ldep", metadata=meta_base)
+                self.class_base_records.append(
+                    (class_id, base_name, self.current_file, self.scope_depth)
+                )
 
         self.scope_depth += 1
         self.current_scope.append(node.name)
@@ -253,10 +400,12 @@ class CKGBuilder(ast.NodeVisitor):
             self.scope_depth -= 1
 
     def visit_FunctionDef(self, node):
-        self._handle_function(node)
+        func_id = self._handle_function(node)
+        self._register_http_endpoint(node, func_id)
 
     def visit_AsyncFunctionDef(self, node):
-        self._handle_function(node)
+        func_id = self._handle_function(node)
+        self._register_http_endpoint(node, func_id)
 
     def _handle_function(self, node):
         func_id = self.get_node_id(node.name)
@@ -292,6 +441,45 @@ class CKGBuilder(ast.NodeVisitor):
         finally:
             self.current_scope.pop()
             self.scope_depth -= 1
+        return func_id
+
+    @staticmethod
+    def _literal_strings(node):
+        """Return string constants from a simple AST literal/list/tuple node."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return [node.value]
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            return [item.value for item in node.elts
+                    if isinstance(item, ast.Constant) and isinstance(item.value, str)]
+        return []
+
+    def _register_http_endpoint(self, node, function_id):
+        """Index literal Flask-style route decorators without executing the app."""
+        methods_by_decorator = {
+            "get": ["GET"], "post": ["POST"], "put": ["PUT"],
+            "patch": ["PATCH"], "delete": ["DELETE"], "route": ["GET"],
+        }
+        for decorator in node.decorator_list:
+            if not isinstance(decorator, ast.Call):
+                continue
+            decorator_name = self._node_to_name(decorator.func)
+            action = decorator_name.rsplit(".", 1)[-1].lower() if decorator_name else ""
+            if action not in methods_by_decorator or not decorator.args:
+                continue
+            paths = self._literal_strings(decorator.args[0])
+            if not paths:
+                continue
+            methods = methods_by_decorator[action]
+            for keyword in decorator.keywords:
+                if keyword.arg == "methods":
+                    parsed = [method.upper() for method in self._literal_strings(keyword.value)]
+                    if parsed:
+                        methods = parsed
+            for path in paths:
+                for method in methods:
+                    self.http_endpoints.setdefault((method, path), []).append(function_id)
+            self.graph.nodes[function_id]["http_path"] = paths[0]
+            self.graph.nodes[function_id]["http_methods"] = ",".join(methods)
 
     def visit_Call(self, node):
         callee_name = self._node_to_name(node.func)
@@ -349,6 +537,92 @@ class CKGBuilder(ast.NodeVisitor):
     # -------------------------------------------------------------
     # RESOLUTION PASSES (Dependency & Semantic)
     # -------------------------------------------------------------
+    def _resolve_reference(self, caller_file, spelling):
+        """Resolve an explicit local/imported reference without name-only guesses.
+
+        The old resolver searched every same-named symbol before consulting an
+        import statement. That could bind an external or ambiguous name to an
+        unrelated repository function. This helper first follows Python import
+        aliases and only falls back to a globally unique local symbol.
+        """
+        imports = self.imports_by_file.get(caller_file, {})
+        base, separator, remainder = spelling.partition(".")
+        imported_base = base in imports
+        canonical = spelling
+        if imported_base:
+            canonical = imports[base]
+            if separator:
+                canonical = f"{canonical}.{remainder}"
+
+        module_name, dot, symbol_name = canonical.rpartition(".")
+        if dot:
+            target_file = self.module_to_file.get(module_name)
+            if target_file:
+                candidates = [
+                    node_id
+                    for node_id in self.symbols_by_name.get(symbol_name, [])
+                    if node_id.startswith(f"{target_file}:")
+                ]
+                if candidates:
+                    return candidates
+            # An explicitly imported external module must remain external.
+            if imported_base:
+                return []
+
+        if not separator and not imported_base:
+            same_file = [
+                node_id
+                for node_id in self.symbols_by_name.get(spelling, [])
+                if node_id.startswith(f"{caller_file}:")
+            ]
+            if same_file:
+                return same_file
+
+        candidates = self.symbols_by_name.get(symbol_name if dot else spelling, [])
+        return candidates if len(candidates) == 1 else []
+
+    def _find_method(self, class_id, method_name, seen=None):
+        """Find a method declared on a class or an explicitly resolved base."""
+        seen = seen or set()
+        if class_id in seen:
+            return None
+        seen.add(class_id)
+        direct = f"{class_id}.{method_name}"
+        if direct in self.graph and self.graph.nodes[direct].get("type") == "function":
+            return direct
+        for base_id in self.class_bases.get(class_id, []):
+            resolved = self._find_method(base_id, method_name, seen)
+            if resolved:
+                return resolved
+        return None
+
+    def _resolve_inheritance(self):
+        """Turn explicit AST base-class spellings into real graph relationships."""
+        for class_id, base_spelling, caller_file, scope_depth in self.class_base_records:
+            candidates = [
+                node_id
+                for node_id in self._resolve_reference(caller_file, base_spelling)
+                if self.graph.nodes[node_id].get("type") == "class"
+            ]
+            if candidates:
+                self.class_bases[class_id] = candidates
+                for target_id in candidates:
+                    confidence = 1.0 if len(candidates) == 1 else 1.0 / len(candidates)
+                    metadata = HyperEdgeMetadata(
+                        d_scope=scope_depth, c_type=confidence, id_ctx=caller_file
+                    )
+                    self.add_ckg_edge(
+                        class_id, target_id, relation="EXTENDS", layer="Ldep", metadata=metadata
+                    )
+            else:
+                stub_id = f"symbol::{base_spelling}"
+                if not self.graph.has_node(stub_id):
+                    self.add_ckg_node(stub_id, node_type="symbol_ref", layer="Ldep", name=base_spelling)
+                metadata = HyperEdgeMetadata(d_scope=scope_depth, c_type=0.0, id_ctx=caller_file)
+                self.add_ckg_edge(
+                    class_id, stub_id, relation="EXTENDS", layer="Ldep", metadata=metadata
+                )
+
     def _resolve_dependency_layer(self):
         print(f"[*] Resolving Dependency Layer (Ldep) for {len(self.calls_to_resolve)} call sites...")
         # Aggregate call frequencies for hyper-edge metadata
@@ -372,41 +646,23 @@ class CKGBuilder(ast.NodeVisitor):
 
             # 1. If base_prefix is 'self', resolve to methods in current enclosing class
             if base_prefix == "self":
-                # caller_id: file:Class.method
-                class_prefix = caller_id.rsplit(".", 1)[0]
-                target_cand = f"{class_prefix}.{symbol_name}"
-                if target_cand in self.graph:
-                    target_ids = [target_cand]
+                if callee_name.count(".") == 1:
+                    class_prefix = caller_id.rsplit(".", 1)[0]
+                    target_cand = self._find_method(class_prefix, symbol_name)
+                    if target_cand:
+                        target_ids = [target_cand]
 
-            # 2. Check if base_prefix is an imported module (e.g. import operations -> operations.add)
-            if not target_ids and base_prefix and caller_file in self.imports_by_file:
-                imported_map = self.imports_by_file[caller_file]
-                if base_prefix in imported_map:
-                    target_mod = imported_map[base_prefix] # e.g. "operations"
-                    if symbol_name in self.symbols_by_name:
-                        candidates = self.symbols_by_name[symbol_name]
-                        mod_candidates = [cid for cid in candidates if target_mod in cid]
-                        if mod_candidates:
-                            target_ids = mod_candidates
+            if not target_ids and base_prefix == "super()":
+                if callee_name.count(".") == 1:
+                    class_prefix = caller_id.rsplit(".", 1)[0]
+                    for base_id in self.class_bases.get(class_prefix, []):
+                        target_cand = self._find_method(base_id, symbol_name)
+                        if target_cand:
+                            target_ids = [target_cand]
+                            break
 
-            # 3. Check direct symbol name
-            if not target_ids and symbol_name in self.symbols_by_name:
-                candidates = self.symbols_by_name[symbol_name]
-                # Prioritize same-file candidates
-                same_file = [cid for cid in candidates if cid.startswith(caller_file)]
-                if same_file:
-                    target_ids = same_file
-                else:
-                    target_ids = candidates
-
-            # 4. Check direct import alias (e.g. from operations import add)
-            if not target_ids and caller_file in self.imports_by_file:
-                imported_map = self.imports_by_file[caller_file]
-                if callee_name in imported_map:
-                    canonical_name = imported_map[callee_name]
-                    target_sym = canonical_name.split(".")[-1]
-                    if target_sym in self.symbols_by_name:
-                        target_ids = self.symbols_by_name[target_sym]
+            if not target_ids:
+                target_ids = self._resolve_reference(caller_file, callee_name)
 
             # 5. Add resolved edges or external stub
             if target_ids:
@@ -423,6 +679,28 @@ class CKGBuilder(ast.NodeVisitor):
                 self.add_ckg_edge(caller_id, stub_id, relation="CALLS", layer="Ldep", metadata=meta)
 
         print(f"[*] Dependency Layer resolved: {resolved_count} internal call bindings created.")
+
+    def _resolve_http_calls(self):
+        """Connect literal frontend HTTP calls to indexed local Python handlers.
+
+        This is deliberately conservative: an edge is emitted only when both
+        the method and URL are static literals and match a handler in the
+        indexed repository. Dynamic URLs, gateway rewrites, and runtime router
+        configuration remain unresolved rather than guessed.
+        """
+        resolved_count = 0
+        for caller_id, path, method, id_ctx in self.http_calls_to_resolve:
+            target_ids = self.http_endpoints.get((method.upper(), path), [])
+            for target_id in target_ids:
+                metadata = HyperEdgeMetadata(
+                    d_scope=0, f_call=1.0, c_type=1.0, id_ctx=id_ctx
+                )
+                self.add_ckg_edge(
+                    caller_id, target_id, relation="HTTP_CALLS", layer="Ldep",
+                    metadata=metadata,
+                )
+                resolved_count += 1
+        print(f"[*] HTTP dependency resolution: {resolved_count} local endpoint bindings created.")
 
     def _build_semantic_layer(self, similarity_threshold=0.55):
         print("[*] Computing Semantic Layer (Lsem) embeddings and contracts...")
@@ -693,6 +971,8 @@ class CKGBuilder(ast.NodeVisitor):
         elif isinstance(node, ast.Attribute):
             base = self._node_to_name(node.value)
             return f"{base}.{node.attr}" if base else node.attr
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "super":
+            return "super()"
         return None
 
     def _print_layer_statistics(self):
@@ -852,6 +1132,9 @@ def main():
         builder.run_interactive_shell()
 
     if args.export and not args.interactive:
+        export_dir = os.path.dirname(os.path.abspath(args.export))
+        if export_dir:
+            os.makedirs(export_dir, exist_ok=True)
         export_g = builder.graph.copy()
         for _, _, data in export_g.edges(data=True):
             if "metadata" in data and isinstance(data["metadata"], dict):
