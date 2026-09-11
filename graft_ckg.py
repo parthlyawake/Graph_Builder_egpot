@@ -18,6 +18,7 @@ Hyper-Edge Metadata Vector:
 
 import ast
 import os
+import re
 import sys
 import json
 import math
@@ -70,14 +71,29 @@ class CKGBuilder(ast.NodeVisitor):
         self.workspace_packages = {}  # package name -> package metadata
         self.class_base_records = []  # (class_id, base_spelling, file, scope_depth)
         self.class_bases = {}       # class_id -> resolved direct base class IDs
+        self.class_subclasses = {}  # class_id -> list of subclass IDs
         self.var_defs = {}          # scope_id -> {var_name: node_id}
+        self.var_types = {}         # scope_id -> {var_name: class_or_type_name}
         self.raw_file_lines = {}    # file_rel_path -> list of lines
         self.total_loc = 0
+        self.ignore_patterns = []   # patterns from .ckgignore and default policies
+
+        # Contract Layer (Lcontract): protobuf/gRPC service contracts and
+        # producer/consumer bindings across languages.
+        self.proto_services = {}        # service_name -> {"node_id", "rpcs": {rpc -> node_id}}
+        self.grpc_calls_to_resolve = [] # (caller_id, service, method, id_ctx)
+        self.grpc_client_vars = {}      # file -> {var_name: service_name}
+        self.pending_attr_calls = []    # (caller_id, var, method, file) resolved post-parse
+        self.go_type_vars = {}          # file -> {var_name: type_name}
+        self.grpc_server_registrations = []  # (service, impl_arg, file, scope_id)
+        self.grpc_servicer_records = [] # (class_id, service_name, file)
+        self.js_add_service_records = []# (service, handler_map, file, scope_id)
 
         # RAG index structures
         self.vectorizer = None
         self.tfidf_matrix = None
         self.indexed_node_ids = []
+        self.bm25_index = None
 
     def get_current_scope_id(self):
         if not self.current_scope:
@@ -257,28 +273,111 @@ class CKGBuilder(ast.NodeVisitor):
             id_ctx=metadata.id_ctx,
         )
 
+    def _load_ignore_patterns(self):
+        defaults = [
+            "*_pb2.py", "*_pb2_grpc.py", "*.pb.go", "*_grpc_pb.js", "*_pb.js", "*_grpc_pb.d.ts",
+            "genproto/*", "vendor/*", "node_modules/*", ".git/*", "__pycache__/*", "venv/*", ".venv/*", "dist/*", "build/*"
+        ]
+        patterns = list(defaults)
+        ckgignore_path = os.path.join(self.repo_path, ".ckgignore")
+        if os.path.isfile(ckgignore_path):
+            try:
+                with open(ckgignore_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#"):
+                            patterns.append(line)
+            except Exception as e:
+                print(f"[!] Warning reading .ckgignore: {e}")
+        self.ignore_patterns = patterns
+
+    def _is_ignored(self, rel_path):
+        import fnmatch
+        norm = rel_path.replace("\\", "/")
+        name = os.path.basename(norm)
+        for pat in self.ignore_patterns:
+            pat_norm = pat.replace("\\", "/")
+            if fnmatch.fnmatch(norm, pat_norm) or fnmatch.fnmatch(name, pat_norm):
+                return True
+            if pat_norm.endswith("/*") and (norm == pat_norm[:-2] or norm.startswith(pat_norm[:-1])):
+                return True
+            if "/" in pat_norm and fnmatch.fnmatch(norm, f"*{pat_norm}*"):
+                return True
+        return False
+
+    def _parse_python_file(self, rel_path, full_path):
+        self.current_file = rel_path
+        self.current_scope = []
+        self.scope_depth = 0
+        self.imports_by_file[rel_path] = {}
+
+        try:
+            with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+            lines = content.splitlines()
+            self.raw_file_lines[rel_path] = lines
+            self.total_loc += len(lines)
+
+            file_node_id = f"file::{rel_path}"
+            self.add_ckg_node(
+                file_node_id,
+                node_type="file",
+                layer="Lsyn",
+                name=os.path.basename(rel_path),
+                line_no=1,
+                code=f"# File: {rel_path}\n# Lines: {len(lines)}",
+            )
+
+            tree = ast.parse(content, filename=full_path)
+            file_doc = ast.get_docstring(tree)
+            if file_doc:
+                self.docstrings[file_node_id] = file_doc
+                self.graph.nodes[file_node_id]["docstring"] = file_doc
+
+            self.visit(tree)
+        except Exception as e:
+            print(f"[!] Warning: Error parsing {rel_path}: {e}")
+
     # -------------------------------------------------------------
     # PHASE 1 & 2: SYNTACTIC & IN-FILE PARSING (AST)
     # -------------------------------------------------------------
     def build(self):
         print(f"[*] Starting GRAFT-CKG 4-Layer Construction on: {self.repo_path}")
+        self._load_ignore_patterns()
         
-        # 1. Scan files
+        # 1. Scan files (deterministic sorted walk)
         source_files = []
-        for root, _, files in os.walk(self.repo_path):
-            for file in files:
-                if os.path.splitext(file)[1] in {".py", *TreeSitterExtractor.EXTENSIONS}:
-                    full_path = os.path.join(root, file)
-                    rel_path = os.path.relpath(full_path, self.repo_path).replace("\\", "/")
+        proto_files = []
+        for root, dirs, files in os.walk(self.repo_path):
+            dirs[:] = sorted([
+                d for d in dirs
+                if not self._is_ignored(os.path.relpath(os.path.join(root, d), self.repo_path).replace("\\", "/"))
+            ])
+            for file in sorted(files):
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, self.repo_path).replace("\\", "/")
+                if self._is_ignored(rel_path):
+                    continue
+                ext = os.path.splitext(file)[1]
+                if ext in {".py", *TreeSitterExtractor.EXTENSIONS}:
                     source_files.append((rel_path, full_path))
+                elif ext == ".proto":
+                    proto_files.append((rel_path, full_path))
 
-        print(f"[*] Found {len(source_files)} supported source files.")
+        print(f"[*] Found {len(source_files)} supported source files, {len(proto_files)} proto files.")
         self.module_to_file = {
             self._module_name_for_file(rel_path): rel_path
             for rel_path, _ in source_files
             if self._module_name_for_file(rel_path)
         }
         self._load_module_configuration()
+
+        # Pass 0: parse protobuf contracts into the Contract Layer (Lcontract).
+        for rel_path, full_path in proto_files:
+            try:
+                self._parse_proto_file(rel_path, full_path)
+            except Exception as e:
+                print(f"[!] Warning: Error parsing proto {rel_path}: {e}")
 
         # Pass 1: Extract language-specific syntax into the common graph schema.
         for rel_path, full_path in source_files:
@@ -289,47 +388,84 @@ class CKGBuilder(ast.NodeVisitor):
                 except Exception as e:
                     print(f"[!] Warning: Error parsing {rel_path}: {e}")
                 continue
-            self.current_file = rel_path
-            self.current_scope = []
-            self.scope_depth = 0
-            self.imports_by_file[rel_path] = {}
-
-            try:
-                with open(full_path, "r", encoding="utf-8", errors="replace") as f:
-                    content = f.read()
-                lines = content.splitlines()
-                self.raw_file_lines[rel_path] = lines
-                self.total_loc += len(lines)
-
-                # Add file node to Syntactic Layer (Lsyn)
-                file_node_id = f"file::{rel_path}"
-                self.add_ckg_node(
-                    file_node_id,
-                    node_type="file",
-                    layer="Lsyn",
-                    name=os.path.basename(rel_path),
-                    line_no=1,
-                    code=f"# File: {rel_path}\n# Lines: {len(lines)}",
-                )
-
-                tree = ast.parse(content, filename=full_path)
-                
-                # Extract file-level docstring
-                file_doc = ast.get_docstring(tree)
-                if file_doc:
-                    self.docstrings[file_node_id] = file_doc
-                    self.graph.nodes[file_node_id]["docstring"] = file_doc
-
-                self.visit(tree)
-            except Exception as e:
-                print(f"[!] Warning: Error parsing {rel_path}: {e}")
+            self._parse_python_file(rel_path, full_path)
 
         # Pass 2: Resolve inheritance before method calls, then dependencies.
         self._resolve_inheritance()
         self._resolve_dependency_layer()
         self._resolve_http_calls()
+        self._resolve_contract_layer()
 
         # Pass 3: Construct Semantic Layer (Lsem)
+        self._build_semantic_layer()
+
+        print(f"[*] Construction Complete:")
+        print(f"    - Total LOC:       {self.total_loc}")
+        print(f"    - Graph Nodes:     {self.graph.number_of_nodes()}")
+        print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
+        self._print_layer_statistics()
+        return self.graph
+
+    def update_files(self, changed_rel_paths, deleted_rel_paths=()):
+        """
+        Incremental streaming construction (HR-Build) updating the graph for changed files.
+        Avoids full batch rebuilds by surgically updating only modified/deleted ASTs and resolving relations.
+        """
+        all_affected = set(changed_rel_paths) | set(deleted_rel_paths)
+        if not all_affected:
+            return
+
+        for rel_path in all_affected:
+            norm = rel_path.replace("\\", "/")
+            nodes_to_remove = [
+                n for n, d in list(self.graph.nodes(data=True))
+                if d.get("file") == norm or n.startswith(f"{norm}:") or n == f"file::{norm}"
+            ]
+            for n in nodes_to_remove:
+                if self.graph.has_node(n):
+                    self.graph.remove_node(n)
+            self.raw_file_lines.pop(norm, None)
+            self.imports_by_file.pop(norm, None)
+            self.file_symbols.pop(norm, None)
+            self.grpc_client_vars.pop(norm, None)
+            self.go_type_vars.pop(norm, None)
+
+        edges_to_remove = []
+        for u, v, k, d in list(self.graph.edges(keys=True, data=True)):
+            rel = d.get("relation")
+            if rel in {"CALLS", "POLYMORPHIC_CALL", "EXTENDS", "HTTP_CALLS", "IMPLEMENTS", "CONSUMES", "SEMANTIC_SIMILAR"}:
+                edges_to_remove.append((u, v, k))
+        for u, v, k in edges_to_remove:
+            if self.graph.has_edge(u, v, key=k):
+                self.graph.remove_edge(u, v, key=k)
+
+        self.calls_to_resolve = []
+        self.http_calls_to_resolve = []
+        self.grpc_calls_to_resolve = []
+        self.class_base_records = []
+        self.symbols_by_name = {}
+        for nid, data in self.graph.nodes(data=True):
+            sname = data.get("name")
+            if sname:
+                self.symbols_by_name.setdefault(sname, []).append(nid)
+
+        for rel_path in changed_rel_paths:
+            norm = rel_path.replace("\\", "/")
+            full_path = os.path.join(self.repo_path, norm)
+            if not os.path.isfile(full_path):
+                continue
+            ext = os.path.splitext(norm)[1]
+            if ext == ".proto":
+                self._parse_proto_file(norm, full_path)
+            elif ext in TreeSitterExtractor.EXTENSIONS:
+                TreeSitterExtractor(ext).extract(self, norm, full_path)
+            elif ext == ".py":
+                self._parse_python_file(norm, full_path)
+
+        self._resolve_inheritance()
+        self._resolve_dependency_layer()
+        self._resolve_http_calls()
+        self._resolve_contract_layer()
         self._build_semantic_layer()
 
         print(f"[*] Construction Complete:")
@@ -390,6 +526,12 @@ class CKGBuilder(ast.NodeVisitor):
                 self.class_base_records.append(
                     (class_id, base_name, self.current_file, self.scope_depth)
                 )
+                # gRPC servicer: class X(pb2_grpc.<Service>Servicer)
+                servicer_match = re.match(r"^(?:\w+\.)*(\w+)Servicer$", base_name)
+                if servicer_match:
+                    self.grpc_servicer_records.append(
+                        (class_id, servicer_match.group(1), self.current_file)
+                    )
 
         self.scope_depth += 1
         self.current_scope.append(node.name)
@@ -426,13 +568,28 @@ class CKGBuilder(ast.NodeVisitor):
         if func_id not in self.var_defs:
             self.var_defs[func_id] = {}
 
-        for arg in node.args.args:
+        all_params = []
+        if hasattr(node.args, "posonlyargs"):
+            all_params.extend(node.args.posonlyargs)
+        all_params.extend(node.args.args)
+        if hasattr(node.args, "kwonlyargs"):
+            all_params.extend(node.args.kwonlyargs)
+        if getattr(node.args, "vararg", None):
+            all_params.append(node.args.vararg)
+        if getattr(node.args, "kwarg", None):
+            all_params.append(node.args.kwarg)
+
+        for arg in all_params:
             arg_name = arg.arg
             var_id = f"{func_id}.var::{arg_name}"
-            self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=arg_name, line_no=arg.lineno if hasattr(arg, 'lineno') else node.lineno)
+            self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=arg_name, line_no=getattr(arg, 'lineno', node.lineno))
             self.var_defs[func_id][arg_name] = var_id
             meta_arg = HyperEdgeMetadata(d_scope=self.scope_depth + 1, c_type=1.0, id_ctx=self.current_file)
             self.add_ckg_edge(func_id, var_id, relation="PASSES_ARG", layer="Lflow", metadata=meta_arg)
+            if getattr(arg, "annotation", None):
+                type_name = self._node_to_name(arg.annotation)
+                if type_name:
+                    self.var_types.setdefault(func_id, {})[arg_name] = type_name.rsplit(".", 1)[-1]
 
         self.scope_depth += 1
         self.current_scope.append(node.name)
@@ -442,6 +599,17 @@ class CKGBuilder(ast.NodeVisitor):
             self.current_scope.pop()
             self.scope_depth -= 1
         return func_id
+
+    @staticmethod
+    def _extract_target_names(target):
+        if isinstance(target, ast.Name):
+            return [(target.id, getattr(target, "lineno", 0))]
+        if isinstance(target, (ast.Tuple, ast.List)):
+            res = []
+            for elt in target.elts:
+                res.extend(CKGBuilder._extract_target_names(elt))
+            return res
+        return []
 
     @staticmethod
     def _literal_strings(node):
@@ -485,22 +653,46 @@ class CKGBuilder(ast.NodeVisitor):
         callee_name = self._node_to_name(node.func)
         if callee_name and self.current_scope:
             caller_id = self.get_current_scope_id()
+            # gRPC client call candidate: <var>.<Method>(...). The stub binding
+            # for <var> may appear later in the file (e.g. under __main__), so
+            # resolution is deferred to _resolve_contract_layer.
+            if callee_name.count(".") == 1:
+                var, _, method = callee_name.partition(".")
+                self.pending_attr_calls.append((caller_id, var, method, self.current_file))
             self.calls_to_resolve.append((caller_id, callee_name, self.scope_depth, self.current_file))
         self.generic_visit(node)
 
     def visit_Assign(self, node):
+        # gRPC stub binding: var = pb2_grpc.<Service>Stub(channel)  (any scope,
+        # including module level / __main__ blocks)
+        if isinstance(node.value, ast.Call):
+            stub_name = self._node_to_name(node.value.func)
+            stub_match = re.match(r"^(?:\w+\.)*(\w+)Stub$", stub_name or "")
+            if stub_match:
+                for target in node.targets:
+                    for var_name, _ in self._extract_target_names(target):
+                        self.grpc_client_vars.setdefault(self.current_file, {})[
+                            var_name
+                        ] = stub_match.group(1)
         if self.current_scope:
             scope_id = self.get_current_scope_id()
             if scope_id not in self.var_defs:
                 self.var_defs[scope_id] = {}
 
+            inferred_type = None
+            if isinstance(node.value, ast.Call):
+                ctor_name = self._node_to_name(node.value.func)
+                if ctor_name:
+                    inferred_type = ctor_name.rsplit(".", 1)[-1]
+
             for target in node.targets:
-                var_name = self._node_to_name(target)
-                if var_name:
+                for var_name, lineno in self._extract_target_names(target):
                     var_id = f"{scope_id}.var::{var_name}"
                     if not self.graph.has_node(var_id):
-                        self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=var_name, line_no=node.lineno)
+                        self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=var_name, line_no=lineno or node.lineno)
                     self.var_defs[scope_id][var_name] = var_id
+                    if inferred_type:
+                        self.var_types.setdefault(scope_id, {})[var_name] = inferred_type
                     
                     meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file)
                     self.add_ckg_edge(scope_id, var_id, relation="DEFINES", layer="Lflow", metadata=meta)
@@ -512,15 +704,69 @@ class CKGBuilder(ast.NodeVisitor):
             if scope_id not in self.var_defs:
                 self.var_defs[scope_id] = {}
 
-            var_name = self._node_to_name(node.target)
-            if var_name:
+            type_name = self._node_to_name(node.annotation) if getattr(node, "annotation", None) else None
+            for var_name, lineno in self._extract_target_names(node.target):
                 var_id = f"{scope_id}.var::{var_name}"
                 if not self.graph.has_node(var_id):
-                    self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=var_name, line_no=node.lineno)
+                    self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=var_name, line_no=lineno or node.lineno)
                 self.var_defs[scope_id][var_name] = var_id
+                if type_name:
+                    self.var_types.setdefault(scope_id, {})[var_name] = type_name.rsplit(".", 1)[-1]
                 
                 meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file)
                 self.add_ckg_edge(scope_id, var_id, relation="DEFINES", layer="Lflow", metadata=meta)
+        self.generic_visit(node)
+
+    def visit_For(self, node):
+        if self.current_scope:
+            scope_id = self.get_current_scope_id()
+            for var_name, lineno in self._extract_target_names(node.target):
+                var_id = f"{scope_id}.var::{var_name}"
+                if not self.graph.has_node(var_id):
+                    self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=var_name, line_no=lineno or node.lineno)
+                self.var_defs.setdefault(scope_id, {})[var_name] = var_id
+                meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file)
+                self.add_ckg_edge(scope_id, var_id, relation="DEFINES", layer="Lflow", metadata=meta)
+        self.generic_visit(node)
+
+    def visit_With(self, node):
+        if self.current_scope:
+            scope_id = self.get_current_scope_id()
+            for item in node.items:
+                if item.optional_vars:
+                    for var_name, lineno in self._extract_target_names(item.optional_vars):
+                        var_id = f"{scope_id}.var::{var_name}"
+                        if not self.graph.has_node(var_id):
+                            self.add_ckg_node(var_id, node_type="variable", layer="Lflow", name=var_name, line_no=lineno or node.lineno)
+                        self.var_defs.setdefault(scope_id, {})[var_name] = var_id
+                        meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file)
+                        self.add_ckg_edge(scope_id, var_id, relation="DEFINES", layer="Lflow", metadata=meta)
+        self.generic_visit(node)
+
+    def visit_Return(self, node):
+        if self.current_scope:
+            scope_id = self.get_current_scope_id()
+            return_id = f"{scope_id}.return::{node.lineno}"
+            if not self.graph.has_node(return_id):
+                self.add_ckg_node(return_id, node_type="return", layer="Lflow", name="return", line_no=node.lineno)
+            meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file)
+            self.add_ckg_edge(scope_id, return_id, relation="RETURNS", layer="Lflow", metadata=meta)
+            if node.value and isinstance(node.value, ast.Name):
+                var_name = node.value.id
+                if scope_id in self.var_defs and var_name in self.var_defs[scope_id]:
+                    var_id = self.var_defs[scope_id][var_name]
+                    self.add_ckg_edge(var_id, return_id, relation="FLOWS_TO", layer="Lflow", metadata=meta)
+        self.generic_visit(node)
+
+    def visit_AugAssign(self, node):
+        if self.current_scope:
+            scope_id = self.get_current_scope_id()
+            if isinstance(node.target, ast.Name):
+                var_name = node.target.id
+                if scope_id in self.var_defs and var_name in self.var_defs[scope_id]:
+                    var_id = self.var_defs[scope_id][var_name]
+                    meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file)
+                    self.add_ckg_edge(scope_id, var_id, relation="MUTATES", layer="Lflow", metadata=meta)
         self.generic_visit(node)
 
     def visit_Name(self, node):
@@ -579,7 +825,13 @@ class CKGBuilder(ast.NodeVisitor):
                 return same_file
 
         candidates = self.symbols_by_name.get(symbol_name if dot else spelling, [])
-        return candidates if len(candidates) == 1 else []
+        if len(candidates) == 1:
+            cand = candidates[0]
+            caller_unit = caller_file.split("/")[0] if "/" in caller_file else ""
+            cand_unit = cand.split(":")[0].replace("file::", "").split("/")[0] if "/" in cand else ""
+            if caller_unit == cand_unit or not caller_unit or not cand_unit:
+                return [cand]
+        return []
 
     def _find_method(self, class_id, method_name, seen=None):
         """Find a method declared on a class or an explicitly resolved base."""
@@ -596,6 +848,73 @@ class CKGBuilder(ast.NodeVisitor):
                 return resolved
         return None
 
+    def _find_all_implementations(self, class_id_or_name, method_name):
+        """Find base method and all overriding methods in subclasses (CHA)."""
+        classes_to_check = []
+        if class_id_or_name in self.graph and self.graph.nodes[class_id_or_name].get("type") == "class":
+            classes_to_check.append(class_id_or_name)
+        else:
+            for cid in self.symbols_by_name.get(class_id_or_name, []):
+                if self.graph.nodes.get(cid, {}).get("type") == "class":
+                    classes_to_check.append(cid)
+
+        impls = []
+        for class_id in classes_to_check:
+            base_method = self._find_method(class_id, method_name)
+            if base_method and base_method not in impls:
+                impls.append(base_method)
+            visited = set()
+            queue = list(self.class_subclasses.get(class_id, []))
+            while queue:
+                sub_id = queue.pop(0)
+                if sub_id in visited:
+                    continue
+                visited.add(sub_id)
+                sub_method = f"{sub_id}.{method_name}"
+                if sub_method in self.graph and self.graph.nodes[sub_method].get("type") == "function":
+                    if sub_method not in impls:
+                        impls.append(sub_method)
+                queue.extend(self.class_subclasses.get(sub_id, []))
+        return impls
+
+    def _compute_polymorphic_confidences(self, caller_id, candidate_ids, tau=0.2):
+        """Equation (4): Softmax polymorphic dispatch confidence with temperature tau."""
+        import math
+        if not candidate_ids:
+            return []
+        if len(candidate_ids) == 1:
+            return [1.0]
+
+        def get_node_text(nid):
+            ndata = self.graph.nodes.get(nid, {})
+            name = ndata.get("name", "")
+            doc = ndata.get("docstring", "")
+            code = ndata.get("code", "")
+            return f"{name} {doc} {code[:200]}".strip() or name
+
+        caller_text = get_node_text(caller_id)
+        candidate_texts = [get_node_text(cid) for cid in candidate_ids]
+
+        sims = []
+        try:
+            vec = TfidfVectorizer(stop_words="english", ngram_range=(1, 1))
+            all_texts = [caller_text] + candidate_texts
+            matrix = vec.fit_transform(all_texts)
+            caller_vec = matrix[0:1]
+            for i in range(len(candidate_ids)):
+                sim = float(cosine_similarity(caller_vec, matrix[i + 1 : i + 2])[0, 0])
+                sims.append(sim)
+        except Exception:
+            sims = [1.0] * len(candidate_ids)
+
+        scaled = [s / max(tau, 1e-4) for s in sims]
+        max_s = max(scaled)
+        exps = [math.exp(s - max_s) for s in scaled]
+        sum_exp = sum(exps)
+        if sum_exp > 0:
+            return [round(e / sum_exp, 4) for e in exps]
+        return [round(1.0 / len(candidate_ids), 4)] * len(candidate_ids)
+
     def _resolve_inheritance(self):
         """Turn explicit AST base-class spellings into real graph relationships."""
         for class_id, base_spelling, caller_file, scope_depth in self.class_base_records:
@@ -607,6 +926,7 @@ class CKGBuilder(ast.NodeVisitor):
             if candidates:
                 self.class_bases[class_id] = candidates
                 for target_id in candidates:
+                    self.class_subclasses.setdefault(target_id, []).append(class_id)
                     confidence = 1.0 if len(candidates) == 1 else 1.0 / len(candidates)
                     metadata = HyperEdgeMetadata(
                         d_scope=scope_depth, c_type=confidence, id_ctx=caller_file
@@ -661,6 +981,22 @@ class CKGBuilder(ast.NodeVisitor):
                             target_ids = [target_cand]
                             break
 
+            # 2. Receiver-type inference for obj.method()
+            if not target_ids and "." in callee_name and base_prefix not in {"self", "super()"}:
+                inferred_class = self.var_types.get(caller_id, {}).get(base_prefix)
+                if inferred_class:
+                    impls = self._find_all_implementations(inferred_class, symbol_name)
+                    if impls:
+                        if len(impls) == 1:
+                            target_ids = impls
+                        else:
+                            confidences = self._compute_polymorphic_confidences(caller_id, impls, tau=0.2)
+                            for impl_id, conf in zip(impls, confidences):
+                                meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=conf, id_ctx=caller_file)
+                                self.add_ckg_edge(caller_id, impl_id, relation="POLYMORPHIC_CALL", layer="Ldep", metadata=meta)
+                                resolved_count += 1
+                            continue
+
             if not target_ids:
                 target_ids = self._resolve_reference(caller_file, callee_name)
 
@@ -677,6 +1013,36 @@ class CKGBuilder(ast.NodeVisitor):
                     self.add_ckg_node(stub_id, node_type="external_func", layer="Ldep", name=callee_name)
                 meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=0.5, id_ctx=caller_file)
                 self.add_ckg_edge(caller_id, stub_id, relation="CALLS", layer="Ldep", metadata=meta)
+
+        # 6. Cross-file method calls through imported module aliases
+        #    (e.g. `import helpers` then `helpers.transform(...)`).
+        for (caller_id, callee_name, scope_depth, id_ctx), count in call_counts.items():
+            if "." not in callee_name:
+                continue
+            base, _, method = callee_name.rpartition(".")
+            if base in {"self", "super()"}:
+                continue
+            imports = self.imports_by_file.get(id_ctx, {})
+            module_key = imports.get(base)
+            if not module_key:
+                continue
+            target_file = self.module_to_file.get(module_key)
+            if not target_file:
+                continue
+            candidates = [
+                nid for nid in self.symbols_by_name.get(method, [])
+                if nid.startswith(f"{target_file}:")
+                and self.graph.nodes[nid].get("type") == "function"
+            ]
+            if len(candidates) == 1:
+                edge_exists = any(
+                    v == candidates[0] and d.get("relation") == "CALLS"
+                    for _, v, d in self.graph.out_edges(caller_id, data=True)
+                )
+                if not edge_exists:
+                    meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=id_ctx)
+                    self.add_ckg_edge(caller_id, candidates[0], relation="CALLS", layer="Ldep", metadata=meta)
+                    resolved_count += 1
 
         print(f"[*] Dependency Layer resolved: {resolved_count} internal call bindings created.")
 
@@ -702,36 +1068,207 @@ class CKGBuilder(ast.NodeVisitor):
                 resolved_count += 1
         print(f"[*] HTTP dependency resolution: {resolved_count} local endpoint bindings created.")
 
+    # -------------------------------------------------------------
+    # CONTRACT LAYER (Lcontract): protobuf/gRPC cross-language bindings
+    # -------------------------------------------------------------
+    def _parse_proto_file(self, rel_path, full_path):
+        """Parse a .proto file into canonical service/rpc contract nodes."""
+        with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+            text = f.read()
+        text = re.sub(r"//[^\n]*", "", text)
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        file_id = f"file::{rel_path}"
+        self.add_ckg_node(file_id, "file", "Lsyn", os.path.basename(rel_path), 1,
+                          code=f"// Proto contract file: {rel_path}")
+        # Normalise empty rpc option blocks `{}` so service bodies can be
+        # delimited by brace balancing (the first `}` is NOT the service end).
+        text = re.sub(r"\)\s*\{\s*\}", ");", text)
+        for service_match in re.finditer(r"service\s+(\w+)\s*\{", text):
+            service_name = service_match.group(1)
+            depth, i = 1, service_match.end()
+            while i < len(text) and depth:
+                depth += {"{": 1, "}": -1}.get(text[i], 0)
+                i += 1
+            body = text[service_match.end():i - 1]
+            service_id = f"contract::{service_name}"
+            self.add_ckg_node(service_id, "service_contract", "Lcontract", service_name)
+            self.add_ckg_edge(file_id, service_id, "CONTAINS", "Lsyn")
+            rpcs = {}
+            for rpc_match in re.finditer(r"rpc\s+(\w+)\s*\(\s*(\w+)\s*\)\s*returns\s*\(\s*(\w+)\s*\)", body):
+                rpc_name, req_type, resp_type = rpc_match.groups()
+                rpc_id = f"contract::{service_name}.{rpc_name}"
+                self.add_ckg_node(rpc_id, "rpc_contract", "Lcontract", rpc_name)
+                self.graph.nodes[rpc_id]["request_type"] = req_type
+                self.graph.nodes[rpc_id]["response_type"] = resp_type
+                self.add_ckg_edge(service_id, rpc_id, "DEFINES_RPC", "Lcontract")
+                rpcs[rpc_name] = rpc_id
+            self.proto_services[service_name] = {"node_id": service_id, "rpcs": rpcs}
+
+    def _resolve_contract_layer(self):
+        """Bind producers (IMPLEMENTS) and consumers (CONSUMES) to contracts."""
+        produced = 0
+        consumed = 0
+
+        # Python servicers: class X(pb2_grpc.<Service>Servicer) with rpc methods.
+        # The rpc method may be implemented on the servicer class itself OR on
+        # any subclass (template pattern, e.g. BaseEmailService -> EmailService).
+        subclasses_of = {}
+        for sub_id, bases in self.class_bases.items():
+            for base_id in bases:
+                subclasses_of.setdefault(base_id, []).append(sub_id)
+
+        def _descendants(cid, seen=None):
+            seen = seen or set()
+            for sub in subclasses_of.get(cid, []):
+                if sub not in seen:
+                    seen.add(sub)
+                    _descendants(sub, seen)
+            return seen
+
+        for class_id, service_name, file in self.grpc_servicer_records:
+            contract = self.proto_services.get(service_name)
+            if not contract:
+                continue
+            self.add_ckg_edge(class_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+            produced += 1
+            for rpc_name, rpc_id in contract["rpcs"].items():
+                for impl_class in [class_id, *sorted(_descendants(class_id))]:
+                    direct = f"{impl_class}.{rpc_name}"
+                    if direct in self.graph and self.graph.nodes[direct].get("type") == "function":
+                        self.add_ckg_edge(direct, rpc_id, "IMPLEMENTS", "Lcontract")
+                        produced += 1
+
+        # Go servers: pb.Register<Service>Server(srv, impl) + methods on impl type
+        for service_name, impl_arg, file, scope_id in self.grpc_server_registrations:
+            contract = self.proto_services.get(service_name)
+            if not contract:
+                continue
+            impl_type = (impl_arg or "").strip("&").strip()
+            # Resolve impl variable to its concrete type (svc := new(checkoutService))
+            impl_type = self.go_type_vars.get(file, {}).get(impl_type, impl_type)
+            # The type may be declared in a different file of the same package.
+            impl_id = f"{file}:{impl_type}"
+            if impl_id not in self.graph:
+                candidates = [nid for nid in self.symbols_by_name.get(impl_type, [])
+                              if self.graph.nodes[nid].get("type") == "class"]
+                if len(candidates) == 1:
+                    impl_id = candidates[0]
+            if impl_id in self.graph:
+                self.add_ckg_edge(impl_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+                produced += 1
+                for rpc_name, rpc_id in contract["rpcs"].items():
+                    method_id = self._find_method(impl_id, rpc_name)
+                    if method_id:
+                        self.add_ckg_edge(method_id, rpc_id, "IMPLEMENTS", "Lcontract")
+                        produced += 1
+
+        # JS servers: server.addService(pkg.<Service>.service, {rpc: handler})
+        for service_name, handlers, file, scope_id in self.js_add_service_records:
+            contract = self.proto_services.get(service_name)
+            if not contract:
+                continue
+            self.add_ckg_edge(scope_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+            produced += 1
+            for rpc_key, handler_expr in handlers.items():
+                rpc_id = self._match_rpc_case(contract, rpc_key)
+                if not rpc_id:
+                    continue
+                target_ids = self._resolve_reference(file, handler_expr)
+                for tid in target_ids:
+                    self.add_ckg_edge(tid, rpc_id, "IMPLEMENTS", "Lcontract")
+                    produced += 1
+
+        # Python stub calls whose stub variable was bound anywhere in the file
+        for caller_id, var, method, file in self.pending_attr_calls:
+            service = self.grpc_client_vars.get(file, {}).get(var)
+            if service:
+                self.grpc_calls_to_resolve.append((caller_id, service, method, file))
+        self.pending_attr_calls = []
+
+        # Consumers: gRPC stub calls from any language
+        seen_consumers = set()
+        for caller_id, service_name, method, id_ctx in self.grpc_calls_to_resolve:
+            if (caller_id, service_name, method) in seen_consumers:
+                continue
+            seen_consumers.add((caller_id, service_name, method))
+            contract = self.proto_services.get(service_name)
+            if not contract:
+                continue
+            rpc_id = self._match_rpc_case(contract, method)
+            if rpc_id:
+                self.add_ckg_edge(caller_id, rpc_id, "CONSUMES", "Lcontract")
+                consumed += 1
+
+        print(f"[*] Contract Layer resolved: {produced} producer bindings, {consumed} consumer bindings.")
+
+    @staticmethod
+    def _match_rpc_case(contract, name):
+        """Match an RPC name case-insensitively (JS uses camelCase handlers)."""
+        if name in contract["rpcs"]:
+            return contract["rpcs"][name]
+        lowered = name.lower()
+        for rpc_name, rpc_id in contract["rpcs"].items():
+            if rpc_name.lower() == lowered:
+                return rpc_id
+        return None
+
     def _build_semantic_layer(self, similarity_threshold=0.55):
         print("[*] Computing Semantic Layer (Lsem) embeddings and contracts...")
-        nodes_with_docs = [nid for nid, doc in self.docstrings.items() if len(doc.strip()) > 10]
-        self.indexed_node_ids = nodes_with_docs
+        indexed_nodes = []
+        corpus = []
+        for nid, data in self.graph.nodes(data=True):
+            ntype = data.get("type")
+            if ntype in {"function", "class", "module", "service_contract", "rpc_contract"}:
+                doc = data.get("docstring", "")
+                name = data.get("name", "")
+                code = data.get("code", "")
+                name_tokens = " ".join(re.findall(r"[A-Za-z0-9]+", name))
+                full_text = f"{name} {name_tokens} {doc} {code[:150]}".strip()
+                if full_text:
+                    indexed_nodes.append(nid)
+                    corpus.append(full_text)
 
-        if not nodes_with_docs:
-            print("[!] Note: No docstrings found for semantic indexing.")
+        self.indexed_node_ids = indexed_nodes
+        if not indexed_nodes:
+            print("[!] Note: No symbols found for semantic indexing.")
             return
 
-        corpus = [self.docstrings[nid] for nid in nodes_with_docs]
         self.vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2))
         try:
             self.tfidf_matrix = self.vectorizer.fit_transform(corpus)
-            sim_matrix = cosine_similarity(self.tfidf_matrix)
-
-            semantic_edge_count = 0
-            n = len(nodes_with_docs)
-            for i in range(n):
-                for j in range(i + 1, n):
-                    score = float(sim_matrix[i, j])
-                    if score >= similarity_threshold:
-                        u = nodes_with_docs[i]
-                        v = nodes_with_docs[j]
-                        meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=score, id_ctx="corpus")
-                        self.add_ckg_edge(u, v, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
-                        self.add_ckg_edge(v, u, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
-                        semantic_edge_count += 2
-            print(f"[*] Semantic Layer generated: {semantic_edge_count} cross-concept relational links.")
+            nodes_with_docs = [nid for nid, doc in self.docstrings.items() if len(doc.strip()) > 10 and nid in self.indexed_node_ids]
+            if len(nodes_with_docs) > 1:
+                doc_indices = [self.indexed_node_ids.index(nid) for nid in nodes_with_docs]
+                doc_submatrix = self.tfidf_matrix[doc_indices]
+                sim_matrix = cosine_similarity(doc_submatrix)
+                semantic_edge_count = 0
+                n = len(nodes_with_docs)
+                for i in range(n):
+                    for j in range(i + 1, n):
+                        score = float(sim_matrix[i, j])
+                        if score >= similarity_threshold:
+                            u = nodes_with_docs[i]
+                            v = nodes_with_docs[j]
+                            meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=score, id_ctx="corpus")
+                            self.add_ckg_edge(u, v, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
+                            self.add_ckg_edge(v, u, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
+                            semantic_edge_count += 2
+                print(f"[*] Semantic Layer generated: {semantic_edge_count} cross-concept relational links.")
         except Exception as e:
             print(f"[!] Warning: Error building semantic layer: {e}")
+
+        # BM25 lexical index for the retrieval baseline (no graph edges).
+        try:
+            from rank_bm25 import BM25Okapi
+
+            tokenized = [self._bm25_tokenize(text) for text in corpus]
+            self.bm25_index = BM25Okapi(tokenized) if tokenized else None
+        except ImportError:
+            self.bm25_index = None
+
+    @staticmethod
+    def _bm25_tokenize(text):
+        return re.findall(r"[a-z0-9]+", text.lower())
 
     # -------------------------------------------------------------
     # QUERY & RETRIEVAL INTERFACES (Requested by Scholar)
@@ -955,6 +1492,55 @@ class CKGBuilder(ast.NodeVisitor):
         }
 
     # -------------------------------------------------------------
+    # CONTRACT QUERIES (producer/consumer impact analysis)
+    # -------------------------------------------------------------
+    def _contract_node_id(self, name):
+        """Resolve 'Service' or 'Service.Rpc' (case-insensitive rpc) to a node id."""
+        if name in self.graph and self.graph.nodes[name].get("type") in {"service_contract", "rpc_contract"}:
+            return name
+        candidate = name if name.startswith("contract::") else f"contract::{name}"
+        if candidate in self.graph:
+            return candidate
+        if "." in candidate:
+            service, _, rpc = candidate.rpartition(".")
+            contract = self.proto_services.get(service.split("::", 1)[-1])
+            if contract:
+                matched = self._match_rpc_case(contract, rpc)
+                if matched:
+                    return matched
+        return None
+
+    def who_consumes(self, contract_name):
+        """List code entities that consume a service or rpc contract."""
+        node_id = self._contract_node_id(contract_name)
+        if not node_id:
+            return {"error": f"Contract '{contract_name}' not found."}
+        targets = {node_id}
+        if self.graph.nodes[node_id].get("type") == "service_contract":
+            targets |= set(self.proto_services[node_id.split("::", 1)[-1]]["rpcs"].values())
+        consumers = []
+        for target in targets:
+            for src, _, data in self.graph.in_edges(target, data=True):
+                if data.get("relation") == "CONSUMES":
+                    consumers.append({"consumer": src, "rpc": target})
+        return {"contract": node_id, "consumers": consumers}
+
+    def who_implements(self, contract_name):
+        """List code entities that implement a service or rpc contract."""
+        node_id = self._contract_node_id(contract_name)
+        if not node_id:
+            return {"error": f"Contract '{contract_name}' not found."}
+        targets = {node_id}
+        if self.graph.nodes[node_id].get("type") == "service_contract":
+            targets |= set(self.proto_services[node_id.split("::", 1)[-1]]["rpcs"].values())
+        implementers = []
+        for target in targets:
+            for src, _, data in self.graph.in_edges(target, data=True):
+                if data.get("relation") == "IMPLEMENTS":
+                    implementers.append({"implementer": src, "rpc": target})
+        return {"contract": node_id, "implementers": implementers}
+
+    # -------------------------------------------------------------
     # HELPERS
     # -------------------------------------------------------------
     def _extract_source_segment(self, node):
@@ -976,16 +1562,17 @@ class CKGBuilder(ast.NodeVisitor):
         return None
 
     def _print_layer_statistics(self):
-        layer_counts = {"Lsyn": 0, "Ldep": 0, "Lflow": 0, "Lsem": 0}
+        layer_counts = {"Lsyn": 0, "Ldep": 0, "Lflow": 0, "Lsem": 0, "Lcontract": 0}
         for _, _, data in self.graph.edges(data=True):
             l = data.get("layer")
             if l in layer_counts:
                 layer_counts[l] += 1
         print("    - Layer Distribution (Edges):")
-        print(f"      * Syntactic  (Lsyn):  {layer_counts['Lsyn']}")
-        print(f"      * Dependency (Ldep):  {layer_counts['Ldep']}")
-        print(f"      * Dataflow   (Lflow): {layer_counts['Lflow']}")
-        print(f"      * Semantic   (Lsem):  {layer_counts['Lsem']}")
+        print(f"      * Syntactic  (Lsyn):      {layer_counts['Lsyn']}")
+        print(f"      * Dependency (Ldep):      {layer_counts['Ldep']}")
+        print(f"      * Dataflow   (Lflow):     {layer_counts['Lflow']}")
+        print(f"      * Semantic   (Lsem):      {layer_counts['Lsem']}")
+        print(f"      * Contract   (Lcontract): {layer_counts['Lcontract']}")
 
 
     def verify_graph(self):
@@ -1002,7 +1589,7 @@ class CKGBuilder(ast.NodeVisitor):
         edges = list(self.graph.edges(data=True))
         
         # 1. Layer distribution
-        layer_dist = {"Lsyn": 0, "Ldep": 0, "Lflow": 0, "Lsem": 0}
+        layer_dist = {"Lsyn": 0, "Ldep": 0, "Lflow": 0, "Lsem": 0, "Lcontract": 0}
         for _, _, d in edges:
             l = d.get("layer")
             if l in layer_dist:
@@ -1039,6 +1626,9 @@ class CKGBuilder(ast.NodeVisitor):
             "variable_nodes_count": len(var_nodes),
             "dataflow_def_use_linked_vars": len(defined_vars.intersection(used_vars)),
             "docstring_coverage_pct": round(doc_coverage, 2),
+            "contract_services": len(self.proto_services),
+            "contract_producer_edges": sum(1 for _, _, d in edges if d.get("relation") == "IMPLEMENTS"),
+            "contract_consumer_edges": sum(1 for _, _, d in edges if d.get("relation") == "CONSUMES"),
             "health_status": "PASS (All 4 Layers Populated)" if all(v > 0 for v in layer_dist.values()) else "PASS (Structure Verified)",
         }
         return report
@@ -1093,7 +1683,9 @@ def main():
     parser.add_argument("--explain", help="Node ID or symbol name to explain across all 4 layers")
     parser.add_argument("--rag", help="Natural language query for RAG retrieval and subtree grafting")
     parser.add_argument("--adjacency", help="Node ID to run adjacency query on")
-    parser.add_argument("--layers", nargs="+", choices=["Lsyn", "Ldep", "Lflow", "Lsem"], help="Filter adjacency by layers")
+    parser.add_argument("--layers", nargs="+", choices=["Lsyn", "Ldep", "Lflow", "Lsem", "Lcontract"], help="Filter adjacency by layers")
+    parser.add_argument("--who-consumes", dest="who_consumes", help="List consumers of a contract (Service or Service.Rpc)")
+    parser.add_argument("--who-implements", dest="who_implements", help="List implementers of a contract (Service or Service.Rpc)")
     parser.add_argument("--export", default="repo_graph.graphml", help="Export path for GraphML")
     args = parser.parse_args()
 
@@ -1127,6 +1719,12 @@ def main():
         print(f"GRAFT-CKG ADJACENCY QUERY FOR: {args.adjacency}")
         print("="*70)
         print(json.dumps(adj_res, indent=2))
+
+    if args.who_consumes:
+        print(json.dumps(builder.who_consumes(args.who_consumes), indent=2))
+
+    if args.who_implements:
+        print(json.dumps(builder.who_implements(args.who_implements), indent=2))
 
     if args.interactive:
         builder.run_interactive_shell()

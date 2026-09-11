@@ -135,3 +135,22 @@ python visualize.py my_graph.graphml --output my_viewer.html
 1. **[Gephi Lite](https://gephi.org/gephi-lite/):** Drag & drop `my_graph.gexf` or `my_graph.graphml`.
 2. **[Cosmograph](https://cosmograph.app/run):** Drag & drop `my_graph.json` (60 FPS GPU WebGL rendering).
 3. **Local Browser:** Double-click `my_viewer.html` for instant offline D3 physics visualization.
+
+---
+
+## 6. v2 additions — Contract Layer, Go, benchmarks
+
+```bash
+# Build any polyglot repo (Python / JS / TS / Go / .proto) and list contract bindings
+python graft_ckg.py /path/to/microservices-demo --verify
+python graft_ckg.py /path/to/microservices-demo --who-consumes EmailService
+python graft_ckg.py /path/to/microservices-demo --who-implements ShippingService.GetQuote
+
+# Measured benchmarks (see RESULTS.md and GRAFT-CKG_Assessment_and_Gap_Report.md)
+python bench/run_benchmark.py --repo /path/to/microservices-demo --labels bench/labels/online_boutique_contracts.json
+python bench/trace_oracle.py --repo /path/to/python/repo --pytest-args tests
+python bench/inject_contract_fault.py --repo /path/to/microservices-demo --service ShippingService --rpc GetQuote --fault rename-rpc
+```
+
+Graph vocabulary added in v2: layer `Lcontract`; node types `service_contract`, `rpc_contract`; relations
+`DEFINES_RPC`, `IMPLEMENTS`, `CONSUMES`. Note: `math_app/` referenced above is not shipped; use `examples/mixed_service`.

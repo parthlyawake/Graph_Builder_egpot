@@ -1,5 +1,8 @@
 # Benchmark evidence report
 
+> **v2 note:** real-repository measurements now live in `RESULTS.md` (generated from `bench/results/`). The toy-fixture numbers below are retained for reproducibility only and must not be presented as benchmark results.
+
+
 **Run date:** 2026-09-10  
 **Base revision:** `1c566173e06d7e9a43cdfb247d15ba4c2acceda3` plus the uncommitted polyglot implementation in this change set.  
 **Environment:** Python 3.12; Tree-sitter JavaScript and TypeScript adapters installed from `requirements.txt`.
