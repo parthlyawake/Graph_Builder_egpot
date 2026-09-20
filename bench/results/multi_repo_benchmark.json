@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-19 21:04:38",
+  "timestamp": "2026-09-20 08:56:49",
   "table1_construction": {
     "single_repos": [
       {
@@ -103,14 +103,14 @@
       "repositories": 10,
       "loc": 5001,
       "nodes": 1794,
-      "edges": 5157,
-      "build_latency_s": 0.213,
-      "throughput_s_per_kloc": 0.0426,
+      "edges": 5155,
+      "build_latency_s": 0.577,
+      "throughput_s_per_kloc": 0.1153,
       "layer_distribution": {
         "Lsyn": 299,
         "Ldep": 1340,
         "Lflow": 3378,
-        "Lsem": 62,
+        "Lsem": 60,
         "Lcontract": 78
       },
       "contract_services": 10,
@@ -144,7 +144,7 @@
       "Hits@1": 41.7,
       "Hits@5": 83.3,
       "Context_Recall@10": 77.1,
-      "Token_Redundancy_%": 41.2
+      "Token_Redundancy_%": 103.2
     },
     "BM25_Lexical": {
       "MRR@5": 0.617,
@@ -165,7 +165,7 @@
       "Hits@1": 41.7,
       "Hits@5": 83.3,
       "Context_Recall@10": 29.2,
-      "Token_Redundancy_%": 18.5
+      "Token_Redundancy_%": 46.4
     }
   },
   "table2_ablations_section_7b": {
@@ -175,7 +175,7 @@
       "Hits@1": 41.7,
       "Context_Recall@10": 77.1,
       "Delta_Recall": 0.0,
-      "Token_Redundancy_%": 41.2
+      "Token_Redundancy_%": 103.2
     },
     "w/o_Lflow": {
       "MRR@5": 0.561,
@@ -183,7 +183,7 @@
       "Hits@1": 41.7,
       "Context_Recall@10": 77.1,
       "Delta_Recall": 0.0,
-      "Token_Redundancy_%": 37.5
+      "Token_Redundancy_%": 89.4
     },
     "w/o_Ldep": {
       "MRR@5": 0.561,
@@ -191,7 +191,7 @@
       "Hits@1": 41.7,
       "Context_Recall@10": 75.0,
       "Delta_Recall": -2.1,
-      "Token_Redundancy_%": 18.0
+      "Token_Redundancy_%": 41.4
     },
     "w/o_Lsem": {
       "MRR@5": 0.561,
@@ -199,7 +199,7 @@
       "Hits@1": 41.7,
       "Context_Recall@10": 77.1,
       "Delta_Recall": 0.0,
-      "Token_Redundancy_%": 41.2
+      "Token_Redundancy_%": 103.2
     },
     "w/o_Lcontract": {
       "MRR@5": 0.561,
@@ -207,7 +207,7 @@
       "Hits@1": 41.7,
       "Context_Recall@10": 34.0,
       "Delta_Recall": -43.1,
-      "Token_Redundancy_%": 25.7
+      "Token_Redundancy_%": 66.0
     }
   },
   "table3_contract_layer": {

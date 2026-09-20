@@ -21,21 +21,50 @@ try:  # Go adapter is optional: the engine degrades to JS/TS without it.
 except ImportError:  # pragma: no cover - depends on environment
     _GO_AVAILABLE = False
 
+try:  # Java adapter — install with: pip install tree-sitter-java
+    import tree_sitter_java  # type: ignore
+
+    _JAVA_AVAILABLE = True
+except ImportError:
+    _JAVA_AVAILABLE = False
+
+try:  # C# adapter — install with: pip install tree-sitter-c-sharp
+    import tree_sitter_c_sharp  # type: ignore
+
+    _CSHARP_AVAILABLE = True
+except ImportError:
+    _CSHARP_AVAILABLE = False
+
 
 class TreeSitterExtractor:
+    # Core extensions always supported; Java/C# enabled if packages installed.
     EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".go"}
+    if _JAVA_AVAILABLE:
+        EXTENSIONS.add(".java")
+    if _CSHARP_AVAILABLE:
+        EXTENSIONS.add(".cs")
 
     def __init__(self, extension):
         if extension == ".go":
             if not _GO_AVAILABLE:
-                raise RuntimeError("tree-sitter-go is not installed")
+                raise RuntimeError("tree-sitter-go is not installed. Run: pip install tree-sitter-go")
             grammar = tree_sitter_go.language()
+        elif extension == ".java":
+            if not _JAVA_AVAILABLE:
+                raise RuntimeError("tree-sitter-java is not installed. Run: pip install tree-sitter-java")
+            grammar = tree_sitter_java.language()
+        elif extension == ".cs":
+            if not _CSHARP_AVAILABLE:
+                raise RuntimeError("tree-sitter-c-sharp is not installed. Run: pip install tree-sitter-c-sharp")
+            grammar = tree_sitter_c_sharp.language()
         elif extension in {".ts", ".tsx"}:
             grammar = tree_sitter_typescript.language_typescript()
         else:
             grammar = tree_sitter_javascript.language()
         self.parser = Parser(Language(grammar))
         self.is_go = extension == ".go"
+        self.is_java = extension == ".java"
+        self.is_csharp = extension == ".cs"
 
     @staticmethod
     def _text(node, source):

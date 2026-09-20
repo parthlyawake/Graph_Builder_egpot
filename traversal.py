@@ -24,6 +24,22 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from graft_ckg import CKGBuilder
 
 
+def count_tokens(text: str, model: str = "cl100k_base") -> int:
+    """
+    Count BPE tokens in `text` using tiktoken (OpenAI cl100k_base encoding).
+    Falls back to word-count * 1.3 heuristic if tiktoken is not installed.
+
+    Used for accurate token-redundancy metric in paper Table II (§VII-A).
+    The cl100k_base encoding matches GPT-4 / GPT-3.5-turbo tokenisation.
+    """
+    try:
+        import tiktoken
+        enc = tiktoken.get_encoding(model)
+        return len(enc.encode(text))
+    except Exception:
+        return max(1, int(len(text.split()) * 1.3))
+
+
 class SCKGTraversal:
     """Graph traversal and context grafting engine over a built CKG."""
 
@@ -391,12 +407,16 @@ class SCKGTraversal:
 
         formatted_context = "\n\n".join(context_blocks)
 
+        # Accurate BPE token count using tiktoken (paper Table II metric)
+        bpe_tokens = count_tokens(formatted_context)
+
         return {
             "root": root,
             "selected_nodes": list(selected_nodes),
             "node_count": len(selected_nodes),
             "edge_count": len(selected_edges),
-            "approx_tokens": int(approx_token_count),
+            "approx_tokens": int(approx_token_count),  # kept for backward compat
+            "bpe_tokens": bpe_tokens,                  # accurate BPE count (cl100k_base)
             "token_budget": max_tokens,
             "relations": selected_edges,
             "grafted_context": formatted_context,

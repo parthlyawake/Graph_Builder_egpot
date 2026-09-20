@@ -42,7 +42,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from graft_ckg import CKGBuilder
 from multi_repo import WorkspaceConfig, WorkspaceCKGBuilder, RepoConfig
-from traversal import SCKGTraversal
+from traversal import SCKGTraversal, count_tokens
 from remediation import SCKGSelfHealingEngine, DefectType
 
 try:
@@ -327,7 +327,7 @@ def run_combined_benchmark(
                 grafted_nodes = set(graft.get("selected_nodes", [top_root]))
                 found_deps = sum(1 for dep in req_deps if any(dep in gn or gn in dep for gn in grafted_nodes))
                 g_rec = found_deps / len(req_deps) if req_deps else 1.0
-                g_tokens = graft.get("approx_tokens", 100)
+                g_tokens = graft.get("bpe_tokens", graft.get("approx_tokens", 100))
             else:
                 g_rec = 0.0
                 g_tokens = 0

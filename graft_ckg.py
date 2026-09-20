@@ -256,7 +256,9 @@ class CKGBuilder(ast.NodeVisitor):
                 self.file_symbols[self.current_file] = []
             self.file_symbols[self.current_file].append(node_id)
 
-    def add_ckg_node(self, node_id, node_type, layer="Lsyn", name="", line_no=0, doc="", code="", repo=None):
+    def add_ckg_node(self, node_id, node_type, layer="Lsyn", name="", line_no=0, doc="", code="", repo=None, docstring=None):
+        if docstring is not None:
+            doc = docstring
         self.graph.add_node(
             node_id,
             id=node_id,
@@ -1032,11 +1034,17 @@ class CKGBuilder(ast.NodeVisitor):
 
             # 5. Add resolved edges or external stub
             if target_ids:
-                for tid in target_ids:
-                    conf = 1.0 if len(target_ids) == 1 else (1.0 / len(target_ids))
-                    meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=conf, id_ctx=caller_file)
+                if len(target_ids) == 1:
+                    tid = target_ids[0]
+                    meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=caller_file)
                     self.add_ckg_edge(caller_id, tid, relation="CALLS", layer="Ldep", metadata=meta)
                     resolved_count += 1
+                else:
+                    confidences = self._compute_polymorphic_confidences(caller_id, target_ids, tau=0.2)
+                    for tid, conf in zip(target_ids, confidences):
+                        meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=conf, id_ctx=caller_file)
+                        self.add_ckg_edge(caller_id, tid, relation="POLYMORPHIC_CALL", layer="Ldep", metadata=meta)
+                        resolved_count += 1
             else:
                 stub_id = f"external::{callee_name}"
                 if not self.graph.has_node(stub_id):
@@ -1073,6 +1081,17 @@ class CKGBuilder(ast.NodeVisitor):
                     meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=id_ctx)
                     self.add_ckg_edge(caller_id, candidates[0], relation="CALLS", layer="Ldep", metadata=meta)
                     resolved_count += 1
+            elif len(candidates) > 1:
+                confidences = self._compute_polymorphic_confidences(caller_id, candidates, tau=0.2)
+                for cand_id, conf in zip(candidates, confidences):
+                    edge_exists = any(
+                        v == cand_id and d.get("relation") in ("CALLS", "POLYMORPHIC_CALL")
+                        for _, v, d in self.graph.out_edges(caller_id, data=True)
+                    )
+                    if not edge_exists:
+                        meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=conf, id_ctx=id_ctx)
+                        self.add_ckg_edge(caller_id, cand_id, relation="POLYMORPHIC_CALL", layer="Ldep", metadata=meta)
+                        resolved_count += 1
 
         print(f"[*] Dependency Layer resolved: {resolved_count} internal call bindings created.")
 
@@ -1275,7 +1294,13 @@ class CKGBuilder(ast.NodeVisitor):
                 return rpc_id
         return None
 
-    def _build_semantic_layer(self, similarity_threshold=0.55):
+    def _build_semantic_layer(self, similarity_threshold=0.70):
+        """
+        Algorithm 1, Lines 12-14 (HR-Build):
+        E_sem <- COMPUTEINTENTEMBEDDINGS(V)
+        E_sem <- CONSTRUCTCONTRACTEDGES(V, E_sem, theta_sim = 0.70)
+        E <- E U E_sem
+        """
         print("[*] Computing Semantic Layer (Lsem) embeddings and contracts...")
         indexed_nodes = []
         corpus = []

@@ -1,0 +1,15 @@
+{
+  "polyglot_system": {
+    "full_rebuild_ms_mean": 9.33,
+    "full_rebuild_ms_stdev": 8.56,
+    "incremental_ms_mean": 3.03,
+    "incremental_ms_stdev": 0.29,
+    "speedup": 3.1,
+    "trials": 10
+  },
+  "multi_repo_system": {
+    "full_rebuild_ms_mean": 9.33,
+    "incremental_ms_mean": 3.36,
+    "speedup": 2.8
+  }
+}

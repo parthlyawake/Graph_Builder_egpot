@@ -272,6 +272,30 @@ class PolyglotGapFixesTests(unittest.TestCase):
         self.assertNotIn("a.py:calculate", builder.graph.nodes)
         self.assertIn("a.py:compute", builder.graph.nodes)
 
+    def test_equation_4_softmax_multi_candidate_dispatch(self) -> None:
+        """Paper Equation (4): c_type(u, v_j) = exp(sim/tau) / sum(exp(sim/tau)).
+        Verifies that when an invocation matches multiple candidate targets,
+        softmax confidences are assigned with sum(c_type) ~= 1.0 (partition of unity).
+        """
+        builder = CKGBuilder(self.temp_dir)
+        # Register a caller node and two candidate nodes in graph
+        builder.add_ckg_node("caller.py:dispatch", "function", "Lsyn", "dispatch", 1,
+                             docstring="Process payment and charge transaction", code="def dispatch(): pass")
+        builder.add_ckg_node("payment.py:charge", "function", "Lsyn", "charge", 1,
+                             docstring="Execute credit card payment charge", code="def charge(): pass")
+        builder.add_ckg_node("logging.py:charge", "function", "Lsyn", "charge", 1,
+                             docstring="Log audit event", code="def charge(): pass")
+
+        candidates = ["payment.py:charge", "logging.py:charge"]
+        confidences = builder._compute_polymorphic_confidences("caller.py:dispatch", candidates, tau=0.2)
+
+        self.assertEqual(len(confidences), 2)
+        # Partition of unity: sum of softmax probabilities must equal 1.0
+        self.assertAlmostEqual(sum(confidences), 1.0, delta=0.01)
+        # Contextual relevance: payment.charge is much more semantically relevant to payment dispatch
+        self.assertGreater(confidences[0], confidences[1],
+                           "Payment charge candidate should have higher confidence than logging charge")
+
 
 if __name__ == "__main__":
     unittest.main()

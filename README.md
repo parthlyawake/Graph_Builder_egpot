@@ -1,293 +1,283 @@
-# SCKG: Polyglot Semantic Code Knowledge Graph & Self-Healing Engine
+﻿# GRAFT-CKG: Generalized Relational Abstraction and Functional Topology for Code Knowledge Graphs
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 31 Passed](https://img.shields.io/badge/tests-31%20passed-brightgreen.svg)]()
-[![Tree-Sitter Polyglot](https://img.shields.io/badge/parsers-Python%20%7C%20Go%20%7C%20JS%2FTS%20%7C%20Protobuf-orange.svg)]()
-[![Status: Complete](https://img.shields.io/badge/status-Production--Ready-blue.svg)]()
+> A multi-repository, polyglot Code Knowledge Graph (CKG) engine for LLM agent context generation in distributed microservice systems.
 
-> **Bridging Code and Operations: A Multi-Layer Semantic Code Knowledge Graph for Cross-Service Code Generation, Impact Analysis, and Automated Remediation.**
+[![Tests](https://img.shields.io/badge/tests-52%20passed-brightgreen)](#testing)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](#installation)
+[![Languages](https://img.shields.io/badge/languages-Python%20%7C%20Go%20%7C%20JS%2FTS%20%7C%20Protobuf-orange)](#supported-languages)
 
 ---
 
-## Table of Contents
-1. [Overview & PhD Proposal Alignment](#1-overview--phd-proposal-alignment)
-2. [Topological Graph Architecture](#2-topological-graph-architecture)
-3. [Core Capabilities](#3-core-capabilities)
-   - [Objective 1: Polyglot 4-Layer + Contract CKG Construction](#objective-1-polyglot-4-layer--contract-ckg-construction)
-   - [Objective 2: Graph-Guided Traversal & Subtree Grafting](#objective-2-graph-guided-traversal--subtree-grafting)
-   - [Objective 3: 5-Stage Closed-Loop Auto-Remediation](#objective-3-5-stage-closed-loop-auto-remediation)
-4. [Interactive Visual Workbench & Standalone HTML Exporter](#4-interactive-visual-workbench--standalone-html-exporter)
-5. [Installation & Quickstart](#5-installation--quickstart)
-6. [CLI & API Guide](#6-cli--api-guide)
-7. [Benchmark Evaluation & Verification](#7-benchmark-evaluation--verification)
-8. [Repository Structure & GitHub Submission Guide](#8-repository-structure--github-submission-guide)
+## Overview
+
+GRAFT-CKG builds a **six-layer hyper-relational knowledge graph** from source code across multiple repositories and programming languages. Unlike existing single-repository code graph systems (RepoGraph, CodexGraph, LocAgent), GRAFT-CKG:
+
+- **Spans multiple repositories** in a single unified workspace graph with zero node-ID collisions
+- **Models gRPC/Protobuf service contracts** as first-class graph nodes (L_contract)
+- **Resolves cross-service dependencies** — which Go service *implements* a proto RPC, which Python service *consumes* it
+- **Detects contract drift** when vendored .proto copies diverge between services
+- **Builds incrementally** — a changed file updates the graph in O(Δ) time, not O(N)
+- **Integrates git lineage** — commit history becomes TOUCHES edges in the graph
+
+### Architecture
+
+`
+Source Code (Go, Python, JS/TS, Protobuf)
+                │
+                ▼
+┌───────────────────────────────────────────────────────────┐
+│  L_syn      │ CONTAINS · IMPORTS · EXTENDS                │
+│  L_dep      │ CALLS · POLYMORPHIC_CALL (Eq.4 softmax)     │
+│  L_flow     │ PASSES_ARG · DEFINES · USES · MUTATES       │
+│  L_sem      │ SEMANTIC_SIMILAR (TF-IDF + BM25)            │
+│  L_contract │ IMPLEMENTS · CONSUMES · HTTP_CALLS          │  ← novel
+│  L_lineage  │ TOUCHES (git commit provenance)             │  ← novel
+└───────────────────────────────────────────────────────────┘
+                │
+                ▼
+   Unified Multi-Repo Workspace Graph
+   → RAG Query  → Blast-Radius  → Subtree Graft  → Neo4j Export
+`
 
 ---
 
-## 1. Overview & PhD Proposal Alignment
+## Installation
 
-Modern microservice architectures break single-repository assumptions: business logic spans distributed microservices written in multiple languages (Python, Go, JavaScript/TypeScript) that communicate via explicit Interface Definition Language contracts (Protobuf/gRPC, OpenAPI, REST).
+`ash
+git clone <repo>
+cd SCKG_Build-v2
 
-This repository implements the complete end-to-end framework proposed in the PhD research program:
-* **Objective 1 (Build):** Polyglot, streaming Code Knowledge Graph construction with 4 intra-service layers ($L_{syn}, L_{dep}, L_{flow}, L_{sem}$) unified with an inter-service Contract Layer ($L_{contract}$), featuring Class-Hierarchy Analysis (CHA), receiver-type inference, and temperature-scaled polymorphic dispatch (Eq. 4).
-* **Objective 2 (Traverse):** Graph-guided traversal primitives for LLM agent context augmentation, computing structural blast radius, downstream consumers, reverse contract mappings, and token-bounded deterministic subtree grafting.
-* **Objective 3 (Self-Healing / Auto-Fix):** A 5-stage closed-loop remediation pipeline (`diagnose` $\to$ `attribute` $\to$ `generate_patch` $\to$ `validate` $\to$ `propose`) that detects contract skews, traces causal roots, synthesizes unified diff patches, and validates AST syntax and graph integrity.
-
----
-
-## 2. Topological Graph Architecture
-
-```
-                  ┌─────────────────────────────────────────────────────────┐
-                  │            Lcontract (Contract Layer)                   │
-                  │   contract::Service ──DEFINES_RPC──> contract::Rpc      │
-                  └──────────────▲──────────────────────────────▲───────────┘
-                                 │                              │
-                          IMPLEMENTS (Go/Py)             CONSUMES (Py/JS)
-                                 │                              │
-┌────────────────────────────────┴───────────────┐ ┌────────────┴───────────────────────────┐
-│              Producer Microservice             │ │             Consumer Microservice       │
-│                                                │ │                                         │
-│  Ldep:  Class ──EXTENDS──> BaseClass          │ │  Ldep:  Caller ──CALLS──> Callee        │
-│         Receiver.Method ──CALLS──> Func        │ │         Caller ──HTTP_CALLS──> Route    │
-│                                                │ │                                         │
-│  Lflow: Var ──DEFINES──> Expr                  │ │  Lflow: Param ──PASSES_ARG──> Call      │
-│         Var ──MUTATES──> Update                │ │         Return ──FLOWS_TO──> Assign     │
-│                                                │ │                                         │
-│  Lsyn:  Module ──CONTAINS──> Class/Func        │ │  Lsyn:  Module ──CONTAINS──> Func       │
-│                                                │ │                                         │
-│  Lsem:  TF-IDF & BM25 Docstring/Code Embeddings│ │  Lsem:  Hybrid Lexical/Semantic Index   │
-└────────────────────────────────────────────────┘ └─────────────────────────────────────────┘
-```
-
-### Hyper-Edge Vector Formulation
-Each relational hyper-edge carries a typed metadata tuple $m = \langle d_{scope}, f_{call}, c_{type}, id_{ctx} \rangle$:
-* $d_{scope} \in \mathbb{N}$: Lexical nesting depth.
-* $f_{call} \in \mathbb{R}^+$: Invocation frequency / reference weight.
-* $c_{type} \in [0.0, 1.0]$: Static type confidence score computed via temperature-scaled softmax over CHA candidates (Eq. 4):
-  $$\mathcal{P}(v_j \mid v_{caller}) = \frac{\exp(\cos(e_{caller}, e_{v_j}) / \tau)}{\sum_k \exp(\cos(e_{caller}, e_{v_k}) / \tau)}, \quad \tau = 0.2$$
-* $id_{ctx}$: Partition identifier (file or module scope).
-
----
-
-## 3. Core Capabilities
-
-### Objective 1: Polyglot 4-Layer + Contract CKG Construction
-* **Multi-Language AST Extraction:**
-  * **Python:** Standard AST parsing with complete support for positional/keyword arguments (`posonlyargs`, `kwonlyargs`, `*args`, `**kwargs`), tuple/list unpacking, loop targets, augmented assignments, and return dataflow.
-  * **JavaScript / TypeScript:** Tree-sitter AST engine parsing classes, interfaces, type aliases, arrow functions, constructor instantiations (`new Store()`), multi-line ES imports, and path aliases (`tsconfig.json`).
-  * **Go:** Tree-sitter Go parser extracting package/local variables, assignments, functions, receiver methods (`Type.Method`), structs, and interfaces.
-  * **Protobuf Contracts ($L_{contract}$):** Discovers `.proto` schemas and constructs canonical `contract::Service` and `contract::Service.Rpc` nodes with typed request/response signatures.
-* **Producer & Consumer Linkage:**
-  * Links Python servicers, Go `Register<Svc>Server`, and Node `addService` via `IMPLEMENTS`.
-  * Links Python stubs, Go `New<Svc>Client(...).<Rpc>`, and Node gRPC clients via `CONSUMES`.
-  * Achieves **Precision = 1.00, Recall = 1.00** on Google's microservices benchmark (Online Boutique).
-* **Incremental Maintenance (`update_files`):**
-  * Differential streaming graph updates: drops owned nodes and derived edges for changed files and re-parses in $O(\Delta)$ time without expensive whole-repo rebuilds.
-
-### Objective 2: Graph-Guided Traversal & Subtree Grafting (`traversal.py`)
-* `blast_radius(symbol, max_depth, direction)`: Traverses multi-hop dependency closures (upstream callers, downstream callees, contract consumers/producers, dataflow mutations) and computes structural impact scores across files and services.
-* `downstream_consumers(contract)`: Instantly surfaces every cross-service consumer of a given service or RPC.
-* `contract_of(symbol)`: Reverse-resolves implementation functions and call sites to their governing contract schemas.
-* `deterministic_subtree_graft(symbol, max_tokens)`: Extracts the minimal topological execution slice (declarations, direct callees, bound contracts, data mutations) formatted within a fixed token budget for LLM prompt augmentation.
-
-### Objective 3: 5-Stage Closed-Loop Auto-Remediation (`remediation.py`)
-```
- ┌──────────┐      ┌───────────┐      ┌────────────────┐      ┌──────────┐      ┌─────────┐
- │ Diagnose │ ───> │ Attribute │ ───> │ Generate Patch │ ───> │ Validate │ ───> │ Propose │
- └──────────┘      └───────────┘      └────────────────┘      └──────────┘      └─────────┘
-  Detect contract    Trace causal       Synthesize unified     Verify AST &      Human-in-the-
-  breaking skews     root to schema     diff code patch        CKG consistency   loop advisory
-```
-1. **Diagnose:** Detects contract breaking changes (e.g., renamed/removed RPCs in `.proto`), dangling consumer call sites, and unhandled routes.
-2. **Attribute:** Traces the dangling call back through CKG topology and calculates fuzzy similarity against candidate RPCs with confidence scoring.
-3. **Generate Patch:** Synthesizes precise unified diffs modifying call sites (e.g., `stub.GetQuote` $\to$ `stub.GetQuoteV2`) or scaffolding missing RPC handlers.
-4. **Validate:** Dual validation ensuring patched files parse without syntax errors (`ast.parse` / Tree-sitter) and satisfy CKG graph consistency with zero remaining dangling edges.
-5. **Propose:** Produces a complete pull request advisory with defect explanation, blast radius analysis, and `git apply`-compatible unified diff.
-
----
-
-## 4. Interactive Visual Workbench & Standalone HTML Exporter
-
-The visual workbench provides real-time exploration of multi-layer graphs with zero external web dependencies:
-
-* **Interactive Local Server:**
-  ```bash
-  python serve_ckg.py examples/polyglot_system --port 8080
-  ```
-* **Compile Self-Contained Standalone HTML (Zero Lag, Offline Ready):**
-  ```bash
-  # Exports 100% self-contained HTML file viewable in any browser without a running server
-  python serve_ckg.py examples/polyglot_system --export polyglot_showcase.html
-  ```
-* **Key UI Features:**
-  * Clean, distraction-free pure white aesthetic.
-  * Node topology locking with circular nodes, directed arrows, and multi-layer edge colors.
-  * Bottom-right floating pop-up inspector displaying qualified identifiers, line numbers, docstrings, and source snippets.
-  * $N$-Hop BFS neighborhood isolation with real-time background dimming.
-
----
-
-## 5. Installation & Quickstart
-
-### Prerequisites
-* Python 3.9+ (Windows, macOS, Linux)
-* pip
-
-### Setup
-```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>
 pip install -r requirements.txt
-```
+`
 
-### Run Tests
-```bash
-python -m unittest discover -s tests -v
-```
-*(All 31 unit tests across all 6 test suites pass in < 0.5s).*
+**requirements.txt** installs:
+- 
+etworkx, scikit-learn, ank_bm25 — graph + retrieval
+- 	ree-sitter, 	ree-sitter-go, 	ree-sitter-javascript, 	ree-sitter-typescript — parsers
+- 	iktoken — accurate BPE token counting for paper metrics
+- pytest — test runner
+
+Optional (not auto-installed):
+`ash
+pip install tree-sitter-java    # Java support (AdService, Spring Boot)
+pip install tree-sitter-c-sharp # C# support (CartService)
+`
 
 ---
 
-## 6. CLI & API Guide
+## Quick Start
 
-### 1. Build & Verify Graph
-```bash
-# Verify graph health, layer distribution, and call resolution rate
-python graft_ckg.py examples/polyglot_system --verify
+### 1. Build a single-repository CKG
 
-# Explain symbol across all 4 layers
-python graft_ckg.py examples/polyglot_system --explain handle_checkout
-
-# Contract inspection
-python graft_ckg.py examples/polyglot_system --who-consumes ShippingService
-python graft_ckg.py examples/polyglot_system --who-implements ShippingService.GetQuote
-```
-
-### 2. Graph-Guided Traversal (`traversal.py`)
-```bash
-# Compute blast radius for a symbol
-python traversal.py --repo examples/polyglot_system --blast-radius handle_checkout --depth 2
-
-# Identify downstream consumers of a contract
-python traversal.py --repo examples/polyglot_system --consumers ShippingService
-
-# Reverse-map function to its contract
-python traversal.py --repo examples/polyglot_system --contract-of handle_checkout
-
-# Extract deterministic subtree context for LLM prompts
-python traversal.py --repo examples/polyglot_system --graft handle_checkout --max-tokens 1024
-```
-
-### 3. Automated Remediation (`remediation.py`)
-```bash
-# Diagnose contract skews and broken bindings
-python remediation.py --repo examples/polyglot_system --diagnose
-
-# Run 5-stage auto-fix in dry-run mode (generates diffs & proposals)
-python remediation.py --repo examples/polyglot_system --auto-fix
-
-# Apply verified patches directly to disk
-python remediation.py --repo examples/polyglot_system --auto-fix --apply
-```
-
-### Python API Example
-```python
+`python
 from graft_ckg import CKGBuilder
-from traversal import SCKGTraversal
-from remediation import SCKGSelfHealingEngine
 
-# 1. Build Graph
-builder = CKGBuilder("examples/polyglot_system")
+builder = CKGBuilder("path/to/your/repo")
 builder.build()
 
-# 2. Graph Traversal
-traversal = SCKGTraversal(builder)
-blast = traversal.blast_radius("handle_checkout", max_depth=2)
-print("Affected Services:", blast["affected_services"])
+# Query: find all nodes related to "payment processing"
+result = builder.rag_query("payment processing", top_k=5)
+for hit in result["top_matches"]:
+    print(hit["node_id"], hit["score"])
+`
 
-# 3. LLM Prompt Context Grafting
-prompt_context = traversal.deterministic_subtree_graft("handle_checkout", max_tokens=1024)
-print(prompt_context["grafted_context"])
+### 2. Build a multi-repository workspace CKG
 
-# 4. Self-Healing Closed Loop
-engine = SCKGSelfHealingEngine("examples/polyglot_system")
-proposals = engine.remediate_all(apply=False)
-for p in proposals["proposals"]:
-    print(p["unified_diff"])
-```
+Create a workspace.yaml:
+`yaml
+name: 'my_workspace'
+repositories:
+  - id: 'frontend'
+    path: './services/frontend'
+  - id: 'backend'
+    path: './services/backend'
+  - id: 'payments'
+    path: './services/payments'
+shared_contracts:
+  - './protos'
+ignore_patterns:
+  - '*.pb.go'
+  - 'vendor/*'
+`
+
+`python
+from multi_repo import WorkspaceCKGBuilder
+
+wb = WorkspaceCKGBuilder("workspace.yaml")
+wb.build()
+
+print(f"Nodes: {wb.graph.number_of_nodes()}")
+print(f"Edges: {wb.graph.number_of_edges()}")
+print(f"Contracts: {len(wb.canonical_contracts)}")
+print(f"Skews: {len(wb.contract_skews)}")
+`
+
+### 3. Traverse the graph
+
+`python
+from traversal import SCKGTraversal
+
+trav = SCKGTraversal(wb)
+
+# What breaks if ShippingService.GetQuote changes?
+result = trav.blast_radius("contract::ShippingService.GetQuote", max_depth=3)
+print(f"Affected: {result['total_impacted_nodes']} nodes across {len(result['affected_services'])} services")
+
+# Who consumes CartService?
+consumers = trav.downstream_consumers("CartService")
+for c in consumers["consumers"]:
+    print(c["consumer_node"], "->", c["target_contract"])
+
+# Token-bounded LLM context for a symbol
+ctx = trav.deterministic_subtree_graft("checkoutservice/main.go:placeOrder", max_tokens=1500)
+print(f"BPE tokens: {ctx['bpe_tokens']}")  # accurate tiktoken count
+print(ctx["grafted_context"])
+`
+
+### 4. Git lineage
+
+`python
+from lineage import LineageLayer
+
+layer = LineageLayer(wb.repo_builders["checkoutservice"])
+layer.ingest(max_commits=100)
+
+# Who changed placeOrder?
+for commit in layer.who_changed("placeOrder"):
+    print(f"[{commit['sha']}] {commit['date']} — {commit['message']}")
+
+# Temporal coupling: do these files change together?
+weight = layer.co_change_weight("main.go", "server.go")
+print(f"Co-change weight: {weight:.2f}")
+`
+
+### 5. Export to Neo4j
+
+`python
+from neo4j_export import CypherExporter
+
+exporter = CypherExporter(wb.graph)
+exporter.export("output.cypher")
+# Run: cypher-shell -u neo4j -p password < output.cypher
+`
+
+Or from CLI:
+`ash
+python neo4j_export.py workspace.yaml output.cypher
+`
 
 ---
 
-## 7. Benchmark Evaluation & Verification
+## Supported Languages
 
-The repository includes reproducible evaluation harnesses tested against standard open-source systems and microservice benchmarks:
+| Language | Parser | Status |
+|---|---|---|
+| Python | st (stdlib) | Full |
+| JavaScript / JSX | 	ree-sitter-javascript | Full |
+| TypeScript / TSX | 	ree-sitter-typescript | Full |
+| Go | 	ree-sitter-go | Full |
+| Protobuf / gRPC | Custom regex + AST | Full |
+| Java | 	ree-sitter-java | Stub (install separately) |
+| C# | 	ree-sitter-c-sharp | Stub (install separately) |
 
-| Benchmark | Language Mix | Entities | Edges | Contract P | Contract R | Construction Latency |
+---
+
+## Module Reference
+
+| Module | Class / Function | Purpose |
+|---|---|---|
+| graft_ckg.py | CKGBuilder | Core 4-layer graph builder for a single repo |
+| polyglot.py | TreeSitterExtractor | JS/TS/Go/Java/C# tree-sitter adapter |
+| multi_repo.py | WorkspaceCKGBuilder | Multi-repo workspace composition |
+| 	raversal.py | SCKGTraversal, count_tokens | Graph traversal, context grafting, token counting |
+| emediation.py | SCKGRemediation | Contract skew detection and self-healing |
+| lineage.py | LineageLayer | Git commit provenance layer |
+| 
+eo4j_export.py | CypherExporter | Cypher batch export for Neo4j |
+| isualize.py | CLI | GraphML → GEXF / HTML export |
+| serve_ckg.py | CLI | localhost:8080 D3 graph workbench |
+
+---
+
+## Benchmarks (Measured on 4 Real Open-Source Systems)
+
+### Construction Scalability
+
+| System | Languages | LOC | Nodes | Edges | Build (s) | Speedup (incr.) |
 |---|---|---|---|---|---|---|
-| **Online Boutique** | Go, Python, JS, Proto | 1,420 | 2,156 | **1.00** | **1.00** | 0.08 s/kLOC |
-| **NumPy (core)** | Python | 4,892 | 8,104 | N/A | N/A | 0.05 s/kLOC |
-| **Requests** | Python | 894 | 1,412 | N/A | N/A | 0.04 s/kLOC |
-| **Polyglot Microservices** | Go, Python, TS, Proto | 53 | 71 | **1.00** | **1.00** | 0.03 s |
+| Google Online Boutique | Go+Py+JS+Proto | 5k | 1,794 | 5,157 | 0.71 | 1.0x |
+| Podinfo gRPC service | Go+Proto | 6k | 1,994 | 6,654 | 0.92 | 1.9x |
+| Jaeger Tracing Platform | Go+Py+Proto | 50k | 16,826 | 61,606 | 5.20 | **6.6x** |
+| gRPC-Gateway Ecosystem | Go+Proto | 148k | 46,277 | 703,385 | 18.64 | **9.9x** |
 
-Run the benchmark suite:
-```bash
-python bench/run_benchmark.py --repo examples/polyglot_system
-```
+> **Zero node-ID collisions** across all systems. **1 real CONTRACT_SKEW found** automatically in gRPC-Gateway.
 
----
+### Contract Layer Accuracy (Online Boutique, labelled ground truth)
 
-## 8. Repository Structure & GitHub Submission Guide
-
-### Clean Directory Layout
-```
-├── graft_ckg.py              # Core 4-Layer CKG Engine (Lsyn, Ldep, Lflow, Lsem, Lcontract)
-├── polyglot.py               # Tree-Sitter Polyglot Parser (Go, JS/TS, Python, Protobuf)
-├── traversal.py              # Traversal Engine (blast_radius, consumers, subtree grafting)
-├── remediation.py            # 5-Stage Closed-Loop Auto-Remediation Engine
-├── serve_ckg.py              # Visual Workbench & Standalone HTML Exporter
-├── requirements.txt          # Minimal Python dependencies
-├── .gitignore                # Clean exclusions for caches, virtualenvs, and test artifacts
-├── examples/
-│   ├── polyglot_system/      # Multi-service showcase (Go, Python, TypeScript, Protobuf)
-│   └── mixed_service/        # Python Flask backend + JS/TS frontend
-├── tests/
-│   ├── test_traversal.py     # Traversal & blast radius tests
-│   ├── test_remediation.py   # 5-stage self-healing closed-loop tests
-│   ├── test_gap_fixes.py     # Polyglot parser & dataflow compliance tests
-│   ├── test_contract_layer.py# Contract resolution & proto binding tests
-│   ├── test_dependency_resolution.py # Call graph & CHA tests
-│   └── test_polyglot_integration.py  # End-to-end integration tests
-└── bench/                    # Empirical evaluation scripts and ground-truth labels
-```
-
-### Instructions to Push to Your GitHub Repository
-1. Navigate to this directory in your terminal:
-   ```bash
-   cd C:\Users\krish\Downloads\SCKG_Build-v2\SCKG_Build-v2
-   ```
-2. Initialize git and configure main branch:
-   ```bash
-   git init
-   git branch -M main
-   ```
-3. Stage all source files (the updated `.gitignore` automatically prevents temporary caches or large clones from being staged):
-   ```bash
-   git add .
-   ```
-4. Commit:
-   ```bash
-   git commit -m "Initial release of Polyglot SCKG Engine with Traversal and Self-Healing capabilities"
-   ```
-5. Add your GitHub remote and push:
-   ```bash
-   git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>.git
-   git push -u origin main
-   ```
+| Binding Type | GT | Detected | P | R | F1 |
+|---|---|---|---|---|---|
+| CONSUMES (gRPC) | 21 | 21 | 1.000 | 1.000 | 1.000 |
+| IMPLEMENTS (gRPC) | 9 | 9 | 1.000 | 1.000 | 1.000 |
+| HTTP_CALLS | 1 | 1 | 1.000 | 1.000 | 1.000 |
 
 ---
 
-## References & PhD Proposal Context
-* **Vikas Ranjan**, *Bridging Code and Operations: A Semantic Code Knowledge Graph for Cross-Service Code Generation and Code-Level Remediation*, Department of Computer Science & Information Systems, BITS Pilani.
-* **GRAFT-CKG Paper:** *Generalized Relational Abstraction and Functional Topology for Code Knowledge Graphs*.
+## Testing
+
+`ash
+python -m pytest tests/ -v
+# Expected: 52 passed
+`
+
+Test coverage:
+- 	est_contract_layer.py — gRPC contract parsing and binding
+- 	est_dependency_resolution.py — import/call resolution across Python/TS/Go
+- 	est_gap_fixes.py — polymorphic dispatch, incremental update, cross-service isolation
+- 	est_lineage.py — git lineage layer APIs
+- 	est_multi_repo.py — workspace composition, cross-repo traversal
+- 	est_neo4j_export.py — Cypher export validity
+- 	est_polyglot_integration.py — JSDoc/GoDoc, HTTP bindings
+- 	est_remediation.py — contract skew detection and 5-stage healing
+- 	est_traversal.py — blast radius, subtree grafting, consumer queries
+
+---
+
+## Demo (5 minutes)
+
+`ash
+# Live demo on Google Online Boutique (10 services, 5k LOC)
+python demo_online_boutique.py
+
+# Run full multi-system benchmark (4 real repos)
+python bench/run_multi_system_eval.py
+
+# Interactive graph workbench
+python serve_ckg.py path/to/repo --port 8080
+`
+
+---
+
+## Prior Work Comparison
+
+| System | Venue | Multi-Repo | Polyglot | gRPC/Proto | Incremental |
+|---|---|---|---|---|---|
+| RepoGraph | ICLR 2025 | No | Partial | No | No |
+| LocAgent | ACL 2025 | No | No | No | No |
+| CodexGraph | arXiv 2024 | No | Partial | No | No |
+| GraphCodeBERT | ICLR 2021 | No | Yes (6 langs) | No | No |
+| **GRAFT-CKG** | This work | **Yes** | **Yes** | **Yes** | **Yes** |
+
+---
+
+## Paper
+
+*GRAFT-CKG: Generalized Relational Abstraction and Functional Topology for Whole-Repository Code Knowledge Graphs and Agent Context Layers*
+
+Krishna S N, Vikas Ranjan — BITS Pilani (Prof. V. Chamola)
+
+### Key Claims (measured, reproducible)
+- **0** cross-repo node-ID collisions (all 4 systems)
+- **P=R=F1=1.000** on labelled gRPC contract bindings (Online Boutique)
+- **6.6x–9.9x** incremental build speedup at 50k–148k LOC
+- **−43.1%** context recall when L_contract removed (ablation)
+- **−45.5%** LLM tool calls vs raw-file baseline (simulation)

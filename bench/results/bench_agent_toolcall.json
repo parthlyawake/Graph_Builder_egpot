@@ -1,0 +1,170 @@
+{
+  "graft_ckg_agent": {
+    "rows": [
+      {
+        "id": "T01",
+        "tool_calls": 2,
+        "tokens": 180,
+        "resolved": true,
+        "latency_ms": 114.9
+      },
+      {
+        "id": "T02",
+        "tool_calls": 2,
+        "tokens": 498,
+        "resolved": false,
+        "latency_ms": 1.8
+      },
+      {
+        "id": "T03",
+        "tool_calls": 2,
+        "tokens": 50,
+        "resolved": true,
+        "latency_ms": 1.0
+      },
+      {
+        "id": "T04",
+        "tool_calls": 1,
+        "tokens": 9,
+        "resolved": false,
+        "latency_ms": 0.7
+      },
+      {
+        "id": "T05",
+        "tool_calls": 2,
+        "tokens": 499,
+        "resolved": true,
+        "latency_ms": 1.1
+      },
+      {
+        "id": "T06",
+        "tool_calls": 2,
+        "tokens": 47,
+        "resolved": false,
+        "latency_ms": 0.8
+      },
+      {
+        "id": "T07",
+        "tool_calls": 2,
+        "tokens": 501,
+        "resolved": false,
+        "latency_ms": 1.0
+      },
+      {
+        "id": "T08",
+        "tool_calls": 1,
+        "tokens": 11,
+        "resolved": false,
+        "latency_ms": 0.7
+      },
+      {
+        "id": "T09",
+        "tool_calls": 2,
+        "tokens": 51,
+        "resolved": false,
+        "latency_ms": 0.8
+      },
+      {
+        "id": "T10",
+        "tool_calls": 2,
+        "tokens": 54,
+        "resolved": true,
+        "latency_ms": 0.8
+      }
+    ],
+    "aggregate": {
+      "recall": 0.4,
+      "mean_calls": 1.8,
+      "mean_tokens": 190,
+      "mean_latency_ms": 12.360000000000001,
+      "total_resolved": 4
+    }
+  },
+  "baseline_agent": {
+    "rows": [
+      {
+        "id": "T01",
+        "tool_calls": 3,
+        "tokens": 186,
+        "resolved": true,
+        "latency_ms": 6.6
+      },
+      {
+        "id": "T02",
+        "tool_calls": 2,
+        "tokens": 116,
+        "resolved": true,
+        "latency_ms": 0.4
+      },
+      {
+        "id": "T03",
+        "tool_calls": 3,
+        "tokens": 186,
+        "resolved": true,
+        "latency_ms": 0.4
+      },
+      {
+        "id": "T04",
+        "tool_calls": 5,
+        "tokens": 476,
+        "resolved": false,
+        "latency_ms": 0.7
+      },
+      {
+        "id": "T05",
+        "tool_calls": 3,
+        "tokens": 186,
+        "resolved": true,
+        "latency_ms": 0.4
+      },
+      {
+        "id": "T06",
+        "tool_calls": 5,
+        "tokens": 476,
+        "resolved": false,
+        "latency_ms": 0.6
+      },
+      {
+        "id": "T07",
+        "tool_calls": 2,
+        "tokens": 116,
+        "resolved": true,
+        "latency_ms": 0.3
+      },
+      {
+        "id": "T08",
+        "tool_calls": 2,
+        "tokens": 116,
+        "resolved": true,
+        "latency_ms": 0.3
+      },
+      {
+        "id": "T09",
+        "tool_calls": 5,
+        "tokens": 476,
+        "resolved": false,
+        "latency_ms": 0.6
+      },
+      {
+        "id": "T10",
+        "tool_calls": 3,
+        "tokens": 186,
+        "resolved": true,
+        "latency_ms": 0.4
+      }
+    ],
+    "aggregate": {
+      "recall": 0.7,
+      "mean_calls": 3.3,
+      "mean_tokens": 252,
+      "mean_latency_ms": 1.07,
+      "total_resolved": 7
+    }
+  },
+  "comparison": {
+    "call_reduction_pct": 45.45,
+    "token_reduction_pct": 24.6,
+    "recall_graft": 0.4,
+    "recall_baseline": 0.7
+  }
+}

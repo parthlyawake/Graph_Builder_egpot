@@ -1194,11 +1194,19 @@ def start_server(repo_path, port=8080, open_browser=True, force_rebuild=False):
             print(f"[*] Loaded in 0.5s: {GLOBAL_BUILDER.graph.number_of_nodes()} nodes, {GLOBAL_BUILDER.graph.number_of_edges()} edges.")
         except Exception as e:
             print(f"[!] Cache read failed ({e}), rebuilding...")
-            GLOBAL_BUILDER = CKGBuilder(repo_path)
+            if repo_path.endswith((".yaml", ".yml")) or (os.path.isfile(repo_path) and "workspace" in repo_path):
+                from multi_repo import WorkspaceCKGBuilder
+                GLOBAL_BUILDER = WorkspaceCKGBuilder(repo_path)
+            else:
+                GLOBAL_BUILDER = CKGBuilder(repo_path)
             GLOBAL_BUILDER.build()
     else:
         print(f"[*] Constructing GRAFT-CKG for: {REPO_NAME}...")
-        GLOBAL_BUILDER = CKGBuilder(repo_path)
+        if repo_path.endswith((".yaml", ".yml")) or (os.path.isfile(repo_path) and "workspace" in repo_path):
+            from multi_repo import WorkspaceCKGBuilder
+            GLOBAL_BUILDER = WorkspaceCKGBuilder(repo_path)
+        else:
+            GLOBAL_BUILDER = CKGBuilder(repo_path)
         GLOBAL_BUILDER.build()
         try:
             with open(cache_file, "wb") as f:
@@ -1255,7 +1263,11 @@ def export_standalone_html(repo_path, output_path="polyglot_graph.html"):
 
     if builder is None:
         print(f"[*] Constructing GRAFT-CKG for: {repo_name}...")
-        builder = CKGBuilder(repo_path)
+        if repo_path.endswith((".yaml", ".yml")) or (os.path.isfile(repo_path) and "workspace" in repo_path):
+            from multi_repo import WorkspaceCKGBuilder
+            builder = WorkspaceCKGBuilder(repo_path)
+        else:
+            builder = CKGBuilder(repo_path)
         builder.build()
 
     G = builder.graph
