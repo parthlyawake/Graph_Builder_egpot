@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-20 08:56:49",
+  "timestamp": "2026-09-26 23:23:34",
   "table1_construction": {
     "single_repos": [
       {
@@ -104,8 +104,8 @@
       "loc": 5001,
       "nodes": 1794,
       "edges": 5155,
-      "build_latency_s": 0.577,
-      "throughput_s_per_kloc": 0.1153,
+      "build_latency_s": 0.232,
+      "throughput_s_per_kloc": 0.0465,
       "layer_distribution": {
         "Lsyn": 299,
         "Ldep": 1340,
@@ -124,8 +124,8 @@
       "loc": 92,
       "nodes": 65,
       "edges": 96,
-      "build_latency_s": 0.014,
-      "throughput_s_per_kloc": 0.1505,
+      "build_latency_s": 0.012,
+      "throughput_s_per_kloc": 0.1324,
       "layer_distribution": {
         "Lsyn": 19,
         "Ldep": 14,
