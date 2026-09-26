@@ -1,8 +1,8 @@
-﻿# GRAFT-CKG: Generalized Relational Abstraction and Functional Topology for Code Knowledge Graphs
+# GRAFT-CKG: Generalized Relational Abstraction and Functional Topology for Code Knowledge Graphs
 
 > A multi-repository, polyglot Code Knowledge Graph (CKG) engine for LLM agent context generation in distributed microservice systems.
 
-[![Tests](https://img.shields.io/badge/tests-52%20passed-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-53%20passed-brightgreen)](#testing)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](#installation)
 [![Languages](https://img.shields.io/badge/languages-Python%20%7C%20Go%20%7C%20JS%2FTS%20%7C%20Protobuf-orange)](#supported-languages)
 
@@ -52,7 +52,8 @@ pip install -r requirements.txt
 
 **requirements.txt** installs:
 - 
-etworkx, scikit-learn, ank_bm25 — graph + retrieval
+etworkx, scikit-learn, 
+ank_bm25 — graph + retrieval
 - 	ree-sitter, 	ree-sitter-go, 	ree-sitter-javascript, 	ree-sitter-typescript — parsers
 - 	iktoken — accurate BPE token counting for paper metrics
 - pytest — test runner
@@ -177,8 +178,8 @@ python neo4j_export.py workspace.yaml output.cypher
 | TypeScript / TSX | 	ree-sitter-typescript | Full |
 | Go | 	ree-sitter-go | Full |
 | Protobuf / gRPC | Custom regex + AST | Full |
-| Java | 	ree-sitter-java | Stub (install separately) |
-| C# | 	ree-sitter-c-sharp | Stub (install separately) |
+| Java | 	ree-sitter-java | Supported |
+| C# | 	ree-sitter-c-sharp | Supported |
 
 ---
 
@@ -190,7 +191,8 @@ python neo4j_export.py workspace.yaml output.cypher
 | polyglot.py | TreeSitterExtractor | JS/TS/Go/Java/C# tree-sitter adapter |
 | multi_repo.py | WorkspaceCKGBuilder | Multi-repo workspace composition |
 | 	raversal.py | SCKGTraversal, count_tokens | Graph traversal, context grafting, token counting |
-| emediation.py | SCKGRemediation | Contract skew detection and self-healing |
+| 
+emediation.py | SCKGRemediation | Contract skew detection and self-healing |
 | lineage.py | LineageLayer | Git commit provenance layer |
 | 
 eo4j_export.py | CypherExporter | Cypher batch export for Neo4j |
@@ -226,7 +228,7 @@ eo4j_export.py | CypherExporter | Cypher batch export for Neo4j |
 
 `ash
 python -m pytest tests/ -v
-# Expected: 52 passed
+# Expected: 53 passed
 `
 
 Test coverage:
