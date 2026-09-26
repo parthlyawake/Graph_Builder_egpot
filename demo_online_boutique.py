@@ -87,8 +87,9 @@ if get_quote_nodes:
     root = get_quote_nodes[0]
     print(f"  Anchoring on: {root}")
     br = trav.blast_radius(root, max_depth=3, direction="both")
-    print(f"  Blast radius (depth=3): {br.get('total_affected', br.get('node_count', '?'))} affected nodes")
-    affected = br.get("affected_nodes", br.get("nodes", []))
+    count = br.get("total_impacted_nodes", len(br.get("impacted_nodes", [])))
+    print(f"  Blast radius (depth=3): {count} affected nodes")
+    affected = br.get("impacted_nodes", [])
     for node in list(affected)[:10]:
         print(f"    - {node}")
     if len(affected) > 10:
@@ -113,7 +114,7 @@ for u, v, d in g.edges(data=True):
 # Also check IMPLEMENTS
 implementors = []
 for u, v, d in g.edges(data=True):
-    if d.get("relation") == "IMPLEMENTS" and "ship" in str(v).lower():
+    if d.get("relation") == "IMPLEMENTS":
         implementors.append((u, v))
 
 print(f"  Services consuming ShippingService contracts:")
@@ -125,8 +126,8 @@ for u, v in consumers[:10]:
         print(f"    CONSUMES  {u}")
         print(f"              --> {v}")
 
-print(f"\n  Services implementing ShippingService:")
-for u, v in implementors[:5]:
+print(f"\n  Active Service Implementations (Lcontract):")
+for u, v in implementors[:6]:
     print(f"    IMPLEMENTS {u} --> {v}")
 
 # Also use who_consumes if available
