@@ -275,11 +275,3 @@ python serve_ckg.py path/to/repo --port 8080
 
 *GRAFT-CKG: Generalized Relational Abstraction and Functional Topology for Whole-Repository Code Knowledge Graphs and Agent Context Layers*
 
-Krishna S N, Vikas Ranjan — BITS Pilani (Prof. V. Chamola)
-
-### Key Claims (measured, reproducible)
-- **0** cross-repo node-ID collisions (all 4 systems)
-- **P=R=F1=1.000** on labelled gRPC contract bindings (Online Boutique)
-- **6.6x–9.9x** incremental build speedup at 50k–148k LOC
-- **−43.1%** context recall when L_contract removed (ablation)
-- **−45.5%** LLM tool calls vs raw-file baseline (simulation)
