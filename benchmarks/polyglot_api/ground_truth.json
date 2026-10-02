@@ -1,0 +1,16 @@
+{
+  "name": "Polyglot API-Bench v1",
+  "description": "Labelled static TypeScript-to-Python API bindings for repository graph evaluation.",
+  "expected_http_edges": {
+    "frontend/fetch_client.ts:listUsers": "backend/flask_routes.py:list_users",
+    "frontend/fetch_client.ts:createUser": "backend/flask_routes.py:create_user",
+    "frontend/fetch_client.ts:updateOrder": "backend/flask_routes.py:update_order",
+    "frontend/fetch_client.ts:patchSearch": "backend/flask_routes.py:patch_search",
+    "frontend/axios_client.ts:loadProducts": "backend/fastapi_routes.py:list_products",
+    "frontend/axios_client.ts:removeProduct": "backend/fastapi_routes.py:delete_product"
+  },
+  "expected_no_http_edge": [
+    "frontend/fetch_client.ts:dynamicLookup",
+    "frontend/fetch_client.ts:wrongMethod"
+  ]
+}

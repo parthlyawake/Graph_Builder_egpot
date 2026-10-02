@@ -199,6 +199,24 @@ eo4j_export.py | CypherExporter | Cypher batch export for Neo4j |
 | isualize.py | CLI | GraphML → GEXF / HTML export |
 | serve_ckg.py | CLI | localhost:8080 D3 graph workbench |
 
+## Hybrid Retrieval Experiments
+
+The `hybrid_retrieval.py` layer evaluates lexical, semantic, AST, dependency,
+dataflow, test-aware, lineage, contract, runtime-trace, documentation, and
+adaptive retrieval through one fixed-budget interface. See
+[`HYBRID_RETRIEVAL_EXPERIMENTS.md`](HYBRID_RETRIEVAL_EXPERIMENTS.md) for the R0–R13
+matrix and reproducible commands.
+
+```powershell
+python bench/run_hybrid_retrieval.py `
+  --workspace examples/multi_repo_system/workspace.yaml `
+  --labels bench/labels/hybrid_multi_repo_smoke.json `
+  --output bench/results/hybrid_multi_repo_smoke.json
+```
+
+The included smoke labels validate the pipeline only. Publishable numbers must
+come from pinned external benchmark revisions and independently reviewed labels.
+
 ---
 
 ## Benchmarks (Measured on 4 Real Open-Source Systems)

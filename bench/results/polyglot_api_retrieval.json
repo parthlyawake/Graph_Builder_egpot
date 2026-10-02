@@ -1,0 +1,1173 @@
+{
+  "task_count": 6,
+  "top_k": 5,
+  "token_budget": 2048,
+  "methods": {
+    "R0": {
+      "title": "BM25 lexical",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 544.0,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.post"
+          ],
+          "effective_config": "R0"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "backend/flask_routes.py:DemoApp.post",
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:create_user",
+            "file::backend/flask_routes.py",
+            "file::backend/fastapi_routes.py"
+          ],
+          "effective_config": "R0"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.post",
+            "frontend/fetch_client.ts:updateOrder"
+          ],
+          "effective_config": "R0"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "file::backend/flask_routes.py",
+            "file::backend/fastapi_routes.py",
+            "backend/flask_routes.py:DemoApp.get"
+          ],
+          "effective_config": "R0"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "file::backend/fastapi_routes.py",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R0"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R0"
+        }
+      ]
+    },
+    "R1": {
+      "title": "LSA semantic vectors",
+      "MRR@5": 0.5556,
+      "Hits@1": 16.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 577.0,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 2,
+          "top_matches": [
+            "frontend/fetch_client.ts:listUsers",
+            "backend/flask_routes.py:list_users",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R1"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/flask_routes.py:DemoApp"
+          ],
+          "effective_config": "R1"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R1"
+        },
+        {
+          "id": "patch-search",
+          "rank": 2,
+          "top_matches": [
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/flask_routes.py:patch_search",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R1"
+        },
+        {
+          "id": "list-products",
+          "rank": 2,
+          "top_matches": [
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:list_products",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:delete_product"
+          ],
+          "effective_config": "R1"
+        },
+        {
+          "id": "delete-product",
+          "rank": 2,
+          "top_matches": [
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter",
+            "frontend/axios_client.ts:removeProduct"
+          ],
+          "effective_config": "R1"
+        }
+      ]
+    },
+    "R2": {
+      "title": "BM25 + LSA reciprocal-rank fusion",
+      "MRR@5": 0.8056,
+      "Hits@1": 66.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 628.5,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.post"
+          ],
+          "effective_config": "R2"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "backend/flask_routes.py:DemoApp.post",
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:create_user",
+            "backend/flask_routes.py:DemoApp",
+            "backend/flask_routes.py:DemoApp.get"
+          ],
+          "effective_config": "R2"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "backend/flask_routes.py:DemoApp.get",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.post"
+          ],
+          "effective_config": "R2"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R2"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "file::backend/fastapi_routes.py"
+          ],
+          "effective_config": "R2"
+        },
+        {
+          "id": "delete-product",
+          "rank": 2,
+          "top_matches": [
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R2"
+        }
+      ]
+    },
+    "R3": {
+      "title": "R2 + AST scope",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 927.8,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R3"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R3"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R3"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R3"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R3"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R3"
+        }
+      ]
+    },
+    "R4": {
+      "title": "R2 + dependency graph",
+      "MRR@5": 0.8056,
+      "Hits@1": 66.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 703.5,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.post"
+          ],
+          "effective_config": "R4"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "backend/flask_routes.py:DemoApp.post",
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:create_user",
+            "backend/flask_routes.py:DemoApp",
+            "backend/flask_routes.py:DemoApp.get"
+          ],
+          "effective_config": "R4"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "backend/flask_routes.py:DemoApp.get",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.post"
+          ],
+          "effective_config": "R4"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R4"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "file::backend/fastapi_routes.py"
+          ],
+          "effective_config": "R4"
+        },
+        {
+          "id": "delete-product",
+          "rank": 2,
+          "top_matches": [
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R4"
+        }
+      ]
+    },
+    "R5": {
+      "title": "Static hybrid",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R5"
+        }
+      ]
+    },
+    "R6": {
+      "title": "Static hybrid + data flow",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R6"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R6"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R6"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R6"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R6"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R6"
+        }
+      ]
+    },
+    "R7": {
+      "title": "Static hybrid + tests",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R7"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R7"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R7"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R7"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R7"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R7"
+        }
+      ]
+    },
+    "R8": {
+      "title": "Static hybrid + Git lineage",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R8"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R8"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R8"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R8"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R8"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R8"
+        }
+      ]
+    },
+    "R9": {
+      "title": "Polyglot contract hybrid",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R9"
+        }
+      ]
+    },
+    "R10": {
+      "title": "Polyglot hybrid + runtime trace",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R10"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R10"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R10"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R10"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R10"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R10"
+        }
+      ]
+    },
+    "R11": {
+      "title": "Static hybrid + documentation",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R11"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R11"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R11"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R11"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R11"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R11"
+        }
+      ]
+    },
+    "R12": {
+      "title": "Adaptive query router",
+      "MRR@5": 0.8889,
+      "Hits@1": 83.3,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "create-user",
+          "rank": 3,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:create_user",
+            "frontend/fetch_client.ts:listUsers",
+            "file::frontend/fetch_client.ts"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "frontend/fetch_client.ts:updateOrder",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "list-products",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "delete-product",
+          "rank": 1,
+          "top_matches": [
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "frontend/axios_client.ts:removeProduct",
+            "backend/fastapi_routes.py:DemoRouter",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R9"
+        }
+      ]
+    },
+    "R13": {
+      "title": "Adaptive query router + reranker",
+      "MRR@5": 0.6389,
+      "Hits@1": 50.0,
+      "Hits@5": 83.3,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 1017.7,
+      "queries": [
+        {
+          "id": "list-users",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:list_users",
+            "frontend/fetch_client.ts:listUsers",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R13"
+        },
+        {
+          "id": "create-user",
+          "rank": null,
+          "top_matches": [
+            "frontend/fetch_client.ts:createUser",
+            "backend/flask_routes.py:DemoApp.post",
+            "backend/flask_routes.py:DemoApp",
+            "file::backend/flask_routes.py",
+            "file::backend/fastapi_routes.py"
+          ],
+          "effective_config": "R13"
+        },
+        {
+          "id": "update-order",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:update_order",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/flask_routes.py:DemoApp.post"
+          ],
+          "effective_config": "R13"
+        },
+        {
+          "id": "patch-search",
+          "rank": 1,
+          "top_matches": [
+            "backend/flask_routes.py:patch_search",
+            "frontend/fetch_client.ts:patchSearch",
+            "backend/fastapi_routes.py:DemoRouter.get",
+            "backend/flask_routes.py:DemoApp.get",
+            "backend/fastapi_routes.py:DemoRouter.delete"
+          ],
+          "effective_config": "R13"
+        },
+        {
+          "id": "list-products",
+          "rank": 3,
+          "top_matches": [
+            "file::backend/fastapi_routes.py",
+            "file::backend/flask_routes.py",
+            "backend/fastapi_routes.py:list_products",
+            "frontend/axios_client.ts:loadProducts",
+            "backend/fastapi_routes.py:DemoRouter.get"
+          ],
+          "effective_config": "R13"
+        },
+        {
+          "id": "delete-product",
+          "rank": 2,
+          "top_matches": [
+            "file::backend/fastapi_routes.py",
+            "backend/fastapi_routes.py:delete_product",
+            "backend/fastapi_routes.py:DemoRouter.delete",
+            "backend/fastapi_routes.py:DemoRouter",
+            "file::backend/flask_routes.py"
+          ],
+          "effective_config": "R13"
+        }
+      ]
+    }
+  },
+  "source": "benchmarks\\polyglot_api",
+  "implemented_configurations": [
+    "R0",
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8",
+    "R9",
+    "R10",
+    "R11",
+    "R12",
+    "R13"
+  ],
+  "note": "Run on fixed repository revisions and labels. Do not compare against results from different corpora or token budgets."
+}

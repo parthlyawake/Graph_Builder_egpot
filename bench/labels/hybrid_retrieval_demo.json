@@ -1,0 +1,17 @@
+[
+  {
+    "id": "calculation",
+    "query": "Where is the order total price calculated?",
+    "relevant": ["helpers.py:calculate_total"]
+  },
+  {
+    "id": "creation-route",
+    "query": "Which HTTP endpoint creates an order?",
+    "relevant": ["app.py:create_order"]
+  },
+  {
+    "id": "order-architecture",
+    "query": "Explain the order service architecture and its routes.",
+    "relevant": ["app.py:list_orders", "app.py:create_order"]
+  }
+]

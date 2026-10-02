@@ -66,6 +66,7 @@ graft-ckg = "graft_ckg:main"
 graft-traverse = "traversal:main"
 graft-serve = "serve_ckg:main"
 graft-export = "neo4j_export:_cli"
+graft-retrieve = "hybrid_retrieval:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
