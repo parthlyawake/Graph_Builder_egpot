@@ -90,6 +90,10 @@
     .experiment-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .code { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; font-weight: 700; }
     .experiment p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .method-card { padding: 15px 16px; background: #fff; border: 1px solid var(--line); border-radius: 11px; }
+    .method-card h3 { margin-top: 8px; }
+    .method-card p { margin: 0; color: var(--muted); font-size: 12px; }
     .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px; }
     .flow-step { position: relative; min-height: 96px; padding: 13px; background: #fff; border: 1px solid var(--line); border-radius: 11px; }
     .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -15px; top: 35px; color: var(--muted); z-index: 1; font-size: 18px; }
@@ -106,12 +110,12 @@
       .topbar { align-items: flex-start; }
       .meta { white-space: normal; text-align: right; }
       header { padding: 42px 0 26px; }
-      .score-grid, .implementation, .bottom-grid { grid-template-columns: 1fr 1fr; }
+      .score-grid, .implementation, .bottom-grid, .method-grid { grid-template-columns: 1fr 1fr; }
       .flow { grid-template-columns: 1fr; }
       .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -17px; }
     }
     @media (max-width: 520px) {
-      .score-grid, .implementation, .bottom-grid, .experiments, .capability-list { grid-template-columns: 1fr; }
+      .score-grid, .implementation, .bottom-grid, .experiments, .capability-list, .method-grid { grid-template-columns: 1fr; }
       .section-head { display: block; }
       .section-head p { margin-top: 6px; }
     }
@@ -159,7 +163,7 @@
             <li><span class="check">✓</span><span>Multi-repository namespacing and skew checks</span></li>
             <li><span class="check">✓</span><span>Git lineage, traversal and Neo4j export</span></li>
           </ul>
-          <div class="status-row"><span class="tag live">Python / JS / TS</span><span class="tag verify">Go parser install pending locally</span><span class="tag next">Java / C# optional</span></div>
+          <div class="status-row"><span class="tag live">Python / JS / TS</span><span class="tag verify">Go parser install pending locally</span><span class="tag later">Java / C# optional</span></div>
         </article>
         <article class="panel">
           <h3>Reported retrieval comparison</h3>
@@ -197,7 +201,7 @@
             <div class="score"><span class="score-label">Current leader</span><strong class="score-value">R1</strong><span class="score-detail">LSA semantic vectors</span></div>
             <div class="score"><span class="score-label">R1 MRR@5</span><strong class="score-value">0.750</strong><span class="score-detail">Hits@1: 66.7%</span></div>
           </div>
-          <div class="status-row"><span class="tag verify">not a paper claim</span><span class="tag next">next: larger pinned benchmark</span></div>
+          <div class="status-row"><span class="tag verify">not a paper claim</span><span class="tag verify">fixture-only evidence</span></div>
         </article>
         <article class="panel">
           <h3>Multi-repository MRR@5</h3>
@@ -232,16 +236,36 @@
         <article class="experiment" data-group="priority"><div class="experiment-top"><span class="code">R5</span><span class="tag live">implemented</span></div><h3>Static hybrid</h3><p>R3 + R4. Primary single-repository candidate for the paper.</p></article>
         <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R6</span><span class="tag live">implemented</span></div><h3>Static + dataflow</h3><p>Adds definitions, uses, returns and mutations for root-cause questions.</p></article>
         <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R7</span><span class="tag live">implemented</span></div><h3>Static + tests</h3><p>Uses test-to-code evidence when matching test symbols are present.</p></article>
-        <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R8</span><span class="tag next">lineage input</span></div><h3>Static + Git history</h3><p>Uses Git TOUCHES edges after `--ingest-lineage` is supplied.</p></article>
+        <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R8</span><span class="tag verify">optional input</span></div><h3>Static + Git history</h3><p>Uses Git TOUCHES edges after `--ingest-lineage` is supplied.</p></article>
         <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R9</span><span class="tag live">implemented</span></div><h3>Polyglot hybrid</h3><p>Static hybrid + HTTP/gRPC/Protobuf contract expansion.</p></article>
-        <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R10</span><span class="tag next">trace input</span></div><h3>Polyglot + traces</h3><p>Consumes optional runtime trace links over static service topology.</p></article>
+        <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R10</span><span class="tag verify">optional input</span></div><h3>Polyglot + traces</h3><p>Consumes optional runtime trace links over static service topology.</p></article>
         <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R11</span><span class="tag live">implemented</span></div><h3>Docs + architecture</h3><p>Adds README, Markdown and text-document evidence.</p></article>
         <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R12</span><span class="tag live">implemented</span></div><h3>Adaptive router</h3><p>Selects the smallest relevant strategy by query type and budget.</p></article>
         <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R13</span><span class="tag live">implemented</span></div><h3>Adaptive + reranker</h3><p>Uses deterministic evidence reranking; real-benchmark promotion remains evidence-driven.</p></article>
       </div>
     </section>
 
-    <section class="section bottom-grid" aria-label="Evaluation and immediate work">
+    <section class="section" aria-labelledby="methods-heading">
+      <div class="section-head"><div><div class="eyebrow">Method guide</div><h2 id="methods-heading">What each retrieval method contributes</h2></div><p>Plain-language summaries for the experiment registry.</p></div>
+      <div class="method-grid">
+        <article class="method-card"><div class="code">R0 · lexical</div><h3>BM25 lexical search</h3><p>Matches query words, identifiers and filenames using sparse term scoring. It is the transparent control for exact-name and rare-token lookups.</p></article>
+        <article class="method-card"><div class="code">R1 · semantic</div><h3>LSA semantic vectors</h3><p>Projects text into a low-rank vector space so related concepts can match even when the query and code use different words.</p></article>
+        <article class="method-card"><div class="code">R2 · fusion</div><h3>BM25 + semantic RRF</h3><p>Combines lexical and semantic rankings with reciprocal-rank fusion, giving exact matches and conceptual matches a shared candidate list.</p></article>
+        <article class="method-card"><div class="code">R3 · structure</div><h3>R2 + AST scope</h3><p>Uses the abstract syntax tree to expand a hit to its function, class, imports and nearby declarations instead of returning an arbitrary text slice.</p></article>
+        <article class="method-card"><div class="code">R4 · dependencies</div><h3>R2 + call/import graph</h3><p>Follows calls and imports around seed files, exposing the small dependency neighborhood needed to understand a symbol.</p></article>
+        <article class="method-card"><div class="code">R5 · static hybrid</div><h3>AST + dependency graph</h3><p>Combines structural scope and dependency expansion. This is the main single-repository graph baseline in the current study.</p></article>
+        <article class="method-card"><div class="code">R6 · dataflow</div><h3>Static + dataflow</h3><p>Adds definitions, uses, returns and mutations, which helps trace how a value or error moves through code.</p></article>
+        <article class="method-card"><div class="code">R7 · tests</div><h3>Static + test evidence</h3><p>Links matching tests to implementation nodes, prioritising executable evidence for debugging and change-impact questions.</p></article>
+        <article class="method-card"><div class="code">R8 · temporal</div><h3>Static + Git history</h3><p>Adds file and symbol lineage from commits, making historically coupled or frequently changed code retrievable when lineage is ingested.</p></article>
+        <article class="method-card"><div class="code">R9 · polyglot</div><h3>Contract-aware hybrid</h3><p>Extends the static graph across HTTP, gRPC and Protobuf contracts so a request can connect producer, consumer and handler across languages.</p></article>
+        <article class="method-card"><div class="code">R10 · runtime</div><h3>Polyglot + traces</h3><p>Optionally adds observed runtime links to the static service topology, distinguishing declared relationships from paths seen in execution.</p></article>
+        <article class="method-card"><div class="code">R11 · documentation</div><h3>Docs + architecture</h3><p>Indexes README, Markdown and text evidence so architectural intent and operational notes can complement code-level matches.</p></article>
+        <article class="method-card"><div class="code">R12 · routing</div><h3>Adaptive router</h3><p>Selects the smallest relevant combination by query type and token budget, reducing unnecessary graph expansion for simple lookups.</p></article>
+        <article class="method-card"><div class="code">R13 · ordering</div><h3>Adaptive + reranker</h3><p>Reorders candidates using deterministic evidence signals such as graph distance, contract edges and source authority after retrieval.</p></article>
+      </div>
+    </section>
+
+    <section class="section bottom-grid" aria-label="Evaluation evidence">
       <article class="panel">
         <div class="eyebrow">Decision rule</div><h2>How a winner is chosen</h2>
         <ul class="next-list">
@@ -252,12 +276,12 @@
         </ul>
       </article>
       <article class="panel">
-        <div class="eyebrow">Immediate next work</div><h2>Make the comparison credible</h2>
+        <div class="eyebrow">Completed in this branch</div><h2>Evidence already produced</h2>
         <ul class="next-list">
-          <li><strong>01 — Verify:</strong> install the missing Go parser and rerun the existing suite/results cleanly.</li>
-          <li><strong>02 — Instrument:</strong> add one common retrieval interface and fixed context packer.</li>
-          <li><strong>03 — Establish:</strong> implement and measure R0–R5 before adding new graph layers.</li>
-          <li><strong>04 — Specialize:</strong> run R9 on the Polyglot API-Bench and cross-service queries.</li>
+          <li><strong>Retrieval:</strong> R0–R13 share one interface and a deterministic 2,048-token context packer.</li>
+          <li><strong>Polyglot:</strong> Python, JavaScript, TypeScript and Go API edges are represented in the graph.</li>
+          <li><strong>Evaluation:</strong> fixture, multi-repository and Polyglot API reports are checked in as JSON.</li>
+          <li><strong>Verification:</strong> the repository test suite passes 60/60; API-link checks pass 6/6 positive and 2/2 negative cases.</li>
         </ul>
       </article>
     </section>
