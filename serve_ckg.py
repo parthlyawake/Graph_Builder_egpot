@@ -14,11 +14,13 @@ import sys
 import json
 import webbrowser
 import urllib.parse
+from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from graft_ckg import CKGBuilder
 
 GLOBAL_BUILDER = None
 REPO_NAME = ""
+GLOBAL_RETRIEVER = None
 
 
 def nhop_retrieval(builder, root_id, max_hops=1, layers=None, direction="both"):
@@ -398,7 +400,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
   <div id="sidebar">
     <div class="top-brand">
       <div class="brand-title">GRAFT-CKG WORKBENCH</div>
-      <div class="brand-repo" id="repo-badge">Loading...</div>
+      <div class="brand-repo" id="repo-badge">Loading...</div><a href="/compare" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:#2563eb;font-size:12px">Live method comparison</a><br><a href="/methods" target="_blank" rel="noopener" style="display:inline-block;margin-top:4px;color:#2563eb;font-size:12px">Method guide and reports</a>
     </div>
 
     <!-- Query Inputs -->
@@ -1045,6 +1047,66 @@ class WorkbenchRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/html")
             self.end_headers()
             self.wfile.write(DASHBOARD_HTML.encode("utf-8"))
+
+        elif path == "/methods":
+            dashboard = Path(__file__).with_name("hybrid-retrieval-lab.html")
+            if not dashboard.is_file():
+                self.send_error(404, "Retrieval dashboard is unavailable")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(dashboard.read_bytes())
+
+        elif path == "/compare":
+            page = Path(__file__).with_name("retrieval_live_demo.html")
+            if not page.is_file():
+                self.send_error(404, "Live comparison page is unavailable")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(page.read_bytes())
+
+        elif path == "/api/compare":
+            from hybrid_retrieval import CONFIGS, HybridRetriever
+            from traversal import SCKGTraversal
+            global GLOBAL_RETRIEVER
+            query = params.get("q", [""])[0].strip()
+            if not query or len(query) > 500:
+                self.send_error(400, "Provide a query of 1 to 500 characters")
+                return
+            if GLOBAL_RETRIEVER is None:
+                GLOBAL_RETRIEVER = HybridRetriever(GLOBAL_BUILDER)
+            traversal = SCKGTraversal(GLOBAL_BUILDER)
+            methods = []
+            for method_id, config in CONFIGS.items():
+                result = GLOBAL_RETRIEVER.retrieve(query, method_id, top_k=5, token_budget=2048)
+                matches = result["top_matches"]
+                top_node = matches[0]["node_id"] if matches else None
+                affected = traversal.blast_radius(top_node, max_depth=2) if top_node else {}
+                methods.append({
+                    "id": method_id,
+                    "name": config.title,
+                    "effective_config": result["effective_config"],
+                    "top_matches": matches,
+                    "retrieved_files": sorted({hit.get("file", "") for hit in matches if hit.get("file")}),
+                    "affected_files": affected.get("affected_files", []),
+                    "top_node": top_node,
+                })
+            payload = {
+                "repo": REPO_NAME,
+                "query": query,
+                "graph_nodes": GLOBAL_BUILDER.graph.number_of_nodes(),
+                "graph_edges": GLOBAL_BUILDER.graph.number_of_edges(),
+                "methods": methods,
+            }
+            body = json.dumps(payload).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
 
         elif path == "/api/graph":
             self.send_response(200)
