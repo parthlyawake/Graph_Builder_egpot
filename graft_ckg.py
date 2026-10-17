@@ -75,6 +75,8 @@ class CKGBuilder(ast.NodeVisitor):
         self.class_base_records = []  # (class_id, base_spelling, file, scope_depth)
         self.class_bases = {}       # class_id -> resolved direct base class IDs
         self.class_subclasses = {}  # class_id -> list of subclass IDs
+        self.interface_implementation_records = []  # (class_id, interface spelling, file, depth)
+        self.interface_extension_records = []  # (interface_id, parent spelling, file, depth)
         self.var_defs = {}          # scope_id -> {var_name: node_id}
         self.var_types = {}         # scope_id -> {var_name: class_or_type_name}
         self.raw_file_lines = {}    # file_rel_path -> list of lines
@@ -411,7 +413,9 @@ class CKGBuilder(ast.NodeVisitor):
 
         # Pass 2: Resolve inheritance before method calls, then dependencies.
         self._resolve_inheritance()
+        self._resolve_interface_contracts()
         self._resolve_dependency_layer()
+        self._build_http_contracts()
         self._resolve_http_calls()
         self._resolve_contract_layer()
 
@@ -462,6 +466,8 @@ class CKGBuilder(ast.NodeVisitor):
         self.http_calls_to_resolve = []
         self.grpc_calls_to_resolve = []
         self.class_base_records = []
+        self.interface_implementation_records = []
+        self.interface_extension_records = []
         self.symbols_by_name = {}
         for nid, data in self.graph.nodes(data=True):
             sname = data.get("name")
@@ -482,7 +488,9 @@ class CKGBuilder(ast.NodeVisitor):
                 self._parse_python_file(norm, full_path)
 
         self._resolve_inheritance()
+        self._resolve_interface_contracts()
         self._resolve_dependency_layer()
+        self._build_http_contracts()
         self._resolve_http_calls()
         self._resolve_contract_layer()
         self._build_semantic_layer()
@@ -975,6 +983,46 @@ class CKGBuilder(ast.NodeVisitor):
                     class_id, stub_id, relation="EXTENDS", layer="Ldep", metadata=metadata
                 )
 
+    def _resolve_interface_contracts(self):
+        """Bind explicit type declarations only; do not infer structural conformance."""
+        for source_id, spelling, source_file, depth, relation in [
+            *((source_id, spelling, source_file, depth, "IMPLEMENTS")
+              for source_id, spelling, source_file, depth in self.interface_implementation_records),
+            *((source_id, spelling, source_file, depth, "EXTENDS")
+              for source_id, spelling, source_file, depth in self.interface_extension_records),
+        ]:
+            if source_id not in self.graph or not spelling:
+                continue
+            spelling = re.sub(r"<.*>$", "", spelling).strip()
+            targets = [
+                node_id for node_id in self._resolve_reference(source_file, spelling)
+                if self.graph.nodes[node_id].get("type") == "interface"
+            ]
+            for target_id in targets:
+                metadata = HyperEdgeMetadata(
+                    d_scope=depth, c_type=1.0 / len(targets), id_ctx=source_file
+                )
+                self.add_ckg_edge(source_id, target_id, relation, "Lcontract", metadata)
+
+    def _build_http_contracts(self):
+        """Represent each statically registered method/path as an API contract."""
+        self.http_contract_ids = {}
+        for (method, path), handlers in sorted(self.http_endpoints.items()):
+            valid = list(dict.fromkeys(node_id for node_id in handlers if node_id in self.graph))
+            if not valid:
+                continue
+            contract_id = f"http::{self.repo_prefix}{method}:{path}"
+            owner = self.graph.nodes[valid[0]]
+            self.graph.add_node(
+                contract_id, id=contract_id, type="http_endpoint", layer="Lcontract",
+                name=f"{method} {path}", file=owner.get("file", ""),
+                repo=self.repo_id or "", line_no=owner.get("line_no", 0),
+                docstring="", code="",
+            )
+            self.http_contract_ids[(method, path)] = contract_id
+            for handler_id in valid:
+                self.add_ckg_edge(handler_id, contract_id, "IMPLEMENTS", "Lcontract")
+
     def _resolve_dependency_layer(self):
         print(f"[*] Resolving Dependency Layer (Ldep) for {len(self.calls_to_resolve)} call sites...")
         # Aggregate call frequencies for hyper-edge metadata
@@ -1105,8 +1153,15 @@ class CKGBuilder(ast.NodeVisitor):
         """
         resolved_count = 0
         for caller_id, path, method, id_ctx in self.http_calls_to_resolve:
-            target_ids = self.http_endpoints.get((method.upper(), path), [])
+            if caller_id not in self.graph:
+                continue
+            target_ids = list(dict.fromkeys([
+                *self.http_endpoints.get((method.upper(), path), []),
+                *self.http_endpoints.get(('*', path), []),
+            ]))
             for target_id in target_ids:
+                if target_id not in self.graph:
+                    continue
                 metadata = HyperEdgeMetadata(
                     d_scope=0, f_call=1.0, c_type=1.0, id_ctx=id_ctx
                 )
@@ -1115,6 +1170,10 @@ class CKGBuilder(ast.NodeVisitor):
                     metadata=metadata,
                 )
                 resolved_count += 1
+            for key in ((method.upper(), path), ("*", path)):
+                contract_id = self.http_contract_ids.get(key)
+                if contract_id:
+                    self.add_ckg_edge(caller_id, contract_id, "CONSUMES", "Lcontract")
         print(f"[*] HTTP dependency resolution: {resolved_count} local endpoint bindings created.")
 
     # -------------------------------------------------------------

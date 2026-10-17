@@ -10,6 +10,8 @@
 
 ## Overview
 
+For a local graph viewer that teammates can run against their own repository, see [TEAMMATE_GRAPH_GUIDE.md](TEAMMATE_GRAPH_GUIDE.md).
+
 GRAFT-CKG builds a **six-layer hyper-relational knowledge graph** from source code across multiple repositories and programming languages. Unlike existing single-repository code graph systems (RepoGraph, CodexGraph, LocAgent), GRAFT-CKG:
 
 - **Spans multiple repositories** in a single unified workspace graph with zero node-ID collisions
