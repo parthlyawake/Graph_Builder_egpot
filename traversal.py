@@ -1,5 +1,5 @@
 """
-SCKG Graph-Guided Traversal Engine (PhD Proposal Objective 2 / Phase 3).
+SCKG Graph-Guided Traversal Engine.
 
 Provides deterministic, typed graph traversal primitives across the 4 CKG layers
 (Lsyn, Ldep, Lflow, Lsem) and the Contract Layer (Lcontract):
@@ -125,6 +125,11 @@ class SCKGTraversal:
                     continue
 
                 other_node = tgt if dir_tag == "downstream" else src
+
+                # Choke-point optimization: do not traverse backwards across DEFINES_RPC from an RPC
+                # into the parent service_contract, which would cause combinatorial fanout into all sibling RPCs.
+                if rel == "DEFINES_RPC" and dir_tag == "upstream" and self.graph.nodes.get(curr, {}).get("type") == "rpc_contract":
+                    continue
 
                 traversed_edges.append({
                     "source": src,
@@ -354,6 +359,12 @@ class SCKGTraversal:
             for src, _, data in self.graph.in_edges(curr, data=True):
                 l = data.get("layer")
                 rel = data.get("relation")
+
+                # Choke-point optimization: if curr is an rpc_contract, do NOT step backwards
+                # across DEFINES_RPC into the parent service_contract, which would pull in all sibling RPCs.
+                if rel == "DEFINES_RPC" and self.graph.nodes.get(curr, {}).get("type") == "rpc_contract":
+                    continue
+
                 if l in allowed_layers and rel in (
                     "IMPLEMENTS", "CONSUMES", "CONTAINS", "DEFINES_RPC", "SEMANTIC_SIMILAR", "CALLS"
                 ):
@@ -445,9 +456,13 @@ class SCKGTraversal:
 
     def _resolve_contract_or_endpoint(self, name: str) -> Optional[str]:
         """Resolves contract service/rpc or HTTP endpoint string."""
-        resolved = self.builder._contract_node_id(name)
-        if resolved:
-            return resolved
+        if hasattr(self.builder, "_contract_node_id"):
+            resolved = self.builder._contract_node_id(name)
+            if resolved:
+                return resolved
+        candidate = name if name.startswith("contract::") else f"contract::{name}"
+        if candidate in self.graph:
+            return candidate
         # Check HTTP endpoints
         if name in self.graph and self.graph.nodes[name].get("type") == "http_endpoint":
             return name

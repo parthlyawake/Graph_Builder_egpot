@@ -217,6 +217,34 @@ class WorkspaceCKGBuilder:
             return rel_or_abs
         return os.path.normpath(os.path.join(self.config.base_dir, rel_or_abs))
 
+    @staticmethod
+    def _match_rpc_case(contract: Dict[str, Any], name: str) -> Optional[str]:
+        """Match an RPC name case-insensitively (JS uses camelCase handlers)."""
+        if "rpcs" in contract:
+            if name in contract["rpcs"]:
+                return contract["rpcs"][name]
+            lowered = name.lower()
+            for rpc_name, rpc_id in contract["rpcs"].items():
+                if rpc_name.lower() == lowered:
+                    return rpc_id
+        return None
+
+    def _contract_node_id(self, name: str) -> Optional[str]:
+        """Resolve 'Service' or 'Service.Rpc' (case-insensitive rpc) to a canonical node id."""
+        if name in self.graph and self.graph.nodes[name].get("type") in {"service_contract", "rpc_contract"}:
+            return name
+        candidate = name if name.startswith("contract::") else f"contract::{name}"
+        if candidate in self.graph:
+            return candidate
+        if "." in candidate:
+            service, _, rpc = candidate.rpartition(".")
+            contract = self.proto_services.get(service.split("::", 1)[-1])
+            if contract:
+                matched = self._match_rpc_case(contract, rpc)
+                if matched:
+                    return matched
+        return None
+
     def build(self) -> nx.MultiDiGraph:
         """Construct the unified multi-repository hyper-relational CKG."""
         print(f"[*] Initializing GRAFT-CKG Workspace: '{self.config.name}' (v{self.config.version})")
@@ -567,6 +595,8 @@ class WorkspaceCKGBuilder:
         implements_count = 0
         consumes_count = 0
         http_calls_count = 0
+        produces_event_count = 0
+        consumes_event_count = 0
 
         for u, v, d in self.graph.edges(data=True):
             layer = d.get("layer", "Lsyn")
@@ -579,6 +609,10 @@ class WorkspaceCKGBuilder:
                 consumes_count += 1
             elif rel == "HTTP_CALLS":
                 http_calls_count += 1
+            elif rel == "PRODUCES_EVENT":
+                produces_event_count += 1
+            elif rel == "CONSUMES_EVENT":
+                consumes_event_count += 1
 
         repos_summary = {}
         for r_id, b in self.repo_builders.items():
@@ -601,6 +635,8 @@ class WorkspaceCKGBuilder:
             "implements_edges": implements_count,
             "consumes_edges": consumes_count,
             "http_calls_edges": http_calls_count,
+            "produces_event_edges": produces_event_count,
+            "consumes_event_edges": consumes_event_count,
             "contract_skews": self.contract_skews,
             "skew_count": len(self.contract_skews),
         }

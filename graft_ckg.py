@@ -85,6 +85,7 @@ class CKGBuilder(ast.NodeVisitor):
         # producer/consumer bindings across languages.
         self.proto_services = {}        # service_name -> {"node_id", "rpcs": {rpc -> node_id}, ...}
         self.proto_file_hashes = {}     # rel_path -> sha256
+        self.proto_nodes_by_file = {}   # rel_path -> set of contract node IDs
         self.grpc_calls_to_resolve = [] # (caller_id, service, method, id_ctx)
         self.grpc_client_vars = {}      # file -> {var_name: service_name}
         self.pending_attr_calls = []    # (caller_id, var, method, file) resolved post-parse
@@ -125,10 +126,19 @@ class CKGBuilder(ast.NodeVisitor):
 
     @staticmethod
     def _module_name_for_file(rel_path):
-        """Return the importable module name for a repository-relative Python file."""
+        """Return the importable module name for a repository-relative source file."""
         parts = rel_path.replace("\\", "/").split("/")
-        if not parts or os.path.splitext(parts[-1])[1] not in {".py", ".js", ".jsx", ".ts", ".tsx"}:
+        if not parts:
             return ""
+        ext = os.path.splitext(parts[-1])[1]
+        if ext not in {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".java", ".cs"}:
+            return ""
+        if ext == ".java":
+            norm = rel_path.replace("\\", "/")
+            for marker in ("src/main/java/", "src/test/java/", "src/"):
+                if marker in norm:
+                    pkg_path = norm.split(marker, 1)[-1]
+                    return os.path.splitext(pkg_path)[0].replace("/", ".")
         parts[-1] = os.path.splitext(parts[-1])[0]
         if parts[-1] in {"__init__", "index"}:
             parts.pop()
@@ -384,11 +394,14 @@ class CKGBuilder(ast.NodeVisitor):
                     proto_files.append((rel_path, full_path))
 
         print(f"[*] Found {len(source_files)} supported source files, {len(proto_files)} proto files.")
-        self.module_to_file = {
-            self._module_name_for_file(rel_path): rel_path
-            for rel_path, _ in source_files
-            if self._module_name_for_file(rel_path)
-        }
+        self.module_to_file = {}
+        for rel_path, _ in source_files:
+            m_name = self._module_name_for_file(rel_path)
+            if m_name:
+                self.module_to_file[m_name] = rel_path
+            base_name = os.path.splitext(os.path.basename(rel_path))[0]
+            if base_name and base_name not in self.module_to_file:
+                self.module_to_file[base_name] = rel_path
         self._load_module_configuration()
 
         # Pass 0: parse protobuf contracts into the Contract Layer (Lcontract).
@@ -440,6 +453,25 @@ class CKGBuilder(ast.NodeVisitor):
                 n for n, d in list(self.graph.nodes(data=True))
                 if d.get("file") == norm or n.startswith(f"{norm}:") or n == f"file::{norm}"
             ]
+
+            # Invalidate associated Protobuf contract nodes
+            if norm.endswith(".proto") or norm in self.proto_nodes_by_file:
+                associated = list(self.proto_nodes_by_file.get(norm, []))
+                for c_node in associated:
+                    if not self.graph.has_node(c_node):
+                        continue
+                    defs = self.graph.nodes[c_node].get("definitions", [])
+                    remaining_defs = [d for d in defs if d.get("file") != norm]
+                    if not remaining_defs:
+                        nodes_to_remove.append(c_node)
+                    else:
+                        self.graph.nodes[c_node]["definitions"] = remaining_defs
+                self.proto_nodes_by_file.pop(norm, None)
+                self.proto_file_hashes.pop(norm, None)
+                for s_name, s_info in list(self.proto_services.items()):
+                    if s_info.get("file") == norm:
+                        self.proto_services.pop(s_name, None)
+
             for n in nodes_to_remove:
                 if self.graph.has_node(n):
                     self.graph.remove_node(n)
@@ -1122,66 +1154,87 @@ class CKGBuilder(ast.NodeVisitor):
     # -------------------------------------------------------------
     def _parse_proto_file(self, rel_path, full_path):
         """Parse a .proto file into canonical service/rpc contract nodes."""
-        with open(full_path, "rb") as f:
-            raw_bytes = f.read()
-        proto_hash = hashlib.sha256(raw_bytes).hexdigest()
-        self.proto_file_hashes[rel_path] = proto_hash
+        norm = rel_path.replace("\\", "/")
+        prev_file = self.current_file
+        self.current_file = norm
+        try:
+            with open(full_path, "rb") as f:
+                raw_bytes = f.read()
+            proto_hash = hashlib.sha256(raw_bytes).hexdigest()
+            self.proto_file_hashes[norm] = proto_hash
+            self.proto_nodes_by_file.setdefault(norm, set())
 
-        text = raw_bytes.decode("utf-8", errors="replace")
-        text = re.sub(r"//[^\n]*", "", text)
-        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-        file_id = f"file::{self.repo_prefix}{rel_path}"
-        self.add_ckg_node(file_id, "file", "Lsyn", os.path.basename(rel_path), 1,
-                          code=f"// Proto contract file: {rel_path}", repo=self.repo_id or "")
-        # Normalise empty rpc option blocks `{}` so service bodies can be
-        # delimited by brace balancing (the first `}` is NOT the service end).
-        text = re.sub(r"\)\s*\{\s*\}", ");", text)
-        for service_match in re.finditer(r"service\s+(\w+)\s*\{", text):
-            service_name = service_match.group(1)
-            depth, i = 1, service_match.end()
-            while i < len(text) and depth:
-                depth += {"{": 1, "}": -1}.get(text[i], 0)
-                i += 1
-            body = text[service_match.end():i - 1]
-            service_id = f"contract::{service_name}"
-            if not self.graph.has_node(service_id):
-                self.add_ckg_node(service_id, "service_contract", "Lcontract", service_name)
-            self.graph.nodes[service_id].setdefault("definitions", []).append({
-                "file": rel_path,
-                "file_id": file_id,
-                "repo_id": self.repo_id or "",
-                "sha256": proto_hash,
-            })
-            self.add_ckg_edge(file_id, service_id, "CONTAINS", "Lsyn")
-            rpcs = {}
-            rpc_signatures = {}
-            for rpc_match in re.finditer(r"rpc\s+(\w+)\s*\(\s*(\w+)\s*\)\s*returns\s*\(\s*(\w+)\s*\)", body):
-                rpc_name, req_type, resp_type = rpc_match.groups()
-                rpc_id = f"contract::{service_name}.{rpc_name}"
-                if not self.graph.has_node(rpc_id):
-                    self.add_ckg_node(rpc_id, "rpc_contract", "Lcontract", rpc_name)
-                self.graph.nodes[rpc_id]["request_type"] = req_type
-                self.graph.nodes[rpc_id]["response_type"] = resp_type
-                self.graph.nodes[rpc_id].setdefault("definitions", []).append({
-                    "file": rel_path,
+            text = raw_bytes.decode("utf-8", errors="replace")
+            text = re.sub(r"//[^\n]*", "", text)
+            text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+            file_id = f"file::{self.repo_prefix}{norm}"
+            self.add_ckg_node(file_id, "file", "Lsyn", os.path.basename(norm), 1,
+                              code=f"// Proto contract file: {norm}", repo=self.repo_id or "")
+            self.proto_nodes_by_file[norm].add(file_id)
+
+            # Normalise empty rpc option blocks `{}` so service bodies can be
+            # delimited by brace balancing (the first `}` is NOT the service end).
+            text = re.sub(r"\)\s*\{\s*\}", ");", text)
+            for service_match in re.finditer(r"service\s+(\w+)\s*\{", text):
+                service_name = service_match.group(1)
+                depth, i = 1, service_match.end()
+                while i < len(text) and depth:
+                    depth += {"{": 1, "}": -1}.get(text[i], 0)
+                    i += 1
+                body = text[service_match.end():i - 1]
+                service_id = f"contract::{service_name}"
+                if not self.graph.has_node(service_id):
+                    self.add_ckg_node(service_id, "service_contract", "Lcontract", service_name)
+                self.graph.nodes[service_id]["file"] = norm
+                self.graph.nodes[service_id]["sha256"] = proto_hash
+                self.proto_nodes_by_file[norm].add(service_id)
+
+                curr_defs = [d for d in self.graph.nodes[service_id].get("definitions", []) if d.get("file") != norm]
+                curr_defs.append({
+                    "file": norm,
                     "file_id": file_id,
                     "repo_id": self.repo_id or "",
                     "sha256": proto_hash,
-                    "request_type": req_type,
-                    "response_type": resp_type,
                 })
-                self.add_ckg_edge(service_id, rpc_id, "DEFINES_RPC", "Lcontract")
-                rpcs[rpc_name] = rpc_id
-                rpc_signatures[rpc_name] = {"request": req_type, "response": resp_type}
-            self.proto_services[service_name] = {
-                "node_id": service_id,
-                "rpcs": rpcs,
-                "file": rel_path,
-                "file_id": file_id,
-                "repo_id": self.repo_id or "",
-                "sha256": proto_hash,
-                "signatures": rpc_signatures,
-            }
+                self.graph.nodes[service_id]["definitions"] = curr_defs
+                self.add_ckg_edge(file_id, service_id, "CONTAINS", "Lsyn")
+                rpcs = {}
+                rpc_signatures = {}
+                for rpc_match in re.finditer(r"rpc\s+(\w+)\s*\(\s*(\w+)\s*\)\s*returns\s*\(\s*(\w+)\s*\)", body):
+                    rpc_name, req_type, resp_type = rpc_match.groups()
+                    rpc_id = f"contract::{service_name}.{rpc_name}"
+                    if not self.graph.has_node(rpc_id):
+                        self.add_ckg_node(rpc_id, "rpc_contract", "Lcontract", rpc_name)
+                    self.graph.nodes[rpc_id]["request_type"] = req_type
+                    self.graph.nodes[rpc_id]["response_type"] = resp_type
+                    self.graph.nodes[rpc_id]["file"] = norm
+                    self.graph.nodes[rpc_id]["sha256"] = proto_hash
+                    self.proto_nodes_by_file[norm].add(rpc_id)
+
+                    rpc_defs = [d for d in self.graph.nodes[rpc_id].get("definitions", []) if d.get("file") != norm]
+                    rpc_defs.append({
+                        "file": norm,
+                        "file_id": file_id,
+                        "repo_id": self.repo_id or "",
+                        "sha256": proto_hash,
+                        "request_type": req_type,
+                        "response_type": resp_type,
+                    })
+                    self.graph.nodes[rpc_id]["definitions"] = rpc_defs
+                    self.add_ckg_edge(service_id, rpc_id, "DEFINES_RPC", "Lcontract")
+                    rpcs[rpc_name] = rpc_id
+                    rpc_signatures[rpc_name] = {"request": req_type, "response": resp_type}
+                self.proto_services[service_name] = {
+                    "node_id": service_id,
+                    "rpcs": rpcs,
+                    "file": norm,
+                    "file_id": file_id,
+                    "repo_id": self.repo_id or "",
+                    "sha256": proto_hash,
+                    "signatures": rpc_signatures,
+                }
+        finally:
+            self.current_file = prev_file
 
     def _resolve_contract_layer(self):
         """Bind producers (IMPLEMENTS) and consumers (CONSUMES) to contracts."""

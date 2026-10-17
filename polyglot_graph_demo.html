@@ -1,0 +1,163 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 800px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#ab47bc", "font": {"color": "white"}, "id": "paymentservice/server.js:HipsterShopServer.loadAllProtos", "label": "loadAllProtos", "shape": "dot", "size": 25, "title": "ID: paymentservice/server.js:HipsterShopServer.loadAllProtos\nType: function\nRepo: paymentservice\nFile: paymentservice/server.js"}, {"color": "#ab47bc", "font": {"color": "white"}, "id": "paymentservice/server.js:HipsterShopServer.CheckHandler", "label": "CheckHandler", "shape": "dot", "size": 25, "title": "ID: paymentservice/server.js:HipsterShopServer.CheckHandler\nType: function\nRepo: paymentservice\nFile: paymentservice/server.js"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.getCurrencies", "label": "getCurrencies", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.getCurrencies\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.getUserCart", "label": "getUserCart", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.getUserCart\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.getProducts", "label": "getProducts", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.getProducts\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#ab47bc", "font": {"color": "white"}, "id": "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler", "label": "ChargeServiceHandler", "shape": "dot", "size": 25, "title": "ID: paymentservice/server.js:HipsterShopServer.ChargeServiceHandler\nType: function\nRepo: paymentservice\nFile: paymentservice/server.js"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.insertCart", "label": "insertCart", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.insertCart\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.chargeCard", "label": "chargeCard", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.chargeCard\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::CartService.EmptyCart", "label": "EmptyCart", "shape": "dot", "size": 25, "title": "ID: contract::CartService.EmptyCart\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::CartService.AddItem", "label": "AddItem", "shape": "dot", "size": 25, "title": "ID: contract::CartService.AddItem\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.emptyUserCart", "label": "emptyUserCart", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.emptyUserCart\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::RecommendationService.ListRecommendations", "label": "ListRecommendations", "shape": "dot", "size": 25, "title": "ID: contract::RecommendationService.ListRecommendations\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::ShippingService.GetQuote", "label": "GetQuote", "shape": "dot", "size": 25, "title": "ID: contract::ShippingService.GetQuote\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.quoteShipping", "label": "quoteShipping", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.quoteShipping\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.sendOrderConfirmation", "label": "sendOrderConfirmation", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.sendOrderConfirmation\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}, {"color": "#ab47bc", "font": {"color": "white"}, "id": "currencyservice/server.js:check", "label": "check", "shape": "dot", "size": 25, "title": "ID: currencyservice/server.js:check\nType: function\nRepo: currencyservice\nFile: currencyservice/server.js"}, {"color": "#ab47bc", "font": {"color": "white"}, "id": "currencyservice/server.js:main", "label": "main", "shape": "dot", "size": 25, "title": "ID: currencyservice/server.js:main\nType: function\nRepo: currencyservice\nFile: currencyservice/server.js"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::CartService.GetCart", "label": "GetCart", "shape": "dot", "size": 25, "title": "ID: contract::CartService.GetCart\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::CurrencyService.Convert", "label": "Convert", "shape": "dot", "size": 25, "title": "ID: contract::CurrencyService.Convert\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::PaymentService.Charge", "label": "Charge", "shape": "dot", "size": 25, "title": "ID: contract::PaymentService.Charge\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.getRecommendations", "label": "getRecommendations", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.getRecommendations\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::EmailService.SendOrderConfirmation", "label": "SendOrderConfirmation", "shape": "dot", "size": 25, "title": "ID: contract::EmailService.SendOrderConfirmation\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::CheckoutService.PlaceOrder", "label": "PlaceOrder", "shape": "dot", "size": 25, "title": "ID: contract::CheckoutService.PlaceOrder\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::AdService.GetAds", "label": "GetAds", "shape": "dot", "size": 25, "title": "ID: contract::AdService.GetAds\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::PaymentService", "label": "PaymentService", "shape": "dot", "size": 25, "title": "ID: contract::PaymentService\nType: service_contract\nRepo: unknown\nFile: None"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.convertCurrency", "label": "convertCurrency", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.convertCurrency\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::Health", "label": "Health", "shape": "dot", "size": 25, "title": "ID: contract::Health\nType: service_contract\nRepo: unknown\nFile: None"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.getProduct", "label": "getProduct", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.getProduct\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.getAd", "label": "getAd", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.getAd\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.shipOrder", "label": "shipOrder", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.shipOrder\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.getShippingQuote", "label": "getShippingQuote", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.getShippingQuote\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#F4B400", "font": {"color": "white"}, "id": "emailservice/email_client.py:send_confirmation_email", "label": "send_confirmation_email", "shape": "dot", "size": 25, "title": "ID: emailservice/email_client.py:send_confirmation_email\nType: function\nRepo: emailservice\nFile: emailservice/email_client.py"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::CurrencyService.GetSupportedCurrencies", "label": "GetSupportedCurrencies", "shape": "dot", "size": 25, "title": "ID: contract::CurrencyService.GetSupportedCurrencies\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.emptyCart", "label": "emptyCart", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.emptyCart\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::Health.Check", "label": "Check", "shape": "dot", "size": 25, "title": "ID: contract::Health.Check\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/rpc.go:frontendServer.getCart", "label": "getCart", "shape": "dot", "size": 25, "title": "ID: frontend/rpc.go:frontendServer.getCart\nType: function\nRepo: frontend\nFile: frontend/rpc.go"}, {"color": "#ab47bc", "font": {"color": "white"}, "id": "currencyservice/server.js:convert", "label": "convert", "shape": "dot", "size": 25, "title": "ID: currencyservice/server.js:convert\nType: function\nRepo: currencyservice\nFile: currencyservice/server.js"}, {"color": "#ab47bc", "font": {"color": "white"}, "id": "currencyservice/server.js:getSupportedCurrencies", "label": "getSupportedCurrencies", "shape": "dot", "size": 25, "title": "ID: currencyservice/server.js:getSupportedCurrencies\nType: function\nRepo: currencyservice\nFile: currencyservice/server.js"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::ShippingService.ShipOrder", "label": "ShipOrder", "shape": "dot", "size": 25, "title": "ID: contract::ShippingService.ShipOrder\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#DB4437", "font": {"color": "white"}, "id": "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations", "label": "ListRecommendations", "shape": "dot", "size": 25, "title": "ID: recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations\nType: function\nRepo: recommendationservice\nFile: recommendationservice/recommendation_server.py"}, {"color": "#4285F4", "font": {"color": "white"}, "id": "frontend/handlers.go:frontendServer.placeOrderHandler", "label": "placeOrderHandler", "shape": "dot", "size": 25, "title": "ID: frontend/handlers.go:frontendServer.placeOrderHandler\nType: function\nRepo: frontend\nFile: frontend/handlers.go"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.convertCurrency", "label": "convertCurrency", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.convertCurrency\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::ProductCatalogService.ListProducts", "label": "ListProducts", "shape": "dot", "size": 25, "title": "ID: contract::ProductCatalogService.ListProducts\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::CurrencyService", "label": "CurrencyService", "shape": "dot", "size": 25, "title": "ID: contract::CurrencyService\nType: service_contract\nRepo: unknown\nFile: None"}, {"color": "#999999", "font": {"color": "white"}, "id": "contract::ProductCatalogService.GetProduct", "label": "GetProduct", "shape": "dot", "size": 25, "title": "ID: contract::ProductCatalogService.GetProduct\nType: rpc_contract\nRepo: unknown\nFile: None"}, {"color": "#0F9D58", "font": {"color": "white"}, "id": "checkoutservice/main.go:checkoutService.prepOrderItems", "label": "prepOrderItems", "shape": "dot", "size": 25, "title": "ID: checkoutservice/main.go:checkoutService.prepOrderItems\nType: function\nRepo: checkoutservice\nFile: checkoutservice/main.go"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "#666666", "dashes": false, "from": "paymentservice/server.js:HipsterShopServer.loadAllProtos", "title": "UNKNOWN", "to": "contract::PaymentService", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "paymentservice/server.js:HipsterShopServer.loadAllProtos", "title": "UNKNOWN", "to": "contract::Health", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "paymentservice/server.js:HipsterShopServer.CheckHandler", "title": "UNKNOWN", "to": "contract::Health.Check", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getCurrencies", "title": "UNKNOWN", "to": "contract::CurrencyService.GetSupportedCurrencies", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.getUserCart", "title": "UNKNOWN", "to": "contract::CartService.GetCart", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getProducts", "title": "UNKNOWN", "to": "contract::ProductCatalogService.ListProducts", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler", "title": "UNKNOWN", "to": "contract::PaymentService.Charge", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.insertCart", "title": "UNKNOWN", "to": "contract::CartService.AddItem", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.chargeCard", "title": "UNKNOWN", "to": "contract::PaymentService.Charge", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.emptyUserCart", "title": "UNKNOWN", "to": "contract::CartService.EmptyCart", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.quoteShipping", "title": "UNKNOWN", "to": "contract::ShippingService.GetQuote", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.sendOrderConfirmation", "title": "UNKNOWN", "to": "contract::EmailService.SendOrderConfirmation", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "currencyservice/server.js:check", "title": "UNKNOWN", "to": "contract::Health.Check", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "currencyservice/server.js:main", "title": "UNKNOWN", "to": "contract::CurrencyService", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "currencyservice/server.js:main", "title": "UNKNOWN", "to": "contract::Health", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getRecommendations", "title": "UNKNOWN", "to": "frontend/rpc.go:frontendServer.getProduct", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getRecommendations", "title": "UNKNOWN", "to": "contract::RecommendationService.ListRecommendations", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::PaymentService", "title": "UNKNOWN", "to": "contract::PaymentService.Charge", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::PaymentService", "title": "UNKNOWN", "to": "contract::PaymentService.Charge", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::PaymentService", "title": "UNKNOWN", "to": "contract::PaymentService.Charge", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.convertCurrency", "title": "UNKNOWN", "to": "contract::CurrencyService.Convert", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::Health", "title": "UNKNOWN", "to": "contract::Health.Check", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::Health", "title": "UNKNOWN", "to": "contract::Health.Check", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::Health", "title": "UNKNOWN", "to": "contract::Health.Check", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getProduct", "title": "UNKNOWN", "to": "contract::ProductCatalogService.GetProduct", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getAd", "title": "UNKNOWN", "to": "contract::AdService.GetAds", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.shipOrder", "title": "UNKNOWN", "to": "contract::ShippingService.ShipOrder", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getShippingQuote", "title": "UNKNOWN", "to": "frontend/rpc.go:frontendServer.convertCurrency", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getShippingQuote", "title": "UNKNOWN", "to": "contract::ShippingService.GetQuote", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "emailservice/email_client.py:send_confirmation_email", "title": "UNKNOWN", "to": "contract::EmailService.SendOrderConfirmation", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.emptyCart", "title": "UNKNOWN", "to": "contract::CartService.EmptyCart", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/rpc.go:frontendServer.getCart", "title": "UNKNOWN", "to": "contract::CartService.GetCart", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "currencyservice/server.js:convert", "title": "UNKNOWN", "to": "contract::CurrencyService.Convert", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "currencyservice/server.js:getSupportedCurrencies", "title": "UNKNOWN", "to": "contract::CurrencyService.GetSupportedCurrencies", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations", "title": "UNKNOWN", "to": "contract::ProductCatalogService.ListProducts", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/handlers.go:frontendServer.placeOrderHandler", "title": "UNKNOWN", "to": "frontend/rpc.go:frontendServer.getRecommendations", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/handlers.go:frontendServer.placeOrderHandler", "title": "UNKNOWN", "to": "frontend/rpc.go:frontendServer.getCurrencies", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "frontend/handlers.go:frontendServer.placeOrderHandler", "title": "UNKNOWN", "to": "contract::CheckoutService.PlaceOrder", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.convertCurrency", "title": "UNKNOWN", "to": "contract::CurrencyService.Convert", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::CurrencyService", "title": "UNKNOWN", "to": "contract::CurrencyService.GetSupportedCurrencies", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::CurrencyService", "title": "UNKNOWN", "to": "contract::CurrencyService.GetSupportedCurrencies", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::CurrencyService", "title": "UNKNOWN", "to": "contract::CurrencyService.GetSupportedCurrencies", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::CurrencyService", "title": "UNKNOWN", "to": "contract::CurrencyService.Convert", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::CurrencyService", "title": "UNKNOWN", "to": "contract::CurrencyService.Convert", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "contract::CurrencyService", "title": "UNKNOWN", "to": "contract::CurrencyService.Convert", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.prepOrderItems", "title": "UNKNOWN", "to": "checkoutservice/main.go:checkoutService.convertCurrency", "width": 1}, {"arrows": "to", "color": "#666666", "dashes": false, "from": "checkoutservice/main.go:checkoutService.prepOrderItems", "title": "UNKNOWN", "to": "contract::ProductCatalogService.GetProduct", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.3,
+            "damping": 0.09,
+            "gravitationalConstant": -8000,
+            "springConstant": 0.001,
+            "springLength": 200
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

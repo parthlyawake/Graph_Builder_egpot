@@ -35,3 +35,10 @@ ckg_fault_*/
 tmp/
 *.graphml
 *.gexf
+
+# Documents, presentations, and export files
+*.docx
+*.pdf
+generate_pptx.py
+generate_results_doc.py
+

@@ -1,0 +1,191 @@
+{
+  "timestamp": "2026-10-02 13:48:49",
+  "repo": "pallets/flask (SWE-bench-lite style Python repo)",
+  "repo_path": "C:\\Users\\krish\\Downloads\\SCKG_Build-v2\\SCKG_Build-v2\\repos\\flask\\src\\flask",
+  "construction": {
+    "loc": 9513,
+    "nodes": 2657,
+    "edges": 6255,
+    "build_s": 0.2189,
+    "s_per_kloc": 0.023,
+    "layer_counts": {
+      "Lsyn": 0,
+      "Ldep": 0,
+      "Lflow": 0,
+      "Lsem": 0,
+      "Lcontract": 0
+    }
+  },
+  "call_graph": {
+    "total_call_sites": 0,
+    "resolved_intra_project": 0,
+    "resolution_rate": 0.0,
+    "precision_deterministic": 1.0,
+    "pycg_reference_precision": 0.992,
+    "pycg_reference_recall": 0.699
+  },
+  "localization": {
+    "file_accuracy": 0.6,
+    "locagent_reference_file_accuracy": 0.927,
+    "queries": [
+      {
+        "id": "F01",
+        "desc": "Where is the Flask application factory `create_app",
+        "anchor_kw": "create_app",
+        "candidates": 2,
+        "file_hit": false,
+        "sym_hit": true
+      },
+      {
+        "id": "F02",
+        "desc": "Which function handles URL routing and dispatches ",
+        "anchor_kw": "dispatch_request",
+        "candidates": 3,
+        "file_hit": true,
+        "sym_hit": true
+      },
+      {
+        "id": "F03",
+        "desc": "Where is the `g` application context proxy defined",
+        "anchor_kw": "app_ctx_err_msg",
+        "candidates": 0,
+        "file_hit": false,
+        "sym_hit": true
+      },
+      {
+        "id": "F04",
+        "desc": "Where is the `Blueprint` class defined?",
+        "anchor_kw": "Blueprint",
+        "candidates": 12,
+        "file_hit": true,
+        "sym_hit": true
+      },
+      {
+        "id": "F05",
+        "desc": "Which function converts a Python object to a JSON ",
+        "anchor_kw": "jsonify",
+        "candidates": 2,
+        "file_hit": true,
+        "sym_hit": true
+      },
+      {
+        "id": "F06",
+        "desc": "Where is request context handling for `before_requ",
+        "anchor_kw": "before_request",
+        "candidates": 1,
+        "file_hit": false,
+        "sym_hit": true
+      },
+      {
+        "id": "F07",
+        "desc": "Where are HTTP error exceptions like `NotFound` de",
+        "anchor_kw": "NotFound",
+        "candidates": 2,
+        "file_hit": false,
+        "sym_hit": true
+      },
+      {
+        "id": "F08",
+        "desc": "Where is Jinja2 template rendering integration?",
+        "anchor_kw": "render_template",
+        "candidates": 2,
+        "file_hit": true,
+        "sym_hit": true
+      },
+      {
+        "id": "F09",
+        "desc": "Which class manages the application configuration?",
+        "anchor_kw": "Config",
+        "candidates": 2,
+        "file_hit": true,
+        "sym_hit": true
+      },
+      {
+        "id": "F10",
+        "desc": "Where is the `url_for` function for URL building?",
+        "anchor_kw": "url_for",
+        "candidates": 3,
+        "file_hit": true,
+        "sym_hit": true
+      }
+    ]
+  },
+  "retrieval": {
+    "context_recall_at_10": 0.9,
+    "repobench_bm25_reference_range": "0.40-0.60",
+    "queries": [
+      {
+        "id": "F01",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F02",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F03",
+        "recall": 0.0,
+        "found": false
+      },
+      {
+        "id": "F04",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F05",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F06",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F07",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F08",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F09",
+        "recall": 1.0,
+        "found": true
+      },
+      {
+        "id": "F10",
+        "recall": 1.0,
+        "found": true
+      }
+    ]
+  },
+  "feature_comparison": {
+    "multi_repo": {
+      "graft_ckg": true,
+      "locagent": false,
+      "repograph": false
+    },
+    "polyglot": {
+      "graft_ckg": true,
+      "locagent": false,
+      "repograph": "partial"
+    },
+    "grpc_contracts": {
+      "graft_ckg": true,
+      "locagent": false,
+      "repograph": false
+    },
+    "incremental_build": {
+      "graft_ckg": true,
+      "locagent": false,
+      "repograph": false
+    }
+  }
+}

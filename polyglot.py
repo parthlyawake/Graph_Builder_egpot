@@ -107,6 +107,34 @@ class TreeSitterExtractor:
         cleaned = re.sub(r"(?m)^\s*//\s?", "", cleaned)
         return cleaned.strip() or None
 
+    @staticmethod
+    def _extract_java_annotations(node, source):
+        """Extract Java annotations from node or its modifiers child.
+        Returns dict: {AnnotationName: string_value or ""}
+        """
+        annotations = {}
+        modifiers = next((c for c in node.named_children if c.type == "modifiers"), None)
+        target_nodes = [node]
+        if modifiers:
+            target_nodes.extend(modifiers.named_children)
+        for c in target_nodes:
+            if c.type in ("annotation", "marker_annotation"):
+                name_node = c.child_by_field_name("name") or (c.named_children[0] if c.named_children else None)
+                if not name_node:
+                    continue
+                ann_name = TreeSitterExtractor._text(name_node, source).lstrip("@")
+                ann_value = ""
+                args_node = c.child_by_field_name("arguments") or next(
+                    (ch for ch in c.named_children if ch.type == "annotation_argument_list"), None
+                )
+                if args_node:
+                    raw_args = TreeSitterExtractor._text(args_node, source)
+                    str_match = re.search(r'["\']([^"\']+)["\']', raw_args)
+                    if str_match:
+                        ann_value = str_match.group(1)
+                annotations[ann_name] = ann_value
+        return annotations
+
     def extract(self, builder, rel_path, full_path):
         with open(full_path, "rb") as source_file:
             source = source_file.read()
@@ -187,6 +215,12 @@ class TreeSitterExtractor:
                 builder.add_ckg_node(symbol, "module", "Ldep", specifier)
             builder.add_ckg_edge(file_id, symbol, "IMPORTS", "Ldep")
 
+        # Java: import [static] package.Class; / import package.*;
+        if self.is_java or rel_path.endswith(".java"):
+            for imp in re.findall(r"(?m)^\s*import\s+(?:static\s+)?([a-zA-Z0-9_.]+)(?:\.\*)?\s*;", text):
+                simple_name = imp.rsplit(".", 1)[-1]
+                self._add_import(builder, rel_path, file_id, simple_name, imp)
+
     @staticmethod
     def _add_import(builder, rel_path, file_id, alias, target):
         builder.imports_by_file[rel_path][alias] = target
@@ -211,12 +245,24 @@ class TreeSitterExtractor:
                     builder.docstrings[class_id] = docstring
                     builder.graph.nodes[class_id]["docstring"] = docstring
                 builder.add_ckg_edge(builder.get_current_scope_id(), class_id, "CONTAINS", "Lsyn")
-                heritage = next((c for c in node.named_children if c.type == "class_heritage"), None)
+                
+                # Java Spring route prefix & Feign client handling
+                old_prefix = getattr(builder, "_current_route_prefix", "")
+                if self.is_java:
+                    ann = self._extract_java_annotations(node, source)
+                    if "RequestMapping" in ann:
+                        builder._current_route_prefix = ann["RequestMapping"].rstrip("/")
+                    if "FeignClient" in ann and ann["FeignClient"]:
+                        builder.grpc_client_vars.setdefault(builder.current_file, {})[name] = ann["FeignClient"]
+
+                heritage = next((c for c in node.named_children if c.type in ("class_heritage", "superclass", "super_interfaces")), None)
                 if heritage:
-                    base = re.sub(r"^extends\s+", "", self._text(heritage, source)).strip()
+                    base = re.sub(r"^(?:extends|implements)\s+", "", self._text(heritage, source)).strip()
                     if base:
                         builder.class_base_records.append((class_id, base, builder.current_file, builder.scope_depth))
                 self._with_scope(builder, name, lambda: self._visit_children(builder, node, source))
+                if self.is_java:
+                    builder._current_route_prefix = old_prefix
                 return
 
         if node.type == "type_declaration" and self.is_go:
@@ -236,6 +282,10 @@ class TreeSitterExtractor:
                     builder.docstrings[node_id] = docstring
                     builder.graph.nodes[node_id]["docstring"] = docstring
                 builder.add_ckg_edge(builder.get_current_scope_id(), node_id, "CONTAINS", "Lsyn")
+                if self.is_java and node.type == "interface_declaration":
+                    ann = self._extract_java_annotations(node, source)
+                    if "FeignClient" in ann and ann["FeignClient"]:
+                        builder.grpc_client_vars.setdefault(builder.current_file, {})[name] = ann["FeignClient"]
                 self._with_scope(builder, name, lambda: self._visit_children(builder, node, source))
                 return
 
@@ -278,6 +328,52 @@ class TreeSitterExtractor:
                     builder.calls_to_resolve.append(
                         (scope_id, target_name, builder.scope_depth, builder.current_file)
                     )
+
+        # Java constructor call: new OrderResponse(...)
+        if node.type == "object_creation_expression" and builder.current_scope:
+            type_node = node.child_by_field_name("type")
+            if type_node:
+                target_name = self._text(type_node, source).rsplit(".", 1)[-1]
+                builder.calls_to_resolve.append(
+                    (builder.get_current_scope_id(), target_name, builder.scope_depth, builder.current_file)
+                )
+
+        # Java method invocation: object.method(...) or method(...)
+        if node.type == "method_invocation":
+            name_node = node.child_by_field_name("name")
+            object_node = node.child_by_field_name("object")
+            arguments = node.child_by_field_name("arguments")
+            if name_node and builder.current_scope:
+                m_name = self._text(name_node, source)
+                obj_text = self._text(object_node, source) if object_node else ""
+                scope_id = builder.get_current_scope_id()
+
+                # Kafka / event publishing: kafkaTemplate.send("topic", ...)
+                if m_name == "send" and ("kafka" in obj_text.lower() or "producer" in obj_text.lower()):
+                    if arguments and arguments.named_children:
+                        first_arg = self._text(arguments.named_children[0], source).strip("'\"")
+                        if first_arg:
+                            topic_id = f"topic::{first_arg}"
+                            if not builder.graph.has_node(topic_id):
+                                builder.add_ckg_node(topic_id, "topic_contract", "Lcontract", first_arg)
+                            builder.add_ckg_edge(scope_id, topic_id, "PRODUCES_EVENT", "Lcontract")
+
+                # Java HTTP calls: restTemplate.getForObject(...) or webClient.get().uri(...)
+                if "resttemplate" in obj_text.lower() or "webclient" in obj_text.lower():
+                    if arguments and arguments.named_children:
+                        arg0_text = self._text(arguments.named_children[0], source)
+                        p_match = re.search(r'["\'](?:https?://[^/"\']+)?(/[^"\']+)["\']', arg0_text)
+                        if p_match:
+                            h_method = "POST" if "post" in m_name.lower() else "GET"
+                            builder.http_calls_to_resolve.append((scope_id, p_match.group(1), h_method, builder.current_file))
+
+                # Feign client method call: inventoryClient.checkStock(...)
+                if obj_text and obj_text in builder.grpc_client_vars.get(builder.current_file, {}):
+                    target_svc = builder.grpc_client_vars[builder.current_file][obj_text]
+                    builder.grpc_calls_to_resolve.append((scope_id, target_svc, m_name, builder.current_file))
+
+                callee = f"{obj_text}.{m_name}" if obj_text else m_name
+                builder.calls_to_resolve.append((scope_id, callee, builder.scope_depth, builder.current_file))
 
         if node.type == "call_expression":
             function = node.child_by_field_name("function")
@@ -625,6 +721,42 @@ class TreeSitterExtractor:
             builder.docstrings[function_id] = docstring
             builder.graph.nodes[function_id]["docstring"] = docstring
         builder.add_ckg_edge(builder.get_current_scope_id(), function_id, "CONTAINS", "Lsyn")
+
+        # Java Spring REST endpoints and Event Listeners
+        if self.is_java:
+            ann = self._extract_java_annotations(node, source)
+            http_verbs = {
+                "GetMapping": "GET",
+                "PostMapping": "POST",
+                "PutMapping": "PUT",
+                "DeleteMapping": "DELETE",
+                "PatchMapping": "PATCH",
+                "RequestMapping": "GET",
+            }
+            for ann_name, verb in http_verbs.items():
+                if ann_name in ann:
+                    m_path = ann[ann_name]
+                    prefix = getattr(builder, "_current_route_prefix", "")
+                    if not m_path.startswith("/") and prefix and m_path:
+                        m_path = "/" + m_path
+                    full_path = (prefix + m_path) if (prefix or m_path) else "/"
+                    if not full_path.startswith("/"):
+                        full_path = "/" + full_path
+                    builder.http_endpoints.setdefault((verb, full_path), []).append(function_id)
+                    contract_id = f"contract::HTTP.{verb}.{full_path}"
+                    if not builder.graph.has_node(contract_id):
+                        builder.add_ckg_node(contract_id, "endpoint", "Lcontract", f"{verb} {full_path}")
+                    builder.add_ckg_edge(function_id, contract_id, "IMPLEMENTS", "Lcontract")
+                    builder.add_ckg_edge(contract_id, function_id, "PRODUCES", "Lcontract")
+                    break
+
+            if "KafkaListener" in ann or "RabbitListener" in ann:
+                topic_name = ann.get("KafkaListener") or ann.get("RabbitListener") or "event-stream"
+                topic_id = f"topic::{topic_name}"
+                if not builder.graph.has_node(topic_id):
+                    builder.add_ckg_node(topic_id, "topic_contract", "Lcontract", topic_name)
+                builder.add_ckg_edge(function_id, topic_id, "CONSUMES_EVENT", "Lcontract")
+
         builder.var_defs.setdefault(function_id, {})
         parameters = node.child_by_field_name("parameters") or node.child_by_field_name("parameter")
         if parameters:
