@@ -1,1 +1,12 @@
+All 8 abstract methods defined in "GraphProvider" are fully implemented in "SCKGGraphProvider":
 
+
+Format: | Function | Purpose | Input | Output |
+| `resolve_symptom` | Maps runtime errors/stack traces to graph nodes | `TelemetryEvent` | `list[CodeNode]` |
+| `backward_traverse` | Walks dependencies backward to rank root causes | `CodeNode`, `TraversalPolicy` | `list[CandidateRootCause]` |
+| `forward_traverse` | Computes downstream blast radius for agent context | `CodeNode`, `TraversalPolicy` | `InducedSubgraph` |
+| `get_contract_between` | Finds shared APIs/topics between two services | `service_a: str`, `service_b: str` | `list[CodeNode]` |
+| `explain_path` | Generates causal explanation chain between two nodes | `node_a: CodeNode`, `node_b: CodeNode` | `CausalPath` |
+| `find_node_by_name` | Discovers nodes by symbol name with fuzzy fallback | `name: str`, `file_path: str?` | `list[CodeNode]` |
+| `get_node_detail` | Retrieves complete code snippet, AST lines & metadata | `node_id: str` | `CodeNode` |
+| `version` | Logs engine version for reproducibility | None | `str` (`"GRAFT-CKG/1.0.0"`) |
