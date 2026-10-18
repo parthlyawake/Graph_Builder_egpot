@@ -10,3 +10,71 @@ Format: | Function | Purpose | Input | Output |
 | `find_node_by_name` | Discovers nodes by symbol name with fuzzy fallback | `name: str`, `file_path: str?` | `list[CodeNode]` |
 | `get_node_detail` | Retrieves complete code snippet, AST lines & metadata | `node_id: str` | `CodeNode` |
 | `version` | Logs engine version for reproducibility | None | `str` (`"GRAFT-CKG/1.0.0"`) |
+
+
+E.g Use Cases (Note: These are generated):
+
+from contracts.graph_types import TelemetryEvent, TraversalPolicy
+from sckg_provider import SCKGGraphProvider
+
+# 1. Initialize the Provider (Builds the multi-repo graph)
+provider = SCKGGraphProvider("workspace.yaml")  # or directory path
+
+# 2. version() -> str
+engine_ver = provider.version()
+print(f"Engine Version: {engine_ver}")
+
+# 3. resolve_symptom(symptom: TelemetryEvent) -> list[CodeNode]
+event = TelemetryEvent(
+    event_id="evt-404",
+    service_name="order_service",
+    error_type="gRPC_UNAVAILABLE",
+    message="RPC timeout calling PaymentService.Charge",
+    stack_trace="order_service/service.py:process_order:52",
+)
+symptom_nodes = provider.resolve_symptom(event)
+primary_symptom = symptom_nodes[0]
+print(
+    f"Symptom mapped to: {primary_symptom.short_label()} in {primary_symptom.file_path}"
+)
+
+# 4. backward_traverse(node: CodeNode, policy: TraversalPolicy) -> list[CandidateRootCause]
+policy = TraversalPolicy(max_depth=3, max_nodes=20)
+candidates = provider.backward_traverse(primary_symptom, policy=policy)
+for c in candidates:
+    print(
+        f"Rank #{c.rank}: {c.node.short_label()} (Confidence: {c.confidence:.2f})"
+    )
+    print(f"  Evidence: {c.evidence}")
+
+# 5. forward_traverse(node: CodeNode, policy: TraversalPolicy) -> InducedSubgraph
+blast_subgraph = provider.forward_traverse(primary_symptom, policy=policy)
+print(f"Affected Services: {blast_subgraph.services_affected}")
+print(f"Estimated Tokens: {blast_subgraph.estimated_tokens()}")
+prompt_context = blast_subgraph.to_prompt_context(strategy="full_source")
+
+# 6. get_contract_between(service_a: str, service_b: str) -> list[CodeNode]
+shared_contracts = provider.get_contract_between(
+    "order_service", "payment_service"
+)
+for contract in shared_contracts:
+    print(
+        f"Shared Contract: {contract.name} (Type: {contract.node_type.value})"
+    )
+
+# 7. explain_path(node_a: CodeNode, node_b: CodeNode) -> CausalPath
+causal_chain = provider.explain_path(candidates[0].node, primary_symptom)
+print("Causal Propagation Narrative:")
+print(causal_chain.to_narrative())
+
+# 8. find_node_by_name(name: str, file_path: str | None = None) -> list[CodeNode]
+matching_nodes = provider.find_node_by_name(
+    "process_order", file_path="order_service/service.py"
+)
+for node in matching_nodes:
+    print(f"Found node: {node.node_id} (Type: {node.node_type.value})")
+
+# 9. get_node_detail(node_id: str) -> CodeNode
+node_detail = provider.get_node_detail(primary_symptom.node_id)
+print(f"Node Signature: {node_detail.signature}")
+print(f"Source Snippet:\n{node_detail.source_snippet}")
