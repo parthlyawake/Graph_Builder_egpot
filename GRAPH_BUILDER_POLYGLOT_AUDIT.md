@@ -6,6 +6,8 @@
 
 **Scope:** graph construction, source nodes, containment, calls, and contracts. **No retrieval, ranking, or runtime execution was tested.**
 
+This is the pre-fix audit snapshot. See [GRAPH_BUILDER_FIX_VALIDATION.md](GRAPH_BUILDER_FIX_VALIDATION.md) for the corrected graph builds and remaining limits.
+
 ## Verdict
 
 The builder completed on all eight entries in the [polyglot repository list](https://github.com/Vikas-Personal-Research-Org/polygot-repo-list). Across a seeded, language-stratified sample, **24/24 source declarations had matching function nodes and 24/24 had a `CONTAINS` edge**. Those results establish basic node creation for the sampled code; they do not establish that every dependency edge is correct. Manual edge checks found a false Java self-call, a missed Go method binding, duplicate HTTP contract nodes, and missing service links for dynamic URLs. DeathStarBench contains C++/Thrift application code that this builder does not parse, and the listed Sock Shop repository contains deployment assets rather than its service implementations.

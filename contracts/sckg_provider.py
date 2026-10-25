@@ -126,6 +126,8 @@ class SCKGGraphProvider(GraphProvider):
             return NodeType.TOPIC_CONTRACT
         if t in ("http_endpoint", "endpoint") or "endpoint::" in node_id:
             return NodeType.ENDPOINT
+        if t == "http_callsite":
+            return NodeType.HTTP_CALLSITE
         if t in ("service_contract", "rpc_contract", "contract") or "contract::" in node_id:
             return NodeType.CONTRACT
         if t == "commit":
@@ -197,6 +199,10 @@ class SCKGGraphProvider(GraphProvider):
             return EdgeType.CONSUMES_EVENT
         if r == "HTTP_CALLS":
             return EdgeType.HTTP_CALLS
+        if r == "HTTP_REQUEST":
+            return EdgeType.HTTP_REQUEST
+        if r == "POSSIBLE_HTTP_TARGET":
+            return EdgeType.POSSIBLE_HTTP_TARGET
         if r in ("DEFINES", "DEFINES_RPC"):
             return EdgeType.DEFINES
         if r == "IMPORTS":

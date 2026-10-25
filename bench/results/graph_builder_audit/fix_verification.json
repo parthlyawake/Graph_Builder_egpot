@@ -1,0 +1,90 @@
+{
+  "systems": {
+    "microservices-demo": {
+      "source_files": 47,
+      "nodes": 2156,
+      "edges": 5743,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 0,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 0
+    },
+    "opentelemetry-demo": {
+      "source_files": 207,
+      "nodes": 5622,
+      "edges": 16638,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 0,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 17
+    },
+    "retail-store-sample-app": {
+      "source_files": 274,
+      "nodes": 5588,
+      "edges": 13327,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 44,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 0
+    },
+    "robot-shop": {
+      "source_files": 22,
+      "nodes": 766,
+      "edges": 1625,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 9,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 0
+    },
+    "bookinfo": {
+      "source_files": 9,
+      "nodes": 347,
+      "edges": 650,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 0,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 0
+    },
+    "train-ticket": {
+      "source_files": 716,
+      "nodes": 34040,
+      "edges": 150385,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 262,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 0
+    },
+    "DeathStarBench": {
+      "source_files": 131,
+      "nodes": 10352,
+      "edges": 37380,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 0,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 7
+    },
+    "sock-shop": {
+      "source_files": 4,
+      "nodes": 31,
+      "edges": 64,
+      "build_warnings": 0,
+      "duplicate_http_names_before": 0,
+      "duplicate_http_names_after": 0,
+      "dynamic_http_callsites_after": 0
+    }
+  },
+  "checks": {
+    "java_system_getenv_external": true,
+    "java_getenv_no_false_self_call": true,
+    "go_catalog_reindex_resolved": true,
+    "csharp_ping_declared": true,
+    "go_anonymous_blob_absent": true,
+    "otel_ship_order_callsite": true,
+    "deathstar_movie_write_callsite": true
+  },
+  "sample": {
+    "declarations": 24,
+    "matching_nodes": 24,
+    "containment_edges": 24
+  }
+}

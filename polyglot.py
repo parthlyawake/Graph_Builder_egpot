@@ -626,6 +626,22 @@ class TreeSitterExtractor:
                 builder.docstrings[type_id] = docstring
                 builder.graph.nodes[type_id]["docstring"] = docstring
             builder.add_ckg_edge(builder.get_current_scope_id(), type_id, "CONTAINS", "Lsyn")
+            if body and body.type == "struct_type":
+                fields = builder.go_struct_fields.setdefault(type_id, {})
+                for field_list in body.named_children:
+                    for field in field_list.named_children:
+                        if field.type != "field_declaration":
+                            continue
+                        declared_type = field.child_by_field_name("type")
+                        if not declared_type:
+                            continue
+                        type_text = self._text(declared_type, source)
+                        type_match = re.search(r"([A-Za-z_]\w*)\s*$", type_text)
+                        if not type_match:
+                            continue
+                        for name_part in field.named_children:
+                            if name_part.type == "field_identifier":
+                                fields[self._text(name_part, source)] = type_match.group(1)
 
     @staticmethod
     def _go_receiver_type(node, source):
@@ -641,6 +657,9 @@ class TreeSitterExtractor:
 
     def _go_call(self, builder, node, raw_callee, source):
         """Handle Go call expressions, including gRPC client and server patterns."""
+        function_node = node.child_by_field_name("function")
+        if function_node and function_node.type == "func_literal":
+            return  # An invoked closure is not an external function named by its source text.
         scope_id = builder.get_current_scope_id()
         callee = raw_callee
 
@@ -689,6 +708,27 @@ class TreeSitterExtractor:
                 if path_match:
                     path = path_match.group(1)
                     builder.http_calls_to_resolve.append((scope_id, path, method, builder.current_file))
+
+        # http.NewRequestWithContext(ctx, "POST", base+"/path", ...)
+        # retains the visible path while keeping the host unresolved.
+        if raw_callee in {"http.NewRequestWithContext", "http.NewRequest"}:
+            method_index, url_index = (1, 2) if raw_callee.endswith("WithContext") else (0, 1)
+            method_arg = self._call_argument_text(node, source, index=method_index)
+            url_arg = self._call_argument_text(node, source, index=url_index)
+            method = method_arg.strip("'\"`").upper() if method_arg else ""
+            if method in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"} and url_arg:
+                literal = re.fullmatch(r"""["'`](?:https?://[^/"'`]+)?(/[^"'`]+)["'`]""", url_arg)
+                if literal:
+                    builder.http_calls_to_resolve.append(
+                        (scope_id, literal.group(1), method, builder.current_file)
+                    )
+                else:
+                    suffix = re.search(r"""\+\s*["'`](/[^"'`]+)["'`]\s*$""", url_arg)
+                    if suffix:
+                        builder.dynamic_http_calls.append(
+                            (scope_id, method, suffix.group(1), builder.current_file,
+                             self._line(node), node.start_point.column)
+                        )
 
         builder.calls_to_resolve.append(
             (scope_id, callee, builder.scope_depth, builder.current_file)
@@ -763,6 +803,14 @@ class TreeSitterExtractor:
             builder.docstrings[function_id] = docstring
             builder.graph.nodes[function_id]["docstring"] = docstring
         builder.add_ckg_edge(builder.get_current_scope_id(), function_id, "CONTAINS", "Lsyn")
+        if builder.graph.nodes.get(builder.get_current_scope_id(), {}).get("type") == "interface":
+            builder.add_ckg_edge(builder.get_current_scope_id(), function_id, "DECLARES", "Lcontract")
+        if receiver and self.is_go:
+            receiver_node = node.child_by_field_name("receiver")
+            receiver_text = self._text(receiver_node, source) if receiver_node else ""
+            receiver_match = re.match(r"\(\s*([A-Za-z_]\w*)\s+", receiver_text)
+            if receiver_match:
+                builder.var_types.setdefault(function_id, {})[receiver_match.group(1)] = receiver
 
         # Java Spring REST endpoints and Event Listeners
         if self.is_java:
@@ -785,11 +833,6 @@ class TreeSitterExtractor:
                     if not full_path.startswith("/"):
                         full_path = "/" + full_path
                     builder.http_endpoints.setdefault((verb, full_path), []).append(function_id)
-                    contract_id = f"contract::HTTP.{verb}.{full_path}"
-                    if not builder.graph.has_node(contract_id):
-                        builder.add_ckg_node(contract_id, "endpoint", "Lcontract", f"{verb} {full_path}")
-                    builder.add_ckg_edge(function_id, contract_id, "IMPLEMENTS", "Lcontract")
-                    builder.add_ckg_edge(contract_id, function_id, "PRODUCES", "Lcontract")
                     break
 
             if "KafkaListener" in ann or "RabbitListener" in ann:

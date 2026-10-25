@@ -4,6 +4,8 @@ A polyglot, multi-repository Source Code Knowledge Graph (SCKG) construction eng
 
 Run the [local graph viewer](TEAMMATE_GRAPH_GUIDE.md) on your repository, read the [contract graph guide](CONTRACTS.md), or review the [hybrid retrieval experiments](HYBRID_RETRIEVAL_EXPERIMENTS.md).
 
+For graph construction checks on eight polyglot systems, read the [baseline audit](GRAPH_BUILDER_POLYGLOT_AUDIT.md) and [fix validation](GRAPH_BUILDER_FIX_VALIDATION.md).
+
 ---
 
 ## Overview

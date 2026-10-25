@@ -68,11 +68,13 @@ class PolyglotSpringAndEventsTests(unittest.TestCase):
         self.assertIn(("GET", "/api/orders/{id}"), builder.http_endpoints)
 
         # 2. Verify REST contract nodes in Lcontract
-        post_contract = "contract::HTTP.POST./api/orders/create"
-        get_contract = "contract::HTTP.GET./api/orders/{id}"
+        post_contract = "http::POST:/api/orders/create"
+        get_contract = "http::GET:/api/orders/{id}"
         self.assertTrue(graph.has_node(post_contract))
         self.assertTrue(graph.has_node(get_contract))
         self.assertEqual(graph.nodes[post_contract].get("layer"), "Lcontract")
+        self.assertEqual(graph.nodes[post_contract].get("type"), "http_endpoint")
+        self.assertFalse(any(n.startswith("contract::HTTP.") for n in graph.nodes))
 
         # 3. Verify IMPLEMENTS and PRODUCES edges for REST endpoints
         implements_edges = [

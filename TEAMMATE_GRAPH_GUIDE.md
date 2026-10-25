@@ -31,12 +31,13 @@ The graph shows all indexed nodes. Search for a file, interface, endpoint, or sy
 - TypeScript `interface` declarations are first-class `interface` nodes. Method/property signatures appear as child nodes joined by `DECLARES` edges.
 - An explicit TypeScript `class ... implements Interface` or `interface ... extends Interface` creates an `IMPLEMENTS` or `EXTENDS` edge in the contract layer when the named interface resolves within the indexed repo. Structural compatibility is **not** guessed.
 - A statically registered HTTP method/path creates an `http_endpoint` contract node. A handler points to it with `IMPLEMENTS`; a literal client call points to it with `CONSUMES`. The direct `HTTP_CALLS` edge is kept for dependency traversal.
+- A dynamic-host Python or Go HTTP call with a literal path suffix creates an `http_callsite`. `POSSIBLE_HTTP_TARGET` marks an exact path/method candidate without asserting that the host reaches that service.
 - Python framework decorators, Express route registrations, Go `http.HandleFunc`, and Next-style `app/api/.../route.ts` exports are covered. Existing protobuf/gRPC service/RPC contract nodes remain supported.
 
 Use the **Contracts** edge toggle in the viewer to see or hide these relationships. Search `POST /api/...` or an interface name to jump to the contract node.
 
 ## Important limits
 
-Only statically visible route paths and literal client URLs are connected. Dynamic URL construction, aliases, framework rewrites, inferred TypeScript structural conformance, and undocumented runtime registrations remain unresolved. A missing edge means “not proven by this parser,” not “no dependency.” Rebuild after changing source files; the local viewer is a snapshot taken at startup.
+Only statically visible route paths and literal client URLs receive confirmed links. Dynamic-host callsites may show path candidates, while host resolution, aliases, framework rewrites, inferred TypeScript structural conformance, and undocumented runtime registrations remain unresolved. A missing edge means “not proven by this parser,” not “no dependency.” Rebuild after changing source files; the local viewer is a snapshot taken at startup.
 
 The public Vercel demo is a prebuilt Carmein snapshot. The command above is the supported way to try another teammate's repository without deploying or sharing its source.

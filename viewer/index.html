@@ -74,7 +74,7 @@ main{padding:15px 20px 24px;max-width:2000px;margin:0 auto}
 <script>
 const $=id=>document.getElementById(id), canvas=$('graph'), c=canvas.getContext('2d'), mini=$('minimap'), mc=mini.getContext('2d');
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-const color=n=>n.type==='file'?'#ffc784':n.type==='function'||n.type==='method'?'#70dbcf':['interface','http_endpoint','service_contract','rpc_contract'].includes(n.type)?'#fa9fba':n.type==='class'||n.type==='type'?'#c8a6f5':'#86baff';
+const color=n=>n.type==='file'?'#ffc784':n.type==='function'||n.type==='method'?'#70dbcf':['interface','http_endpoint','http_callsite','service_contract','rpc_contract'].includes(n.type)?'#fa9fba':n.type==='class'||n.type==='type'?'#c8a6f5':'#86baff';
 let graph, nodes=[], edges=[], fileEdges=[], byId=new Map(), positions=new Map(), mapPositions=new Map(), groups=[], adjacency=new Map();
 let methods=[], method=null, selected=null, hovered=null, results=new Set(), resultFiles=new Set();
 let activeLayers=new Set(['Lsyn','Ldep','Lflow','Lcontract']), neighborhood=0, neighborhoodSet=null;

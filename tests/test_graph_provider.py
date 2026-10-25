@@ -47,6 +47,12 @@ def test_interface_compliance(polyglot_provider):
     assert "GRAFT-CKG" in polyglot_provider.version()
 
 
+def test_dynamic_http_callsite_contract_types(polyglot_provider):
+    assert polyglot_provider._map_node_type("http_callsite", "httpcall::example") == NodeType.HTTP_CALLSITE
+    assert polyglot_provider._map_edge_type("HTTP_REQUEST") == EdgeType.HTTP_REQUEST
+    assert polyglot_provider._map_edge_type("POSSIBLE_HTTP_TARGET") == EdgeType.POSSIBLE_HTTP_TARGET
+
+
 def test_find_node_by_name(polyglot_provider):
     """Test lookup of nodes by name with and without file paths."""
     matches = polyglot_provider.find_node_by_name("ShippingService")

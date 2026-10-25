@@ -68,6 +68,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.calls_to_resolve = []  # (caller_id, callee_name, scope_depth, id_ctx)
         self.http_endpoints = {}    # (HTTP method, literal path) -> [handler node IDs]
         self.http_calls_to_resolve = []  # (caller_id, literal path, method, id_ctx)
+        self.dynamic_http_calls = []  # (caller_id, method, path suffix, file, line, column)
         self.imports_by_file = {}   # file_rel_path -> {alias: target_module_or_symbol}
         self.module_to_file = {}    # dotted Python module -> repository-relative path
         self.ts_path_aliases = []   # (pattern, target templates) from tsconfig.json
@@ -94,6 +95,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.recorded_attr_calls = []   # (caller_id, var, method, file) persistent record
         self.unresolved_contract_calls = []  # (caller_id, service, method, id_ctx)
         self.go_type_vars = {}          # file -> {var_name: type_name}
+        self.go_struct_fields = {}      # Go type node -> {field_name: declared_type}
         self.grpc_server_registrations = []  # (service, impl_arg, file, scope_id)
         self.grpc_servicer_records = [] # (class_id, service_name, file)
         self.js_add_service_records = []# (service, handler_map, file, scope_id)
@@ -429,6 +431,7 @@ class CKGBuilder(ast.NodeVisitor):
         self._resolve_interface_contracts()
         self._resolve_dependency_layer()
         self._build_http_contracts()
+        self._build_dynamic_http_calls()
         self._resolve_http_calls()
         self._resolve_contract_layer()
 
@@ -484,11 +487,13 @@ class CKGBuilder(ast.NodeVisitor):
             self.file_symbols.pop(norm, None)
             self.grpc_client_vars.pop(norm, None)
             self.go_type_vars.pop(norm, None)
+            for node_id in nodes_to_remove:
+                self.go_struct_fields.pop(node_id, None)
 
         edges_to_remove = []
         for u, v, k, d in list(self.graph.edges(keys=True, data=True)):
             rel = d.get("relation")
-            if rel in {"CALLS", "POLYMORPHIC_CALL", "EXTENDS", "HTTP_CALLS", "IMPLEMENTS", "CONSUMES", "SEMANTIC_SIMILAR"}:
+            if rel in {"CALLS", "POLYMORPHIC_CALL", "EXTENDS", "HTTP_CALLS", "IMPLEMENTS", "PRODUCES", "CONSUMES", "SEMANTIC_SIMILAR"}:
                 edges_to_remove.append((u, v, k))
         for u, v, k in edges_to_remove:
             if self.graph.has_edge(u, v, key=k):
@@ -496,6 +501,7 @@ class CKGBuilder(ast.NodeVisitor):
 
         self.calls_to_resolve = []
         self.http_calls_to_resolve = []
+        self.dynamic_http_calls = []
         self.grpc_calls_to_resolve = []
         self.class_base_records = []
         self.interface_implementation_records = []
@@ -523,6 +529,7 @@ class CKGBuilder(ast.NodeVisitor):
         self._resolve_interface_contracts()
         self._resolve_dependency_layer()
         self._build_http_contracts()
+        self._build_dynamic_http_calls()
         self._resolve_http_calls()
         self._resolve_contract_layer()
         self._build_semantic_layer()
@@ -712,8 +719,8 @@ class CKGBuilder(ast.NodeVisitor):
         callee_name = self._node_to_name(node.func)
         if callee_name and self.current_scope:
             caller_id = self.get_current_scope_id()
-            # Python requests HTTP client call: requests.get/post/put/delete/patch("...")
-            if callee_name.startswith("requests.") and callee_name.split(".")[-1] in ("get", "post", "put", "delete", "patch"):
+            # Python requests/session HTTP client calls.
+            if callee_name.startswith(("requests.", "session.")) and callee_name.split(".")[-1] in ("get", "post", "put", "delete", "patch"):
                 method = callee_name.split(".")[-1].upper()
                 if node.args:
                     paths = self._literal_strings(node.args[0])
@@ -722,6 +729,13 @@ class CKGBuilder(ast.NodeVisitor):
                         if clean_path.startswith("/"):
                             self.http_calls_to_resolve.append(
                                 (caller_id, clean_path, method, self.current_file_ctx)
+                            )
+                    else:
+                        suffix = self._static_http_path_suffix(node.args[0])
+                        if suffix:
+                            self.dynamic_http_calls.append(
+                                (caller_id, method, suffix, self.current_file_ctx,
+                                 node.lineno, node.col_offset)
                             )
             # gRPC client call candidate: <var>.<Method>(...). The stub binding
             # for <var> may appear later in the file (e.g. under __main__), so
@@ -732,6 +746,19 @@ class CKGBuilder(ast.NodeVisitor):
                 self.recorded_attr_calls.append((caller_id, var, method, self.current_file_ctx))
             self.calls_to_resolve.append((caller_id, callee_name, self.scope_depth, self.current_file_ctx))
         self.generic_visit(node)
+
+    @staticmethod
+    def _static_http_path_suffix(expression):
+        """Extract a visible path suffix without claiming the host is known."""
+        if isinstance(expression, ast.BinOp) and isinstance(expression.op, ast.Add):
+            tail = expression.right
+            if isinstance(tail, ast.Constant) and isinstance(tail.value, str) and tail.value.startswith("/"):
+                return tail.value
+        if isinstance(expression, ast.JoinedStr) and expression.values:
+            tail = expression.values[-1]
+            if isinstance(tail, ast.Constant) and isinstance(tail.value, str) and tail.value.startswith("/"):
+                return tail.value
+        return None
 
     def visit_Assign(self, node):
         # gRPC stub binding: var = pb2_grpc.<Service>Stub(channel)  (any scope,
@@ -860,7 +887,8 @@ class CKGBuilder(ast.NodeVisitor):
         The old resolver searched every same-named symbol before consulting an
         import statement. That could bind an external or ambiguous name to an
         unrelated repository function. This helper first follows Python import
-        aliases and only falls back to a globally unique local symbol.
+        aliases and only falls back to a globally unique local symbol for an
+        unqualified name. Unknown qualified receivers remain external.
         """
         imports = self.imports_by_file.get(caller_file, {})
         base, separator, remainder = spelling.partition(".")
@@ -886,6 +914,9 @@ class CKGBuilder(ast.NodeVisitor):
             # An explicitly imported external module must remain external.
             if imported_base:
                 return []
+            # A qualified call such as System.getenv must not bind to an
+            # unrelated same-named method merely because it is unique.
+            return []
 
         if not separator and not imported_base:
             same_file = [
@@ -948,6 +979,20 @@ class CKGBuilder(ast.NodeVisitor):
                         impls.append(sub_method)
                 queue.extend(self.class_subclasses.get(sub_id, []))
         return impls
+
+    def _go_field_type(self, receiver_type, field_name, caller_file):
+        """Resolve a named Go struct field only when its owner is unambiguous."""
+        candidates = [
+            node_id for node_id in self.symbols_by_name.get(receiver_type, [])
+            if self.graph.nodes.get(node_id, {}).get("type") == "class"
+        ]
+        local = [node_id for node_id in candidates
+                 if node_id.startswith(f"{self.repo_prefix}{caller_file}:")]
+        if local:
+            candidates = local
+        if len(candidates) != 1:
+            return None
+        return self.go_struct_fields.get(candidates[0], {}).get(field_name)
 
     def _compute_polymorphic_confidences(self, caller_id, candidate_ids, tau=0.2):
         """Equation (4): Softmax polymorphic dispatch confidence with temperature tau."""
@@ -1054,6 +1099,24 @@ class CKGBuilder(ast.NodeVisitor):
             self.http_contract_ids[(method, path)] = contract_id
             for handler_id in valid:
                 self.add_ckg_edge(handler_id, contract_id, "IMPLEMENTS", "Lcontract")
+                self.add_ckg_edge(contract_id, handler_id, "PRODUCES", "Lcontract")
+
+    def _build_dynamic_http_calls(self):
+        """Keep a dynamic-host callsite and label path matches as possible only."""
+        for caller_id, method, path, source_file, line, column in dict.fromkeys(self.dynamic_http_calls):
+            if caller_id not in self.graph:
+                continue
+            call_id = f"httpcall::{caller_id}:{line}:{column}:{method}:{path}"
+            self.graph.add_node(
+                call_id, id=call_id, type="http_callsite", layer="Lcontract",
+                name=f"{method} {path} (host unresolved)", file=source_file,
+                repo=self.repo_id or "", line_no=line, docstring="", code="",
+            )
+            self.add_ckg_edge(caller_id, call_id, "HTTP_REQUEST", "Lcontract")
+            for key in ((method, path), ("*", path)):
+                contract_id = self.http_contract_ids.get(key)
+                if contract_id:
+                    self.add_ckg_edge(call_id, contract_id, "POSSIBLE_HTTP_TARGET", "Lcontract")
 
     def _resolve_dependency_layer(self):
         print(f"[*] Resolving Dependency Layer (Ldep) for {len(self.calls_to_resolve)} call sites...")
@@ -1096,6 +1159,11 @@ class CKGBuilder(ast.NodeVisitor):
             # 2. Receiver-type inference for obj.method()
             if not target_ids and "." in callee_name and base_prefix not in {"self", "super()"}:
                 inferred_class = self.var_types.get(caller_id, {}).get(base_prefix)
+                if inferred_class and len(callee_name.split(".")) > 2:
+                    for field_name in callee_name.split(".")[1:-1]:
+                        inferred_class = self._go_field_type(inferred_class, field_name, caller_file)
+                        if not inferred_class:
+                            break
                 if inferred_class:
                     impls = self._find_all_implementations(inferred_class, symbol_name)
                     if impls:
@@ -1176,7 +1244,7 @@ class CKGBuilder(ast.NodeVisitor):
         print(f"[*] Dependency Layer resolved: {resolved_count} internal call bindings created.")
 
     def _resolve_http_calls(self):
-        """Connect literal frontend HTTP calls to indexed local Python handlers.
+        """Connect literal HTTP calls to indexed local handlers.
 
         This is deliberately conservative: an edge is emitted only when both
         the method and URL are static literals and match a handler in the

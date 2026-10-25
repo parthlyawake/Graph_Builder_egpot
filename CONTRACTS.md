@@ -8,8 +8,9 @@ The graph is a static index of source code, not a compiler, type checker, API va
 
 | Graph item | Plain-English meaning | Example |
 | --- | --- | --- |
-| `interface` node | A declared TypeScript or Go interface | `Store` |
+| `interface` node | A declared TypeScript, Go, Java, or C# interface | `Store` |
 | `http_endpoint` node | A registered HTTP method and path | `POST /api/orders` |
+| `http_callsite` node | A call with a visible path but unresolved host | `POST /orders (host unresolved)` |
 | `service_contract` node | A service declared in a protobuf file | `OrderService` |
 | `rpc_contract` node | One operation declared by that service | `OrderService.CreateOrder` |
 | `DECLARES` edge | An interface contains a method or property signature | `Store → get` |
@@ -18,6 +19,8 @@ The graph is a static index of source code, not a compiler, type checker, API va
 | `EXTENDS` edge | One interface explicitly extends another | `NamedStore → Store` |
 | `DEFINES_RPC` edge | A protobuf service declares an RPC | `OrderService → CreateOrder` |
 | `HTTP_CALLS` edge | A direct, statically matched client-to-handler dependency | `submitOrder → POST handler` |
+| `HTTP_REQUEST` edge | A function makes a dynamic-host HTTP request with a visible path | `shipOrder → POST /ship-order` |
+| `POSSIBLE_HTTP_TARGET` edge | A dynamic-host callsite has the same method and path as an indexed route; the host is unverified | `POST /ship-order → route candidate` |
 
 `DECLARES`, `IMPLEMENTS`, `CONSUMES`, and contract `EXTENDS` relationships are in the `Lcontract` layer. `HTTP_CALLS` is in the dependency layer (`Ldep`); it is kept alongside the contract edges for direct traversal.
 
@@ -46,7 +49,7 @@ fetch('/api/orders', { method: 'POST' })
 
 The graph contains a contract node named `POST /api/orders` (`http::POST:/api/orders`). The handler has an `IMPLEMENTS` edge to it; the calling function has a `CONSUMES` edge to it and an `HTTP_CALLS` edge directly to the handler.
 
-Supported static route registrations include Python route decorators, Express `app`/`router` method registrations, Go `http.HandleFunc`, and Next-style `app/api/.../route.ts`/`.js` exports. The Python and JavaScript/TypeScript client extractors recognize supported literal HTTP calls; Go recognizes literal `http.Get`/`http.Post`. Exact method-and-path matching is used, with a wildcard method for Go `HandleFunc`.
+Supported static route registrations include Python route decorators, Spring mapping annotations, Express `app`/`router` method registrations, Go `http.HandleFunc`, and Next-style `app/api/.../route.ts`/`.js` exports. The Python and JavaScript/TypeScript client extractors recognize supported literal HTTP calls; Go recognizes literal `http.Get`/`http.Post` and `http.NewRequest` variants. Exact method-and-path matching is used, with a wildcard method for Go `HandleFunc`. A statically visible suffix appended to a dynamic host is kept as an `http_callsite`. A path match to a local endpoint uses `POSSIBLE_HTTP_TARGET`; it is **not** a confirmed `HTTP_CALLS` edge.
 
 ### 3. Protobuf/gRPC service
 
@@ -83,7 +86,7 @@ The CLI also exports `repo_graph.graphml` by default; pass `--export "C:\path\to
 
 ## What remains limited
 
-- Dynamic URLs, URL parameters, router rewrites, runtime registrations, and nonliteral HTTP methods are not reliably resolved.
+- Dynamic hosts are not reliably resolved to services. Some Python and Go calls retain a static path suffix as a callsite; URL parameters, router rewrites, runtime registrations, and nonliteral HTTP methods remain unresolved.
 - TypeScript structural compatibility and Go implicit interface satisfaction are not inferred. Only explicit TypeScript `implements`/`extends` declarations create those contract edges.
 - The protobuf parser covers the service/RPC declaration patterns tested here; it is not a full protobuf compiler or schema-compatibility checker. A differing file hash flags possible skew, not necessarily a breaking change.
 - A contract edge says *where to investigate*. It does not show that the endpoint is healthy, the response schema is correct, or a retrieved file is the true root cause.

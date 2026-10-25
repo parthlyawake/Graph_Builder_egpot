@@ -25,6 +25,7 @@ class NodeType(str, Enum):
     CONTRACT = "contract"       # e.g., a Protobuf message / OpenAPI endpoint
     TOPIC_CONTRACT = "topic_contract"  # e.g., Kafka / RabbitMQ message topic
     ENDPOINT = "endpoint"       # e.g., REST / HTTP route endpoint
+    HTTP_CALLSITE = "http_callsite"  # request with an unresolved host
     COMMIT = "commit"
     FILE = "file"
     MODULE = "module"
@@ -44,6 +45,8 @@ class EdgeType(str, Enum):
     PRODUCES_EVENT = "produces_event"  # service publishes to a topic
     CONSUMES_EVENT = "consumes_event"  # service listens to a topic
     HTTP_CALLS = "http_calls"    # service calls a REST endpoint
+    HTTP_REQUEST = "http_request"  # function makes an unresolved-host request
+    POSSIBLE_HTTP_TARGET = "possible_http_target"  # path match without host proof
     MODIFIED_BY = "modified_by"  # code node was changed by a commit
 
 
