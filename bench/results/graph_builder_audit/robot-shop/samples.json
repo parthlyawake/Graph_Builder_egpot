@@ -1,0 +1,266 @@
+{
+  "repo": "robot-shop",
+  "seed": 20261025,
+  "source_candidates": 97,
+  "candidates_by_extension": {
+    ".go": 7,
+    ".java": 51,
+    ".js": 24,
+    ".py": 15
+  },
+  "samples": [
+    {
+      "source_file": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java",
+      "source_name": "getenv",
+      "source_line": 34,
+      "language_extension": ".java",
+      "source_excerpt": "34:     private String getenv(String key, String def) {\n35:         String val = System.getenv(key);\n36:         val = val == null ? def : val;\n37: \n38:         return val;\n39:     }\n40: \n41:     @GetMapping(path = \"/memory\")\n42:     public int memory() {\n43:         byte[] bytes = new byte[1024 * 1024 * 25];\n44:         Arrays.fill(bytes,(byte)8);\n45:         bytesGlobal.add(bytes);",
+      "graph_node": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv",
+      "graph_line": 34,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller"
+        },
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv"
+        },
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/JpaConfig.java:JpaConfig.getDataSource"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::val"
+        },
+        {
+          "direction": "out",
+          "relation": "MUTATES",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::val"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::String"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::String"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.return::38"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::val"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::val"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::val"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv.var::val"
+        }
+      ]
+    },
+    {
+      "source_file": "web/static/js/auto-complete.js",
+      "source_name": "removeEvent",
+      "source_line": 19,
+      "language_extension": ".js",
+      "source_excerpt": "19:         function removeEvent(el, type, handler){\n20:             // if (el.removeEventListener) not working in IE11\n21:             if (el.detachEvent) el.detachEvent('on'+type, handler); else el.removeEventListener(type, handler);\n22:         }\n23:         function live(elClass, event, cb, context){\n24:             addEvent(context || document, event, function(e){\n25:                 var found, el = e.target || e.srcElement;\n26:                 while (el && !(found = hasClass(el, elClass))) el = el.parentElement;\n27:                 if (found) cb.call(el, e);\n28:             });\n29:         }\n30: ",
+      "graph_node": "web/static/js/auto-complete.js:autoComplete.removeEvent",
+      "graph_line": 19,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "web/static/js/auto-complete.js:autoComplete"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "web/static/js/auto-complete.js:autoComplete"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::el.detachEvent"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::el.removeEventListener"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::el"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::handler"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::type"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::el"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::el"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::el"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::handler"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::handler"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::type"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "web/static/js/auto-complete.js:autoComplete.removeEvent.var::type"
+        }
+      ]
+    },
+    {
+      "source_file": "payment/rabbitmq.py",
+      "source_name": "_publish",
+      "source_line": 28,
+      "language_extension": ".py",
+      "source_excerpt": "28:     def _publish(self, msg, headers):\n29:         self._channel.basic_publish(exchange=self.EXCHANGE,\n30:                                     routing_key=self.ROUTING_KEY,\n31:                                     properties=pika.BasicProperties(headers=headers),\n32:                                     body=json.dumps(msg).encode())\n33:         self._logger.info('message sent')\n34: \n35:     #Publish msg, reconnecting if necessary.\n36:     def publish(self, msg, headers):\n37:         if self._channel is None or self._channel.is_closed or self._conn is None or self._conn.is_closed:\n38:             self._connect()\n39:         try:",
+      "graph_node": "payment/rabbitmq.py:Publisher._publish",
+      "graph_line": 28,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "payment/rabbitmq.py:Publisher.publish"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "payment/rabbitmq.py:Publisher"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::encode"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::json.dumps"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::pika.BasicProperties"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::self._channel.basic_publish"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::self._logger.info"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::headers"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::msg"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::self"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::headers"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::msg"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::self"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::self"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::self"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "payment/rabbitmq.py:Publisher._publish.var::self"
+        }
+      ]
+    }
+  ]
+}

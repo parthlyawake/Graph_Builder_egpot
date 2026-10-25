@@ -1,0 +1,265 @@
+{
+  "repo": "DeathStarBench-source",
+  "seed": 20261025,
+  "source_candidates": 210,
+  "candidates_by_extension": {
+    ".go": 145,
+    ".js": 42,
+    ".py": 23
+  },
+  "samples": [
+    {
+      "source_file": "hotelReservation/services/rate/server.go",
+      "source_name": "Less",
+      "source_line": 194,
+      "language_extension": ".go",
+      "source_excerpt": "194: func (r RatePlans) Less(i, j int) bool {\n195: \treturn r[i].RoomType.TotalRate > r[j].RoomType.TotalRate\n196: }",
+      "graph_node": "hotelReservation/services/rate/server.go:RatePlans.Less",
+      "graph_line": 194,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "hotelReservation/services/rate/server.go:RatePlans"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "hotelReservation/services/rate/server.go:RatePlans.Less.var::i"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "hotelReservation/services/rate/server.go:RatePlans.Less.var::j"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "hotelReservation/services/rate/server.go:RatePlans.Less.return::195"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "hotelReservation/services/rate/server.go:RatePlans.Less.var::i"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "hotelReservation/services/rate/server.go:RatePlans.Less.var::j"
+        }
+      ]
+    },
+    {
+      "source_file": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js",
+      "source_name": "getTime",
+      "source_line": 157,
+      "language_extension": ".js",
+      "source_excerpt": "157: function getTime(time) {\n158:     var new_time = Number(time);\n159:     var a = new Date(new_time);\n160:     var s = a.toDateString();\n161:     var hour = (\"0\" + a.getHours()).substr(-2);\n162:     var min = (\"0\" + a.getMinutes()).substr(-2);\n163:     var time = hour + ':' + min + ' ' + s;\n164:     return time;\n165: }\n166: function replaceMentionWithHTMLLinks(text) {\n167:     return text.replace(/(^|\\s)@(\\w+)/g, '$1<a href=\"profile.html?username=$2\">@$2</a>');\n168: ",
+      "graph_node": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime",
+      "graph_line": 157,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:showTimeline"
+        },
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:show_Mentioned_User_Timeline"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::(\"0\" + a.getHours()).substr"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::(\"0\" + a.getMinutes()).substr"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Date"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Number"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::a.getHours"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::a.getMinutes"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::a.toDateString"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::a"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::hour"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::min"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::new_time"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::s"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::time"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::time"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.return::164"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::a"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::a"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::a"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::hour"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::min"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::new_time"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::s"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::time"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "socialNetwork/openshift/nginx-thrift-config/pages/javascript/timeline.js:getTime.var::time"
+        }
+      ]
+    },
+    {
+      "source_file": "mediaMicroservices/scripts/write_movie_info.py",
+      "source_name": "upload_movie_info",
+      "source_line": 15,
+      "language_extension": ".py",
+      "source_excerpt": "15: async def upload_movie_info(session, addr, movie):\n16:   async with session.post(addr + \"/wrk2-api/movie-info/write\", json=movie) as resp:\n17:     return await resp.text()\n18: \n19: async def register_movie(session, addr, movie):\n20:   params = {\n21:     \"title\": movie[\"title\"],\n22:     \"movie_id\": movie[\"movie_id\"]\n23:   }\n24:   async with session.post(addr + \"/wrk2-api/movie/register\", data=params) as resp:\n25:     return await resp.text()\n26: ",
+      "graph_node": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info",
+      "graph_line": 15,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:write_movie_info"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::mediaMicroservices/scripts/write_movie_info.py"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::resp.text"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::session.post"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info.var::addr"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info.var::movie"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info.var::session"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info.return::17"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info.var::addr"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info.var::movie"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "mediaMicroservices/scripts/write_movie_info.py:upload_movie_info.var::session"
+        }
+      ]
+    }
+  ]
+}

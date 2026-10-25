@@ -1,0 +1,42 @@
+{
+  "repository": "retail-store-sample-app",
+  "seconds": 1.348,
+  "total_loc": 21581,
+  "nodes": 5498,
+  "edges": 13320,
+  "parsed_files": 274,
+  "node_types": {
+    "class": 274,
+    "endpoint": 44,
+    "external_func": 1409,
+    "file": 274,
+    "function": 932,
+    "http_endpoint": 44,
+    "interface": 26,
+    "method": 6,
+    "module": 55,
+    "property": 14,
+    "return": 765,
+    "symbol_ref": 569,
+    "type": 4,
+    "variable": 1082
+  },
+  "relations": {
+    "CALLS": 2965,
+    "CONTAINS": 1279,
+    "DECLARES": 20,
+    "DEFINES": 618,
+    "EXTENDS": 139,
+    "FLOWS_TO": 259,
+    "IMPLEMENTS": 124,
+    "IMPORTS": 1705,
+    "MUTATES": 77,
+    "PASSES_ARG": 567,
+    "POLYMORPHIC_CALL": 114,
+    "PRODUCES": 52,
+    "RETURNS": 765,
+    "SEMANTIC_SIMILAR": 2674,
+    "USES": 1962
+  },
+  "log_warnings": []
+}

@@ -1,0 +1,156 @@
+{
+  "repo": "retail-store-sample-app",
+  "seed": 20261025,
+  "source_candidates": 868,
+  "candidates_by_extension": {
+    ".go": 44,
+    ".java": 736,
+    ".js": 2,
+    ".ts": 86
+  },
+  "samples": [
+    {
+      "source_file": "src/ui/src/main/java/com/amazon/sample/ui/client/checkout/models/ShippingAddress.java",
+      "source_name": "getAddress1",
+      "source_line": 84,
+      "language_extension": ".java",
+      "source_excerpt": "84:   @jakarta.annotation.Nullable\n85:   public String getAddress1() {\n86:     return this.address1;\n87:   }\n88: \n89:   /**\n90:    * Gets the address2 property value. The address2 property\n91:    * @return a {@link String}\n92:    */\n93:   @jakarta.annotation.Nullable\n94:   public String getAddress2() {\n95:     return this.address2;",
+      "graph_node": "src/ui/src/main/java/com/amazon/sample/ui/client/checkout/models/ShippingAddress.java:ShippingAddress.getAddress1",
+      "graph_line": 84,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/ui/src/main/java/com/amazon/sample/ui/client/checkout/models/ShippingAddress.java:ShippingAddress"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/ui/src/main/java/com/amazon/sample/ui/client/checkout/models/ShippingAddress.java:ShippingAddress.getAddress1.return::86"
+        }
+      ]
+    },
+    {
+      "source_file": "src/checkout/src/checkout/repositories/RedisCheckoutRepository.ts",
+      "source_name": "readClient",
+      "source_line": 46,
+      "language_extension": ".ts",
+      "source_excerpt": "46:   async readClient() {\n47:     if (!this._readClient) {\n48:       this._readClient = await this.buildClient(this.readerUrl);\n49:     }\n50:     return this._readClient;\n51:   }\n52: \n53:   // Implement onModuleDestroy to clean up Redis connections\n54:   async onModuleDestroy() {\n55:     try {\n56:       if (this._client) {\n57:         await this._client.quit();",
+      "graph_node": "src/checkout/src/checkout/repositories/RedisCheckoutRepository.ts:RedisCheckoutRepository.readClient",
+      "graph_line": 46,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "src/checkout/src/checkout/repositories/RedisCheckoutRepository.ts:RedisCheckoutRepository.get"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/checkout/src/checkout/repositories/RedisCheckoutRepository.ts:RedisCheckoutRepository"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "src/checkout/src/checkout/repositories/RedisCheckoutRepository.ts:RedisCheckoutRepository.buildClient"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/src/checkout/repositories/RedisCheckoutRepository.ts:RedisCheckoutRepository.readClient.return::50"
+        }
+      ]
+    },
+    {
+      "source_file": "src/catalog/controller/controller.go",
+      "source_name": "ReindexProducts",
+      "source_line": 227,
+      "language_extension": ".go",
+      "source_excerpt": "227: func (c *Controller) ReindexProducts(ctx *gin.Context) {\n228: \tif !c.api.IsSearchEnabled() {\n229: \t\thttputil.NewError(ctx, http.StatusServiceUnavailable, fmt.Errorf(\"search is not enabled\"))\n230: \t\treturn\n231: \t}\n232: \n233: \tif err := c.api.Reindex(); err != nil {\n234: \t\thttputil.NewError(ctx, http.StatusInternalServerError, err)\n235: \t\treturn\n236: \t}\n237: \n238: \tctx.JSON(http.StatusOK, gin.H{\"message\": \"reindex completed successfully\"})",
+      "graph_node": "src/catalog/controller/controller.go:Controller.ReindexProducts",
+      "graph_line": 227,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/catalog/controller/controller.go:Controller"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::c.api.Reindex"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::ctx.JSON"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::fmt.Errorf"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::httputil.NewError"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "src/catalog/api/catalog.go:CatalogAPI.IsSearchEnabled"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::ctx"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.return::230"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.return::235"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::ctx"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::ctx"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::ctx"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/catalog/controller/controller.go:Controller.ReindexProducts.var::err"
+        }
+      ]
+    }
+  ]
+}

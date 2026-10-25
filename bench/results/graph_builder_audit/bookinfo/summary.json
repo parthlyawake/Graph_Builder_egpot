@@ -1,0 +1,34 @@
+{
+  "repository": "bookinfo",
+  "seconds": 0.088,
+  "total_loc": 1109,
+  "nodes": 345,
+  "edges": 639,
+  "parsed_files": 9,
+  "node_types": {
+    "class": 8,
+    "external_func": 78,
+    "file": 9,
+    "function": 39,
+    "http_endpoint": 11,
+    "module": 11,
+    "return": 31,
+    "symbol_ref": 43,
+    "variable": 115
+  },
+  "relations": {
+    "CALLS": 144,
+    "CONTAINS": 47,
+    "DEFINES": 75,
+    "EXTENDS": 6,
+    "FLOWS_TO": 9,
+    "IMPLEMENTS": 11,
+    "IMPORTS": 57,
+    "MUTATES": 20,
+    "PASSES_ARG": 46,
+    "RETURNS": 31,
+    "SEMANTIC_SIMILAR": 2,
+    "USES": 191
+  },
+  "log_warnings": []
+}

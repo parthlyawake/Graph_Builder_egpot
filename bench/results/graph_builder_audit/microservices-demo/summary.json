@@ -1,0 +1,39 @@
+{
+  "repository": "microservices-demo",
+  "seconds": 0.456,
+  "total_loc": 6273,
+  "nodes": 2126,
+  "edges": 5744,
+  "parsed_files": 47,
+  "node_types": {
+    "class": 52,
+    "external_func": 442,
+    "file": 55,
+    "function": 267,
+    "http_endpoint": 1,
+    "interface": 2,
+    "module": 66,
+    "return": 229,
+    "rpc_contract": 16,
+    "service_contract": 10,
+    "symbol_ref": 79,
+    "variable": 907
+  },
+  "relations": {
+    "CALLS": 1217,
+    "CONSUMES": 21,
+    "CONTAINS": 361,
+    "DEFINES": 597,
+    "DEFINES_RPC": 66,
+    "EXTENDS": 13,
+    "FLOWS_TO": 132,
+    "IMPLEMENTS": 24,
+    "IMPORTS": 300,
+    "MUTATES": 67,
+    "PASSES_ARG": 366,
+    "RETURNS": 229,
+    "SEMANTIC_SIMILAR": 20,
+    "USES": 2331
+  },
+  "log_warnings": []
+}

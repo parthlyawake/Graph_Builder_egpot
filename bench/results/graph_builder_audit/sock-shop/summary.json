@@ -1,0 +1,27 @@
+{
+  "repository": "sock-shop",
+  "seconds": 0.063,
+  "total_loc": 764,
+  "nodes": 31,
+  "edges": 64,
+  "parsed_files": 4,
+  "node_types": {
+    "external_func": 6,
+    "file": 4,
+    "function": 3,
+    "module": 3,
+    "return": 3,
+    "symbol_ref": 1,
+    "variable": 11
+  },
+  "relations": {
+    "CALLS": 12,
+    "CONTAINS": 3,
+    "DEFINES": 2,
+    "IMPORTS": 16,
+    "PASSES_ARG": 9,
+    "RETURNS": 3,
+    "USES": 19
+  },
+  "log_warnings": []
+}

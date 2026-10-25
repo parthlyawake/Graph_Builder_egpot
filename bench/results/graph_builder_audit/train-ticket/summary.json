@@ -1,0 +1,43 @@
+{
+  "repository": "train-ticket",
+  "seconds": 11.658,
+  "total_loc": 110600,
+  "nodes": 33707,
+  "edges": 150267,
+  "parsed_files": 716,
+  "node_types": {
+    "class": 572,
+    "endpoint": 262,
+    "external_func": 9279,
+    "file": 716,
+    "function": 4622,
+    "http_endpoint": 270,
+    "interface": 88,
+    "module": 15,
+    "return": 3963,
+    "symbol_ref": 746,
+    "topic_contract": 1,
+    "type": 12,
+    "variable": 13161
+  },
+  "relations": {
+    "CALLS": 27662,
+    "CONSUMES": 53,
+    "CONSUMES_EVENT": 2,
+    "CONTAINS": 6826,
+    "DEFINES": 10287,
+    "EXTENDS": 195,
+    "FLOWS_TO": 2923,
+    "HTTP_CALLS": 53,
+    "IMPLEMENTS": 582,
+    "IMPORTS": 5848,
+    "MUTATES": 4515,
+    "PASSES_ARG": 7850,
+    "POLYMORPHIC_CALL": 20851,
+    "PRODUCES": 262,
+    "RETURNS": 4928,
+    "SEMANTIC_SIMILAR": 4070,
+    "USES": 53360
+  },
+  "log_warnings": []
+}
