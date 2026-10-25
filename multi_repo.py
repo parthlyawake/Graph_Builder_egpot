@@ -441,16 +441,18 @@ class WorkspaceCKGBuilder:
         resolved = 0
         for caller_repo_id, builder in self.repo_builders.items():
             for caller_id, clean_path, method, id_ctx in builder.http_calls_to_resolve:
-                already_bound = any(
-                    d.get("relation") == "HTTP_CALLS"
-                    for _, _, d in self.graph.out_edges(caller_id, data=True)
-                )
-                if already_bound:
-                    continue
-
-                targets = self.http_endpoints.get((method.upper(), clean_path), [])
+                targets = list(dict.fromkeys([
+                    *self.http_endpoints.get((method.upper(), clean_path), []),
+                    *self.http_endpoints.get(("*", clean_path), []),
+                ]))
                 for target_id in targets:
                     if target_id == caller_id:
+                        continue
+                    already_bound = any(
+                        target == target_id and d.get("relation") == "HTTP_CALLS"
+                        for _, target, d in self.graph.out_edges(caller_id, data=True)
+                    )
+                    if already_bound:
                         continue
                     meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx=id_ctx)
                     e_id = f"w_http_{caller_id}_{target_id}"

@@ -248,6 +248,41 @@ repositories:
         self.assertIn("py_api", target)
         self.assertIn("authenticate", target)
 
+
+    def test_cross_repo_http_resolution_keeps_multiple_calls(self):
+        """A caller with two static routes must receive two distinct bindings."""
+        self._create_file("services/api/server.py", """from flask import Flask
+app = Flask(__name__)
+
+@app.get("/health")
+def health():
+    return "ok"
+
+@app.post("/orders")
+def orders():
+    return "ok"
+""")
+        self._create_file("services/client/client.py", """import requests
+
+def sync():
+    requests.get("/health")
+    requests.post("/orders")
+""")
+        ws_path = self._create_file("workspace.yaml", """name: "multi_http"
+version: "1.0"
+repositories:
+  - id: "api"
+    path: "./services/api"
+  - id: "client"
+    path: "./services/client"
+""")
+        ws_builder = WorkspaceCKGBuilder(ws_path)
+        ws_builder.build()
+        outgoing = [
+            v for u, v, d in ws_builder.graph.edges(data=True)
+            if u.endswith("client/client.py:sync") and d.get("relation") == "HTTP_CALLS"
+        ]
+        self.assertEqual(set(outgoing), {"api/server.py:health", "api/server.py:orders"})
     def test_cross_repo_traversal_blast_radius(self):
         """Requirement C3: Blast radius traverses across service boundaries."""
         ws_path = os.path.join(
