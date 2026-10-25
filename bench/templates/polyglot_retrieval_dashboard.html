@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GRAFT-CKG file retrieval benchmark across eight polyglot repository checkouts">
+  <title>GRAFT-CKG · Retrieval field notes</title>
+  <style>
+    :root {
+      --paper:#f6f5f0; --ink:#18231e; --muted:#69736b; --line:#d8dcd4;
+      --accent:#286178; --accent-soft:#e4edf0; --surface:#fffefa;
+      --dark:#192a30; --warm:#8b6335;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.6 Arial,Helvetica,sans-serif; }
+    button,select { font:inherit; }
+    button { cursor:pointer; }
+    a { color:inherit; text-underline-offset:3px; }
+    a:hover { color:var(--accent); }
+    :focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+    .wrap { max-width:1340px; margin:auto; padding:0 5.5vw; }
+    .topbar { position:sticky; top:0; z-index:20; height:76px; background:rgba(246,245,240,.96); border-bottom:1px solid var(--line); backdrop-filter:blur(10px); }
+    .top-inner { height:100%; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    .brand { display:flex; align-items:center; gap:11px; font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; text-decoration:none; }
+    .mark { width:22px; height:22px; background:var(--accent); display:block; }
+    .navlinks { display:flex; align-items:center; gap:28px; font-size:12px; color:var(--muted); }
+    .navlinks a { text-decoration:none; }
+    .top-status { font-size:11px; color:var(--muted); white-space:nowrap; }
+    .section { border-bottom:1px solid var(--line); padding:84px 0 92px; }
+    .eyebrow { color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font-size:clamp(56px,7.2vw,104px); line-height:.94; letter-spacing:-.075em; margin:20px 0 26px; max-width:900px; }
+    h1 em,h2 em { font-family:Georgia,serif; font-weight:400; }
+    h2 { font-size:clamp(42px,5vw,68px); line-height:.96; letter-spacing:-.065em; margin:16px 0 21px; }
+    h3 { font-size:24px; line-height:1.15; letter-spacing:-.035em; margin-bottom:10px; }
+    .lede { font-size:17px; line-height:1.6; max-width:650px; color:#4d5a52; }
+    .subcopy { color:var(--muted); max-width:650px; font-size:14px; }
+    .hero { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(310px,.7fr); gap:7vw; align-items:end; padding-top:94px; }
+    .hero p:last-child { margin-bottom:0; }
+    .hero-link { display:inline-block; margin-top:21px; padding:13px 20px; background:var(--accent); color:#fff; text-decoration:none; font-weight:700; font-size:12px; letter-spacing:.03em; }
+    .hero-link:hover { color:#fff; background:#204c5f; }
+    .hero-card { background:var(--dark); color:#f7f9f7; padding:32px; min-height:360px; display:flex; flex-direction:column; justify-content:space-between; }
+    .hero-card .eyebrow { color:#b1cbd1; }
+    .hero-number { font-size:clamp(76px,8vw,122px); line-height:.9; font-weight:800; letter-spacing:-.085em; font-variant-numeric:tabular-nums; }
+    .hero-number small { font-size:.3em; letter-spacing:-.03em; }
+    .hero-card p { color:#d2dee0; max-width:270px; margin:12px 0 0; }
+    .hero-foot { border-top:1px solid #53646a; padding-top:18px; display:flex; justify-content:space-between; gap:20px; font-size:11px; color:#b1cbd1; }
+    .fact-strip { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line); margin-top:70px; }
+    .fact { padding:24px 25px 0 0; }
+    .fact + .fact { border-left:1px solid var(--line); padding-left:25px; }
+    .fact strong { display:block; font-size:36px; line-height:1; letter-spacing:-.07em; }
+    .fact span { display:block; margin-top:9px; color:var(--muted); font-size:12px; }
+    .section-top { display:flex; align-items:end; justify-content:space-between; gap:34px; }
+    .section-top .subcopy { margin-bottom:0; }
+    .metric-switch { display:flex; flex-wrap:wrap; gap:7px; margin:30px 0 18px; }
+    .metric-switch button { border:1px solid var(--line); background:transparent; padding:10px 14px; font-size:12px; color:var(--muted); }
+    .metric-switch button[aria-pressed="true"] { background:var(--ink); color:white; border-color:var(--ink); }
+    .surface { background:var(--surface); border:1px solid var(--line); }
+    .method-head,.method-row { display:grid; grid-template-columns:48px minmax(190px,1.15fr) minmax(180px,1fr) 72px; gap:17px; align-items:center; }
+    .method-head { padding:14px 25px; border-bottom:1px solid var(--line); color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+    .method-row { min-height:75px; padding:13px 25px; border-bottom:1px solid var(--line); }
+    .method-row:last-child { border-bottom:0; }
+    .method-row.best { background:var(--accent-soft); }
+    .method-code { color:var(--accent); font-weight:800; font-size:12px; }
+    .method-name { font-size:15px; font-weight:700; line-height:1.3; }
+    .method-note { color:var(--muted); font-size:12px; line-height:1.4; margin-top:3px; }
+    .bar-track { background:#e4e8e3; height:4px; width:100%; }
+    .bar-fill { display:block; background:var(--accent); height:100%; transition:width .25s ease; }
+    .method-row:not(.best) .bar-fill { background:#879a9e; }
+    .metric-num { text-align:right; font-size:19px; font-weight:800; letter-spacing:-.045em; font-variant-numeric:tabular-nums; }
+    .footnote { color:var(--muted); font-size:12px; margin-top:14px; }
+    .findings { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:42px; }
+    .finding { border-top:1px solid var(--ink); padding-top:17px; }
+    .finding .index { color:var(--accent); font-size:11px; font-weight:800; }
+    .finding h3 { font-size:21px; margin:14px 0 8px; }
+    .finding p { color:var(--muted); margin:0; }
+    .methodology { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:35px; }
+    .step { padding-top:18px; border-top:1px solid var(--line); }
+    .step-num { font-size:11px; font-weight:800; color:var(--accent); }
+    .step h3 { font-size:20px; margin:11px 0; }
+    .step p { color:var(--muted); }
+    .scope-note { background:var(--accent-soft); border-left:3px solid var(--accent); padding:17px 20px; margin-top:32px; color:#35505b; }
+    .repo-layout { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start; margin-top:26px; }
+    .repo-list { border-top:1px solid var(--line); }
+    .repo-row { display:grid; grid-template-columns:minmax(0,1fr) 82px 82px; gap:12px; align-items:center; padding:15px 0; border-bottom:1px solid var(--line); }
+    .repo-row strong { display:block; font-size:15px; }
+    .repo-row small { display:block; color:var(--muted); font-size:11px; margin-top:2px; }
+    .repo-score { font-weight:800; text-align:right; font-variant-numeric:tabular-nums; }
+    .repo-score.muted { color:var(--muted); }
+    .repo-head { color:var(--muted); font-size:11px; text-align:right; font-weight:700; }
+    .repo-copy { border-top:1px solid var(--ink); padding-top:23px; }
+    .repo-copy h3 { max-width:340px; }
+    .repo-copy p { color:var(--muted); }
+    .controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:13px; margin-top:32px; }
+    .control label { display:block; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; margin-bottom:9px; }
+    select { width:100%; min-height:46px; border:1px solid var(--line); border-radius:0; background:var(--surface); color:var(--ink); padding:0 11px; }
+    .query-box { margin-top:22px; padding:25px; }
+    .query-title { font-size:23px; line-height:1.3; letter-spacing:-.035em; font-weight:700; max-width:850px; margin:10px 0 18px; }
+    .file-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); }
+    .expected-list { display:flex; flex-wrap:wrap; gap:8px; margin:9px 0 4px; }
+    .expected-list code { display:inline-block; max-width:100%; word-break:break-all; border:1px solid #b8d0d7; background:var(--accent-soft); color:#234f5f; padding:5px 8px; font:12px/1.4 Consolas,monospace; }
+    .query-meta { color:var(--muted); font-size:12px; margin:10px 0 0; }
+    .results-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px; }
+    .result-panel { background:var(--surface); border:1px solid var(--line); min-width:0; }
+    .result-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:17px 19px; border-bottom:1px solid var(--line); }
+    .result-head strong { font-size:18px; }
+    .result-head span { color:var(--muted); font-size:12px; }
+    .ranked-files { list-style:none; padding:0; margin:0; }
+    .ranked-files li { display:grid; grid-template-columns:25px minmax(0,1fr) auto; gap:10px; align-items:start; min-height:43px; padding:11px 19px; border-bottom:1px solid var(--line); font-size:12px; }
+    .ranked-files li:last-child { border-bottom:0; }
+    .ranked-files li.correct { background:#edf3f1; }
+    .ranked-files .ordinal { color:var(--muted); font-weight:700; }
+    .ranked-files code { font:12px/1.4 Consolas,monospace; overflow-wrap:anywhere; }
+    .hit { color:#2c6651; font-weight:800; font-size:11px; text-transform:uppercase; }
+    .miss { color:#915436; font-size:11px; font-weight:700; }
+    .limit-list { margin-top:24px; border-top:1px solid var(--line); }
+    .limit { display:grid; grid-template-columns:42px minmax(150px,.4fr) 1fr; gap:22px; padding:20px 0; border-bottom:1px solid var(--line); }
+    .limit .n { color:var(--accent); font-weight:800; font-size:12px; }
+    .limit strong { font-size:16px; }
+    .limit p { color:var(--muted); margin:0; }
+    .links { display:flex; gap:19px; flex-wrap:wrap; margin-top:28px; font-size:12px; font-weight:700; }
+    footer { display:flex; justify-content:space-between; gap:30px; color:var(--muted); padding:26px 0 35px; font-size:11px; }
+    @media (max-width:900px) {
+      .hero { gap:35px; }
+      .hero-card { min-height:320px; }
+      .section { padding:67px 0 72px; }
+    }
+    @media (max-width:700px) {
+      .wrap { padding:0 20px; }
+      .topbar { height:64px; }
+      .navlinks { display:none; }
+      .hero,.repo-layout,.results-grid { grid-template-columns:1fr; }
+      .hero { padding-top:62px; }
+      .hero-card { min-height:265px; }
+      .fact-strip { grid-template-columns:1fr 1fr; }
+      .fact { padding:20px 12px 16px 0; border-bottom:1px solid var(--line); }
+      .fact + .fact { padding-left:14px; }
+      .fact:nth-child(3) { border-left:0; padding-left:0; }
+      .findings,.methodology,.controls { grid-template-columns:1fr; }
+      .section-top { display:block; }
+      .method-head,.method-row { grid-template-columns:34px minmax(110px,1fr) 78px; gap:10px; padding-left:13px; padding-right:13px; }
+      .method-head .track-heading,.method-row .bar-track { display:none; }
+      .method-name { font-size:14px; }
+      .method-note { font-size:11px; }
+      .metric-num { font-size:17px; }
+      .limit { grid-template-columns:28px 1fr; gap:10px; }
+      .limit p { grid-column:2; }
+      footer { display:block; }
+    }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; transition:none !important; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <nav class="wrap top-inner" aria-label="Page navigation">
+      <a class="brand" href="#top"><span class="mark" aria-hidden="true"></span>GRAFT-CKG / Field notes</a>
+      <div class="navlinks"><a href="#comparison">Compare methods</a><a href="#repos">Repositories</a><a href="#explorer">Inspect a query</a><a href="#limits">Limits</a></div>
+      <span class="top-status">25 OCT 2026 · LOCAL REPORT</span>
+    </nav>
+  </div>
+
+  <main id="top">
+    <section class="section">
+      <div class="wrap">
+        <div class="hero">
+          <div>
+            <div class="eyebrow">Polyglot repository list · retrieval evaluation</div>
+            <h1>Finding the <em>right files.</em></h1>
+            <p class="lede">We asked the graph builder's retrieval methods where to investigate real code paths in seven application checkouts. This dashboard shows what each method returned, where it succeeded, and where it lost the file.</p>
+            <a class="hero-link" href="#explorer">Inspect a query ↓</a>
+          </div>
+          <aside class="hero-card" aria-label="Leading coverage result">
+            <div><div class="eyebrow">Highest file coverage · R3</div><div class="hero-number" id="hero-recall">—</div><p>of labelled files appeared in the first 10 distinct files.</p></div>
+            <div class="hero-foot"><span>21 APPLICATION QUERIES</span><span>PROVISIONAL RESULT</span></div>
+          </aside>
+        </div>
+        <div class="fact-strip" aria-label="Benchmark scope">
+          <div class="fact"><strong>08</strong><span>listed repository checkouts inspected</span></div>
+          <div class="fact"><strong>07</strong><span>application corpora in the comparison</span></div>
+          <div class="fact"><strong>21</strong><span>source-file localization queries</span></div>
+          <div class="fact"><strong>14</strong><span>retrieval configurations compared</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="comparison">
+      <div class="wrap">
+        <div class="eyebrow">01 / The comparison</div>
+        <div class="section-top"><h2>What works <em>best?</em></h2><p class="subcopy">Choose a metric. Coverage asks whether all expected files made the list. First-file metrics ask whether the method saved the investigator time by putting a relevant file near the top.</p></div>
+        <div class="metric-switch" role="group" aria-label="Score to compare">
+          <button type="button" data-metric="recall" aria-pressed="true">All relevant files · Recall@10</button>
+          <button type="button" data-metric="hits" aria-pressed="false">First file right · Hits@1</button>
+          <button type="button" data-metric="mrr" aria-pressed="false">First hit rank · MRR@10</button>
+        </div>
+        <div class="surface" aria-live="polite"><div class="method-head"><span>Method</span><span>Approach</span><span class="track-heading">Relative score</span><span style="text-align:right">Score</span></div><div id="method-rows"></div></div>
+        <p class="footnote" id="metric-note">Scores cover 21 application queries. Two Sock Shop dashboard smoke queries are excluded.</p>
+        <div class="findings">
+          <div class="finding"><span class="index">01 / COVERAGE</span><h3>R3 finds the most files.</h3><p>Its AST and symbol hints recover files the simpler fusion misses. It still misses two Train-Ticket targets.</p></div>
+          <div class="finding"><span class="index">02 / PRIORITY</span><h3>R1 ranks a first file higher.</h3><p>Semantic vectors have the best MRR on this small set, while recovering a smaller share of all expected files.</p></div>
+          <div class="finding"><span class="index">03 / CAUTION</span><h3>More signals are not always better.</h3><p>Dependency and contract additions match R3's coverage here. The test-file heuristic in R7 pushes unrelated tests upward.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="method">
+      <div class="wrap">
+        <div class="eyebrow">02 / How it was tested</div>
+        <h2>Same questions.<br><em>Same rules.</em></h2>
+        <div class="methodology">
+          <div class="step"><span class="step-num">01</span><h3>Build and inspect</h3><p>We reused the corrected graph snapshots for the listed repositories. Each expected source file was checked against the source and confirmed as a graph retrieval candidate.</p></div>
+          <div class="step"><span class="step-num">02</span><h3>Ask 21 questions</h3><p>Three issue-like questions per application, including two cases that require two files. Each application was searched separately, so unrelated products did not compete.</p></div>
+          <div class="step"><span class="step-num">03</span><h3>Rank distinct files</h3><p>Every method got the same query and 2,048-token context budget. We collapsed repeated function nodes into distinct files and checked the first 10 files against the labels.</p></div>
+        </div>
+        <div class="scope-note"><strong>Why seven scored corpora?</strong> The eighth listed checkout, Sock Shop, contains deployment and dashboard code rather than its service implementations. We ran two dashboard smoke queries, but kept them out of the application comparison.</div>
+      </div>
+    </section>
+
+    <section class="section" id="repos">
+      <div class="wrap">
+        <div class="eyebrow">03 / Repository view</div>
+        <h2>Where the method<br><em>holds up.</em></h2>
+        <p class="subcopy">File Recall@10 by application, using three queries in each. Small per-repository samples are useful for spotting failures, not estimating production accuracy.</p>
+        <div class="repo-layout">
+          <div class="repo-list" id="repo-list"></div>
+          <div class="repo-copy"><h3>Train-Ticket is the pressure point.</h3><p>The broad codebase contains similar service and UI files. R3 found only one of its three labelled targets in the first 10 files. The station-food CORS configuration and old dashboard date script were missed.</p><p>For AWS Retail, R3 recovered the Redis checkout repository file at rank 2, while R1 and R2 missed it. Use the query explorer to inspect both cases.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="explorer">
+      <div class="wrap">
+        <div class="eyebrow">04 / Query explorer</div>
+        <h2>See the <em>actual list.</em></h2>
+        <p class="subcopy">Pick an application and a question. Highlighted rows are manually labelled relevant files. Compare the provisional R3 choice against any other method.</p>
+        <div class="controls">
+          <div class="control"><label for="repo-select">Repository</label><select id="repo-select"></select></div>
+          <div class="control"><label for="query-select">Question</label><select id="query-select"></select></div>
+          <div class="control"><label for="method-select">Compare R3 with</label><select id="method-select"></select></div>
+        </div>
+        <div class="query-box surface"><div class="eyebrow" id="query-id"></div><div class="query-title" id="query-title"></div><div class="file-label">Expected source files</div><div class="expected-list" id="expected-list"></div><p class="query-meta" id="query-meta"></p></div>
+        <div class="results-grid"><div class="result-panel" id="r3-panel"></div><div class="result-panel" id="compare-panel"></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="limits">
+      <div class="wrap">
+        <div class="eyebrow">05 / Interpretation</div>
+        <h2>What these results<br><em>cannot prove.</em></h2>
+        <div class="limit-list">
+          <div class="limit"><span class="n">01</span><strong>Small, curated labels</strong><p>The 21 application questions came from inspected source examples. They are not held-out, independently reported issues. A paper claim needs a larger blinded issue set.</p></div>
+          <div class="limit"><span class="n">02</span><strong>Signals not present</strong><p>These source snapshots have no Git history, and no runtime traces were supplied. R8 and R10 ran, but their extra lineage and trace signals were not evaluated.</p></div>
+          <div class="limit"><span class="n">03</span><strong>Source coverage</strong><p>DeathStarBench's C++/Thrift services and OpenTelemetry's Rust shipping service are outside current parsing coverage. Sock Shop's service code lives in separate repositories.</p></div>
+          <div class="limit"><span class="n">04</span><strong>File-level product work</strong><p>The retriever scores graph nodes and this benchmark collapses them into files afterward. A production affected-file API should score files directly and preserve evidence paths.</p></div>
+        </div>
+        <div class="links"><a href="POLYGLOT_REPO_RETRIEVAL_REPORT.md">Read the analysis ↗</a><a href="bench/labels/polyglot_repo_file_retrieval.json">Inspect labels ↗</a><a href="bench/results/polyglot_repo_file_retrieval.json">Download raw results ↗</a><a href="hybrid-retrieval-lab.html">Earlier experiment lab ↗</a></div>
+      </div>
+    </section>
+  </main>
+  <footer class="wrap"><span>GRAFT-CKG · Retrieval field notes</span><span>Static dashboard generated from saved benchmark results · builder <span id="revision"></span></span></footer>
+
+  <noscript><p class="wrap">Enable JavaScript to explore the saved method rankings and query results. The full report and raw JSON are linked above.</p></noscript>
+  <script>
+    const DATA = __EMBEDDED_RESULTS__;
+    const methodNotes = {
+      R0:'BM25 word matching', R1:'Semantic vectors', R2:'BM25 + semantic fusion',
+      R3:'Fusion + symbol and AST scope', R4:'Fusion + dependency graph',
+      R5:'Static hybrid', R6:'Static hybrid + data flow', R7:'Static hybrid + tests',
+      R8:'Static hybrid + Git lineage', R9:'Static hybrid + contracts',
+      R10:'Contracts + runtime trace', R11:'Static hybrid + documentation',
+      R12:'Adaptive query router', R13:'Adaptive router + reranker'
+    };
+    const repoNames = {
+      'microservices-demo':'Online Boutique', 'opentelemetry-demo':'Astronomy Shop',
+      'retail-store-sample-app':'AWS Retail Store', 'robot-shop':'Robot Shop',
+      'bookinfo':'Istio Bookinfo', 'train-ticket':'Train-Ticket',
+      'DeathStarBench':'DeathStarBench', 'sock-shop':'Sock Shop dashboard'
+    };
+    const $ = id => document.getElementById(id);
+    const methods = Object.keys(DATA.methods).sort((a,b) => Number(a.slice(1))-Number(b.slice(1)));
+    const allRows = DATA.methods.R3.rows;
+    let metric = 'recall';
+    function el(tag, className, value) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (value !== undefined) node.textContent = value;
+      return node;
+    }
+    function metricValue(method) {
+      const p = DATA.methods[method].primary;
+      return metric === 'recall' ? p['File_Recall@10_pct'] : metric === 'hits' ? p['Hits@1_pct'] : p['MRR@10'];
+    }
+    function formatMetric(value) { return metric === 'mrr' ? value.toFixed(3) : value.toFixed(1) + '%'; }
+    function renderMethods() {
+      const sorted = [...methods].sort((a,b) => metricValue(b)-metricValue(a) || Number(a.slice(1))-Number(b.slice(1)));
+      const top = metricValue(sorted[0]);
+      const parent = $('method-rows'); parent.replaceChildren();
+      for (const id of sorted) {
+        const value = metricValue(id);
+        const row = el('div','method-row' + (id === 'R3' ? ' best' : ''));
+        row.append(el('span','method-code',id));
+        const name = el('div'); name.append(el('div','method-name',DATA.methods[id].title),el('div','method-note',methodNotes[id])); row.append(name);
+        const track = el('div','bar-track'); const fill = el('span','bar-fill'); fill.style.width = (top ? value/top*100 : 0) + '%'; track.append(fill); row.append(track);
+        row.append(el('div','metric-num',formatMetric(value))); parent.append(row);
+      }
+      const text = metric === 'recall' ? 'Fraction of every labelled file present in the first 10 distinct files.' : metric === 'hits' ? 'Share of questions where the first file was relevant.' : 'Average reciprocal rank of the first relevant file; higher is better.';
+      $('metric-note').textContent = text + ' 21 application questions; Sock Shop dashboard smoke queries excluded.';
+    }
+    function renderRepos() {
+      const list = $('repo-list'); list.replaceChildren();
+      const head = el('div','repo-row'); head.append(el('span','repo-head','APPLICATION'),el('span','repo-head','R3'),el('span','repo-head','R1')); list.append(head);
+      for (const [id, info] of Object.entries(DATA.repositories)) {
+        if (info.smoke_only) continue;
+        const row = el('div','repo-row');
+        const label = el('div'); label.append(el('strong','',repoNames[id]),el('small','',info.graph_nodes.toLocaleString()+' graph nodes · 3 questions')); row.append(label);
+        row.append(el('div','repo-score',DATA.methods.R3.by_repo[id]['File_Recall@10_pct'].toFixed(1)+'%'));
+        row.append(el('div','repo-score muted',DATA.methods.R1.by_repo[id]['File_Recall@10_pct'].toFixed(1)+'%'));
+        list.append(row);
+      }
+    }
+    function option(value,label) { const x=el('option','',label); x.value=value; return x; }
+    function tasksForRepo(repo) { return allRows.filter(row => row.repo === repo); }
+    function populateQueries() {
+      const repo = $('repo-select').value, select = $('query-select'); select.replaceChildren();
+      for (const row of tasksForRepo(repo)) select.append(option(row.id,row.query));
+      renderQuery();
+    }
+    function rowFor(method,id) { return DATA.methods[method].rows.find(row => row.id === id); }
+    function renderRankPanel(container,title,row) {
+      container.replaceChildren();
+      const head = el('div','result-head'); head.append(el('strong','',title),el('span','',row.recall === 1 ? 'All expected files found' : row.recall === 0 ? 'No expected file in top 10' : 'Some expected files found')); container.append(head);
+      const list = el('ol','ranked-files'); const expected = new Set(row.expected_files);
+      row.top_files.forEach((file,index) => {
+        const hit = expected.has(file), li = el('li',hit ? 'correct' : '');
+        li.append(el('span','ordinal',String(index+1).padStart(2,'0')),el('code','',file),el('span',hit ? 'hit' : '',hit ? 'Relevant' : ''));
+        list.append(li);
+      });
+      container.append(list);
+      const missed = row.expected_files.filter(file => !row.top_files.includes(file));
+      if (missed.length) {
+        const note = el('p','miss','Missed: '+missed.join(', ')); note.style.padding='0 19px 12px'; note.style.overflowWrap='anywhere'; container.append(note);
+      }
+    }
+    function renderQuery() {
+      const id = $('query-select').value; if (!id) return;
+      const main = rowFor('R3',id), otherId = $('method-select').value, other = rowFor(otherId,id);
+      $('query-id').textContent = (repoNames[main.repo] || main.repo) + ' · ' + id;
+      $('query-title').textContent = main.query;
+      const labels = $('expected-list'); labels.replaceChildren(); main.expected_files.forEach(file => labels.append(el('code','',file)));
+      $('query-meta').textContent = main.smoke_only ? 'Dashboard-code smoke task. Excluded from the 21 application scores.' : main.expected_files.length + ' labelled source ' + (main.expected_files.length === 1 ? 'file' : 'files') + ' · first 10 distinct retrieved files shown below.';
+      renderRankPanel($('r3-panel'),'R3 · AST and symbol scope',main);
+      renderRankPanel($('compare-panel'),otherId + ' · ' + methodNotes[otherId],other);
+    }
+    function init() {
+      $('hero-recall').innerHTML = DATA.methods.R3.primary['File_Recall@10_pct'].toFixed(1) + '<small>%</small>';
+      $('revision').textContent = DATA.builder_revision.slice(0,7);
+      document.querySelectorAll('[data-metric]').forEach(button => button.addEventListener('click',() => {
+        metric=button.dataset.metric;
+        document.querySelectorAll('[data-metric]').forEach(item => item.setAttribute('aria-pressed',String(item===button)));
+        renderMethods();
+      }));
+      const repoSelect=$('repo-select');
+      Object.entries(DATA.repositories).forEach(([id,info]) => repoSelect.append(option(id,repoNames[id] + (info.smoke_only ? ' · smoke only' : ''))));
+      repoSelect.value='retail-store-sample-app';
+      const methodSelect=$('method-select'); methods.filter(id => id!=='R3').forEach(id => methodSelect.append(option(id,id+' · '+methodNotes[id]))); methodSelect.value='R1';
+      repoSelect.addEventListener('change',populateQueries); $('query-select').addEventListener('change',renderQuery); methodSelect.addEventListener('change',renderQuery);
+      populateQueries(); $('query-select').value='retail-redis-read'; renderQuery(); renderMethods(); renderRepos();
+    }
+    init();
+  </script>
+</body>
+</html>
