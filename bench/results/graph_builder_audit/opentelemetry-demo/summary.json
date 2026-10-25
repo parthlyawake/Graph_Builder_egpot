@@ -1,0 +1,43 @@
+{
+  "repository": "opentelemetry-demo",
+  "seconds": 1.292,
+  "total_loc": 22473,
+  "nodes": 5585,
+  "edges": 16631,
+  "parsed_files": 207,
+  "node_types": {
+    "class": 58,
+    "external_func": 1205,
+    "file": 209,
+    "function": 549,
+    "interface": 167,
+    "method": 58,
+    "module": 95,
+    "property": 279,
+    "return": 1038,
+    "rpc_contract": 21,
+    "service_contract": 11,
+    "symbol_ref": 556,
+    "type": 45,
+    "variable": 1294
+  },
+  "relations": {
+    "CALLS": 2560,
+    "CONSUMES": 1,
+    "CONTAINS": 1335,
+    "DECLARES": 417,
+    "DEFINES": 1385,
+    "DEFINES_RPC": 21,
+    "EXTENDS": 16,
+    "FLOWS_TO": 696,
+    "IMPLEMENTS": 8,
+    "IMPORTS": 1110,
+    "MUTATES": 62,
+    "PASSES_ARG": 1208,
+    "POLYMORPHIC_CALL": 14,
+    "RETURNS": 1038,
+    "SEMANTIC_SIMILAR": 10,
+    "USES": 6750
+  },
+  "log_warnings": []
+}

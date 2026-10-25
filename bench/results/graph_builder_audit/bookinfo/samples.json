@@ -1,0 +1,355 @@
+{
+  "repo": "bookinfo",
+  "seed": 20261025,
+  "source_candidates": 32,
+  "candidates_by_extension": {
+    ".java": 4,
+    ".js": 5,
+    ".py": 23
+  },
+  "samples": [
+    {
+      "source_file": "src/productpage/productpage.py",
+      "source_name": "metrics",
+      "source_line": 311,
+      "language_extension": ".py",
+      "source_excerpt": "311: def metrics():\n312:     return generate_latest()\n313: \n314: \n315: # Data providers:\n316: def getProducts():\n317:     return [\n318:         {\n319:             'id': 0,\n320:             'title': 'The Comedy of Errors',\n321:             'descriptionHtml': '<a href=\"https://en.wikipedia.org/wiki/The_Comedy_of_Errors\">Wikipedia Summary</a>: The Comedy of Errors is one of <b>William Shakespeare\\'s</b> early plays. It is his shortest and one of his most farcical comedies, with a major part of the humour coming from slapstick and mistaken identity, in addition to puns and word play.'\n322:         }",
+      "graph_node": "src/productpage/productpage.py:metrics",
+      "graph_line": 311,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::src/productpage/productpage.py"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::app.route"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::generate_latest"
+        },
+        {
+          "direction": "out",
+          "relation": "IMPLEMENTS",
+          "other": "http::GET:/metrics"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/productpage/productpage.py:metrics.return::312"
+        }
+      ]
+    },
+    {
+      "source_file": "src/ratings/ratings.js",
+      "source_name": "getLocalReviews",
+      "source_line": 239,
+      "language_extension": ".js",
+      "source_excerpt": "239: function getLocalReviews (productId) {\n240:   if (typeof userAddedRatings[productId] !== 'undefined') {\n241:       return userAddedRatings[productId]\n242:   }\n243:   return {\n244:     id: productId,\n245:     ratings: {\n246:       'Reviewer1': 5,\n247:       'Reviewer2': 4\n248:     }\n249:   }\n250: }",
+      "graph_node": "src/ratings/ratings.js:getLocalReviews",
+      "graph_line": 239,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "src/ratings/ratings.js:getLocalReviewsSuccessful"
+        },
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "src/ratings/ratings.js:putLocalReviews"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::src/ratings/ratings.js"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/ratings/ratings.js:getLocalReviews.var::productId"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/ratings/ratings.js:getLocalReviews.return::241"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/ratings/ratings.js:getLocalReviews.return::243"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/ratings/ratings.js:getLocalReviews.var::productId"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/ratings/ratings.js:getLocalReviews.var::productId"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/ratings/ratings.js:getLocalReviews.var::productId"
+        }
+      ]
+    },
+    {
+      "source_file": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java",
+      "source_name": "getRatings",
+      "source_line": 145,
+      "language_extension": ".java",
+      "source_excerpt": "145:     private JsonObject getRatings(String productId, HttpHeaders requestHeaders) {\n146:       ClientBuilder cb = ClientBuilder.newBuilder();\n147:       Integer timeout = star_color.equals(\"black\") ? 10000 : 2500;\n148:       cb.property(\"com.ibm.ws.jaxrs.client.connection.timeout\", timeout);\n149:       cb.property(\"com.ibm.ws.jaxrs.client.receive.timeout\", timeout);\n150:       Client client = cb.build();\n151:       WebTarget ratingsTarget = client.target(ratings_service + \"/\" + productId);\n152:       Invocation.Builder builder = ratingsTarget.request(MediaType.APPLICATION_JSON);\n153:       for (String header : headers_to_propagate) {\n154:         String value = requestHeaders.getHeaderString(header);\n155:         if (value != null) {\n156:           builder.header(header,value);",
+      "graph_node": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings",
+      "graph_line": 145,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.bookReviewsById"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::ClientBuilder.newBuilder"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Json.createReader"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Response.Status.OK.getStatusCode"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::StringReader"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::System.err.println"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::System.out.println"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::builder.get"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::builder.header"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::cb.build"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::cb.property"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::client.target"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::jsonReader.readObject"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::r.getStatusInfo"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::r.getStatusInfo().getStatusCode"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::r.readEntity"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::ratingsTarget.request"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::requestHeaders.getHeaderString"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::star_color.equals"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::builder"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::cb"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::client"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::r"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::ratingsTarget"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::statusCode"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::timeout"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::value"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::HttpHeaders"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::String"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.return::166"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.return::170"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.return::174"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::builder"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::builder"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::cb"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::cb"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::cb"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::client"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::r"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::r"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::ratingsTarget"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::statusCode"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::statusCode"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::timeout"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::timeout"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::value"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/reviews/reviews-application/src/main/java/application/rest/LibertyRestEndpoint.java:LibertyRestEndpoint.getRatings.var::value"
+        }
+      ]
+    }
+  ]
+}

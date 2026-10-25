@@ -1,0 +1,36 @@
+{
+  "repository": "DeathStarBench-source",
+  "seconds": 1.922,
+  "total_loc": 25985,
+  "nodes": 10336,
+  "edges": 37371,
+  "parsed_files": 131,
+  "node_types": {
+    "class": 245,
+    "external_func": 676,
+    "file": 140,
+    "function": 1511,
+    "module": 80,
+    "return": 1145,
+    "rpc_contract": 12,
+    "service_contract": 9,
+    "symbol_ref": 54,
+    "variable": 6464
+  },
+  "relations": {
+    "CALLS": 7229,
+    "CONTAINS": 1765,
+    "DEFINES": 3574,
+    "DEFINES_RPC": 12,
+    "EXTENDS": 226,
+    "FLOWS_TO": 143,
+    "IMPORTS": 975,
+    "MUTATES": 172,
+    "PASSES_ARG": 3312,
+    "POLYMORPHIC_CALL": 126,
+    "RETURNS": 1145,
+    "SEMANTIC_SIMILAR": 358,
+    "USES": 18334
+  },
+  "log_warnings": []
+}

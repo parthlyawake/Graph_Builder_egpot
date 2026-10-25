@@ -1,0 +1,293 @@
+{
+  "repo": "sock-shop",
+  "seed": 20261025,
+  "source_candidates": 3,
+  "candidates_by_extension": {
+    ".py": 3
+  },
+  "samples": [
+    {
+      "source_file": "graphs/sock-shop-performance.dashboard.py",
+      "source_name": "service_qps_graph",
+      "source_line": 17,
+      "language_extension": ".py",
+      "source_excerpt": "17: def service_qps_graph(datasource, serviceTitle, serviceName):\n18:     title = serviceTitle + \" QPS\"\n19:     return Graph(\n20:         title=title,\n21:         dataSource=datasource,\n22:         span=6,\n23:         lineWidth=1,\n24:         legend=Legend(\n25:             show=True,\n26:             alignAsTable=True,\n27:         ),\n28:         targets=[",
+      "graph_node": "graphs/sock-shop-performance.dashboard.py:service_qps_graph",
+      "graph_line": 17,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::graphs/sock-shop-performance.dashboard.py"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Graph"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Legend"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Target"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::XAxis"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::YAxis"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::title"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::datasource"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::serviceTitle"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.return::19"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::datasource"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::serviceTitle"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph.var::title"
+        }
+      ]
+    },
+    {
+      "source_file": "graphs/sock-shop-performance.dashboard.py",
+      "source_name": "service_latency_graph",
+      "source_line": 47,
+      "language_extension": ".py",
+      "source_excerpt": "47: def service_latency_graph(datasource, serviceTitle, serviceName):\n48:     title = serviceTitle + \" Latency\"\n49:     return Graph(\n50:         title=title,\n51:         dataSource=datasource,\n52:         span=6,\n53:         lineWidth=1,\n54:         targets=[\n55:             Target(\n56:                 expr='histogram_quantile(0.99, sum(rate(request_duration_seconds_bucket{name=\"%s\"}[1m])) by (name, le))' % (serviceName),\n57:                 legendFormat=\"99th quantile\",\n58:                 refId='A',",
+      "graph_node": "graphs/sock-shop-performance.dashboard.py:service_latency_graph",
+      "graph_line": 47,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::graphs/sock-shop-performance.dashboard.py"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Graph"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Target"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::XAxis"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::YAxis"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::title"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::datasource"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::serviceTitle"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.return::49"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::datasource"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::serviceTitle"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph.var::title"
+        }
+      ]
+    },
+    {
+      "source_file": "graphs/sock-shop-performance.dashboard.py",
+      "source_name": "service_row",
+      "source_line": 7,
+      "language_extension": ".py",
+      "source_excerpt": "7: def service_row(datasource, serviceTitle, serviceName):\n8:     return Row(\n9:         title=serviceTitle,\n10:         showTitle=True,\n11:         panels=[\n12:             service_qps_graph(datasource, serviceTitle, serviceName),\n13:             service_latency_graph(datasource, serviceTitle, serviceName),\n14:         ],\n15:     )\n16: \n17: def service_qps_graph(datasource, serviceTitle, serviceName):\n18:     title = serviceTitle + \" QPS\"",
+      "graph_node": "graphs/sock-shop-performance.dashboard.py:service_row",
+      "graph_line": 7,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::graphs/sock-shop-performance.dashboard.py"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Row"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_latency_graph"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_qps_graph"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::datasource"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::serviceTitle"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.return::8"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::datasource"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::datasource"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::serviceName"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::serviceTitle"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::serviceTitle"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "graphs/sock-shop-performance.dashboard.py:service_row.var::serviceTitle"
+        }
+      ]
+    }
+  ]
+}

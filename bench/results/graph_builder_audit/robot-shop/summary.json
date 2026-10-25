@@ -1,0 +1,37 @@
+{
+  "repository": "robot-shop",
+  "seconds": 0.205,
+  "total_loc": 2867,
+  "nodes": 766,
+  "edges": 1605,
+  "parsed_files": 22,
+  "node_types": {
+    "class": 13,
+    "endpoint": 9,
+    "external_func": 218,
+    "file": 22,
+    "function": 97,
+    "http_endpoint": 29,
+    "interface": 2,
+    "module": 23,
+    "return": 64,
+    "symbol_ref": 85,
+    "variable": 204
+  },
+  "relations": {
+    "CALLS": 354,
+    "CONTAINS": 113,
+    "DEFINES": 143,
+    "EXTENDS": 5,
+    "FLOWS_TO": 20,
+    "IMPLEMENTS": 43,
+    "IMPORTS": 137,
+    "MUTATES": 31,
+    "PASSES_ARG": 85,
+    "PRODUCES": 9,
+    "RETURNS": 64,
+    "SEMANTIC_SIMILAR": 2,
+    "USES": 599
+  },
+  "log_warnings": []
+}

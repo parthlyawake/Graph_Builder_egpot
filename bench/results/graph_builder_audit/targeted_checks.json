@@ -1,0 +1,245 @@
+{
+  "boutique_email_rpc": {
+    "exists": true,
+    "out": [
+      [
+        "CALLS",
+        "external::grpc.insecure_channel"
+      ],
+      [
+        "CALLS",
+        "external::demo_pb2_grpc.EmailServiceStub"
+      ],
+      [
+        "CALLS",
+        "external::stub.SendOrderConfirmation"
+      ],
+      [
+        "CALLS",
+        "external::demo_pb2.SendOrderConfirmationRequest"
+      ],
+      [
+        "CALLS",
+        "external::logger.info"
+      ],
+      [
+        "CALLS",
+        "external::logger.error"
+      ],
+      [
+        "CALLS",
+        "external::err.details"
+      ],
+      [
+        "CALLS",
+        "external::format"
+      ],
+      [
+        "CALLS",
+        "external::err.code"
+      ],
+      [
+        "CONSUMES",
+        "contract::EmailService.SendOrderConfirmation"
+      ]
+    ],
+    "in": [
+      [
+        "CONTAINS",
+        "file::src/emailservice/email_client.py"
+      ]
+    ]
+  },
+  "boutique_csharp_interface": {
+    "exists": true,
+    "out": [],
+    "in": [
+      [
+        "CONTAINS",
+        "file::src/cartservice/src/cartstore/ICartStore.cs"
+      ]
+    ]
+  },
+  "otel_ship_order": {
+    "exists": true,
+    "out": [
+      [
+        "CALLS",
+        "external::json.Marshal"
+      ],
+      [
+        "CALLS",
+        "external::fmt.Errorf"
+      ],
+      [
+        "CALLS",
+        "external::http.NewRequestWithContext"
+      ],
+      [
+        "CALLS",
+        "external::bytes.NewBuffer"
+      ],
+      [
+        "CALLS",
+        "external::req.Header.Set"
+      ],
+      [
+        "CALLS",
+        "external::cs.httpClient.Do"
+      ],
+      [
+        "CALLS",
+        "external::resp.Body.Close"
+      ],
+      [
+        "CALLS",
+        "external::io.ReadAll"
+      ],
+      [
+        "CALLS",
+        "external::json.Unmarshal"
+      ]
+    ],
+    "in": [
+      [
+        "CONTAINS",
+        "src/checkout/main.go:checkout"
+      ],
+      [
+        "CALLS",
+        "src/checkout/main.go:checkout.PlaceOrder"
+      ]
+    ]
+  },
+  "retail_topology": {
+    "exists": true,
+    "out": [
+      [
+        "IMPLEMENTS",
+        "contract::HTTP.GET./topology"
+      ],
+      [
+        "CALLS",
+        "external::HashMap<>"
+      ],
+      [
+        "CALLS",
+        "external::info.put"
+      ],
+      [
+        "CALLS",
+        "external::persistenceProvider.equals"
+      ],
+      [
+        "CALLS",
+        "external::this.dynamodbProperties.getTableName"
+      ],
+      [
+        "CALLS",
+        "external::this.dynamodbProperties.getEndpoint"
+      ],
+      [
+        "IMPLEMENTS",
+        "http::GET:/topology"
+      ]
+    ],
+    "in": [
+      [
+        "CONTAINS",
+        "src/cart/src/main/java/com/amazon/sample/carts/web/TopologyController.java:TopologyController"
+      ]
+    ]
+  },
+  "robot_getenv": {
+    "exists": true,
+    "out": [
+      [
+        "CALLS",
+        "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv"
+      ]
+    ],
+    "in": [
+      [
+        "CONTAINS",
+        "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller"
+      ],
+      [
+        "CALLS",
+        "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller"
+      ],
+      [
+        "CALLS",
+        "shipping/src/main/java/com/instana/robotshop/shipping/Controller.java:Controller.getenv"
+      ],
+      [
+        "CALLS",
+        "shipping/src/main/java/com/instana/robotshop/shipping/JpaConfig.java:JpaConfig.getDataSource"
+      ]
+    ]
+  },
+  "bookinfo_metrics": {
+    "exists": true,
+    "out": [
+      [
+        "CALLS",
+        "external::generate_latest"
+      ],
+      [
+        "CALLS",
+        "external::app.route"
+      ],
+      [
+        "IMPLEMENTS",
+        "http::GET:/metrics"
+      ]
+    ],
+    "in": [
+      [
+        "CONTAINS",
+        "file::src/productpage/productpage.py"
+      ]
+    ]
+  },
+  "train_order_tickets": {
+    "exists": true,
+    "out": [
+      [
+        "IMPLEMENTS",
+        "contract::HTTP.POST./api/v1/orderservice/order/tickets"
+      ],
+      [
+        "CALLS",
+        "external::OrderController.LOGGER.info"
+      ],
+      [
+        "CALLS",
+        "external::seatRequest.getTravelDate().toString"
+      ],
+      [
+        "CALLS",
+        "external::seatRequest.getTravelDate"
+      ],
+      [
+        "CALLS",
+        "external::ok"
+      ],
+      [
+        "CALLS",
+        "external::orderService.getSoldTickets"
+      ],
+      [
+        "IMPLEMENTS",
+        "http::POST:/api/v1/orderservice/order/tickets"
+      ]
+    ],
+    "in": [
+      [
+        "CONTAINS",
+        "ts-order-service/src/main/java/order/controller/OrderController.java:OrderController"
+      ]
+    ]
+  },
+  "deathstar_cpp_follow": {
+    "exists": false
+  }
+}

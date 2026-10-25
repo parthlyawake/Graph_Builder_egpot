@@ -1,0 +1,352 @@
+{
+  "repo": "microservices-demo",
+  "seed": 20261025,
+  "source_candidates": 315,
+  "candidates_by_extension": {
+    ".cs": 22,
+    ".go": 130,
+    ".java": 16,
+    ".js": 22,
+    ".py": 125
+  },
+  "samples": [
+    {
+      "source_file": "src/productcatalogservice/server.go",
+      "source_name": "main",
+      "source_line": 68,
+      "language_extension": ".go",
+      "source_excerpt": "68: func main() {\n69: \tif os.Getenv(\"ENABLE_TRACING\") == \"1\" {\n70: \t\terr := initTracing()\n71: \t\tif err != nil {\n72: \t\t\tlog.Warnf(\"warn: failed to start tracer: %+v\", err)\n73: \t\t}\n74: \t} else {\n75: \t\tlog.Info(\"Tracing disabled.\")\n76: \t}\n77: \n78: \tif os.Getenv(\"DISABLE_PROFILER\") == \"\" {\n79: \t\tlog.Info(\"Profiling enabled.\")",
+      "graph_node": "src/productcatalogservice/server.go:main",
+      "graph_line": 68,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::src/productcatalogservice/server.go"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::flag.Parse"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::func() {\n\t\tfor {\n\t\t\tsig := <-sigs\n\t\t\tlog.Printf(\"Received signal: %s\", sig)\n\t\t\tif sig == syscall.SIGUSR1 {\n\t\t\t\treloadCatalog = true\n\t\t\t\tlog.Infof(\"Enable catalog reloading\")\n\t\t\t} else {\n\t\t\t\treloadCatalog = false\n\t\t\t\tlog.Infof(\"Disable catalog reloading\")\n\t\t\t}\n\t\t}\n\t}"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::log.Fatalf"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::log.Info"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::log.Infof"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::log.Printf"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::log.Warnf"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::make"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::os.Getenv"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::signal.Notify"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::time.Duration"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::time.ParseDuration"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "src/productcatalogservice/server.go:initProfiling"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "src/productcatalogservice/server.go:initTracing"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "src/productcatalogservice/server.go:run"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/productcatalogservice/server.go:main.var::s"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/productcatalogservice/server.go:main.var::sig"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/productcatalogservice/server.go:main.var::sigs"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/productcatalogservice/server.go:main.var::v"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::s"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::s"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::s"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::sig"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::sig"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::sig"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::sigs"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::sigs"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::sigs"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::v"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::v"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/productcatalogservice/server.go:main.var::v"
+        }
+      ]
+    },
+    {
+      "source_file": "src/emailservice/email_client.py",
+      "source_name": "send_confirmation_email",
+      "source_line": 25,
+      "language_extension": ".py",
+      "source_excerpt": "25: def send_confirmation_email(email, order):\n26:   channel = grpc.insecure_channel('[::]:8080')\n27:   stub = demo_pb2_grpc.EmailServiceStub(channel)\n28:   try:\n29:     response = stub.SendOrderConfirmation(demo_pb2.SendOrderConfirmationRequest(\n30:       email = email,\n31:       order = order\n32:     ))\n33:     logger.info('Request sent.')\n34:   except grpc.RpcError as err:\n35:     logger.error(err.details())\n36:     logger.error('{}, {}'.format(err.code().name, err.code().value))",
+      "graph_node": "src/emailservice/email_client.py:send_confirmation_email",
+      "graph_line": 25,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::src/emailservice/email_client.py"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::demo_pb2.SendOrderConfirmationRequest"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::demo_pb2_grpc.EmailServiceStub"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::err.code"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::err.details"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::format"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::grpc.insecure_channel"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::logger.error"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::logger.info"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::stub.SendOrderConfirmation"
+        },
+        {
+          "direction": "out",
+          "relation": "CONSUMES",
+          "other": "contract::EmailService.SendOrderConfirmation"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::channel"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::response"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::stub"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::email"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::order"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::channel"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::email"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::order"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/emailservice/email_client.py:send_confirmation_email.var::stub"
+        }
+      ]
+    },
+    {
+      "source_file": "src/cartservice/src/cartstore/ICartStore.cs",
+      "source_name": "Ping",
+      "source_line": 24,
+      "language_extension": ".cs",
+      "source_excerpt": "24:         bool Ping();\n25:     }\n26: }",
+      "graph_node": "src/cartservice/src/cartstore/ICartStore.cs:ICartStore.Ping",
+      "graph_line": 24,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/cartservice/src/cartstore/ICartStore.cs:ICartStore"
+        }
+      ]
+    }
+  ]
+}

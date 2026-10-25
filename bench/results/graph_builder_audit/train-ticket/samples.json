@@ -1,0 +1,366 @@
+{
+  "repo": "train-ticket",
+  "seed": 20261025,
+  "source_candidates": 2235,
+  "candidates_by_extension": {
+    ".go": 3,
+    ".java": 2095,
+    ".js": 123,
+    ".py": 14
+  },
+  "samples": [
+    {
+      "source_file": "ts-station-food-service/src/main/java/food/config/SecurityConfig.java",
+      "source_name": "corsConfigurer",
+      "source_line": 39,
+      "language_extension": ".java",
+      "source_excerpt": "39:     @Bean\n40:     public WebMvcConfigurer corsConfigurer() {\n41:         return new WebMvcConfigurerAdapter() {\n42:             @Override\n43:             public void addCorsMappings(CorsRegistry registry) {\n44:                 registry.addMapping(\"/**\")\n45:                         .allowedOrigins(ALL)\n46:                         .allowedMethods(ALL)\n47:                         .allowedHeaders(ALL)\n48:                         .allowCredentials(false)\n49:                         .maxAge(3600);\n50:             }",
+      "graph_node": "ts-station-food-service/src/main/java/food/config/SecurityConfig.java:SecurityConfig.corsConfigurer",
+      "graph_line": 39,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "ts-station-food-service/src/main/java/food/config/SecurityConfig.java:SecurityConfig"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::WebMvcConfigurerAdapter"
+        },
+        {
+          "direction": "out",
+          "relation": "CONTAINS",
+          "other": "ts-station-food-service/src/main/java/food/config/SecurityConfig.java:SecurityConfig.corsConfigurer.addCorsMappings"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "ts-station-food-service/src/main/java/food/config/SecurityConfig.java:SecurityConfig.corsConfigurer.return::41"
+        }
+      ]
+    },
+    {
+      "source_file": "ts-ui-dashboard/static/js/flowPreserve.js",
+      "source_name": "setTodayDatePreserve",
+      "source_line": 4,
+      "language_extension": ".js",
+      "source_excerpt": "4: function setTodayDatePreserve(){\n5:     var today = new Date();\n6:     var dd = today.getDate();\n7:     var mm = today.getMonth()+1; //January is 0!\n8:     var yyyy = today.getFullYear();\n9:     if(dd < 10){\n10:         dd='0' + dd\n11:     }\n12:     if(mm < 10){\n13:         mm = '0' + mm\n14:     }\n15:     today = yyyy+'-'+mm+'-'+dd;",
+      "graph_node": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve",
+      "graph_line": 4,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "file::ts-ui-dashboard/static/js/flowPreserve.js"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Date"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::document.getElementById"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::document.getElementById(\"travel_booking_date\").setAttribute"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::today.getDate"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::today.getFullYear"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::today.getMonth"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::dd"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::mm"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::today"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::yyyy"
+        },
+        {
+          "direction": "out",
+          "relation": "MUTATES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::dd"
+        },
+        {
+          "direction": "out",
+          "relation": "MUTATES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::mm"
+        },
+        {
+          "direction": "out",
+          "relation": "MUTATES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::today"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::dd"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::dd"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::dd"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::dd"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::mm"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::mm"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::mm"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::mm"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::today"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::today"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::today"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::today"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::today"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-ui-dashboard/static/js/flowPreserve.js:setTodayDatePreserve.var::yyyy"
+        }
+      ]
+    },
+    {
+      "source_file": "ts-voucher-service/server.py",
+      "source_name": "queryOrderByIdAndType",
+      "source_line": 46,
+      "language_extension": ".py",
+      "source_excerpt": "46:     def queryOrderByIdAndType(self,orderId,type):\n47:         # Because nacos-sdk-python does not support nacos 2.x yet, we still use environment variables\n48:         # to set order-service url.\n49:         type = int(type)\n50:         #ordinary train\n51:         order_url = 'http://ts-order-service:12031'\n52:         order_other_url = 'http://ts-order-other-service:12032'\n53:         if(os.getenv(\"ORDER_SERVICE_URL\") is not None):\n54:             order_url = os.getenv(\"ORDER_SERVICE_URL\")\n55: \n56:         if(os.getenv(\"ORDER_OTHER_SERVICE_URL\") is not None):\n57:             order_other_url = os.getenv(\"ORDER_OTHER_SERVICE_URL\")",
+      "graph_node": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType",
+      "graph_line": 46,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.post"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::int"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::json.loads"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::os.getenv"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::response.read"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::urllib.request.Request"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::urllib.request.urlopen"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::header_dict"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::order_other_url"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::order_other_url"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::order_url"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::order_url"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::req"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::response"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::type"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::url"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::url"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::orderId"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::self"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::type"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.return::66"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::header_dict"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::orderId"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::orderId"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::order_other_url"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::order_url"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::req"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::response"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::type"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::type"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "ts-voucher-service/server.py:GetVoucherHandler.queryOrderByIdAndType.var::url"
+        }
+      ]
+    }
+  ]
+}

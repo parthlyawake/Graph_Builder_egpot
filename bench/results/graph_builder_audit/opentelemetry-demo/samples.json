@@ -1,0 +1,414 @@
+{
+  "repo": "opentelemetry-demo",
+  "seed": 20261025,
+  "source_candidates": 295,
+  "candidates_by_extension": {
+    ".cs": 47,
+    ".go": 61,
+    ".java": 30,
+    ".js": 5,
+    ".py": 83,
+    ".ts": 53,
+    ".tsx": 16
+  },
+  "samples": [
+    {
+      "source_file": "src/load-generator/locustfile.py",
+      "source_name": "index",
+      "source_line": 150,
+      "language_extension": ".py",
+      "source_excerpt": "150:     def index(self):\n151:         with self.tracer.start_as_current_span(\"user_index\", context=context.get_current()):\n152:             logging.info(\"User accessing index page\")\n153:             self.client.get(\"/\")\n154: \n155:     @task(10)\n156:     def browse_product(self):\n157:         product = random.choice(products)\n158:         with self.tracer.start_as_current_span(\"user_browse_product\", context=context.get_current(), attributes={\"demo.product.id\": product}):\n159:             logging.info(f\"User browsing product: {product}\")\n160:             self.client.get(\"/api/products/\" + product)\n161: ",
+      "graph_node": "src/load-generator/locustfile.py:WebsiteUser.index",
+      "graph_line": 150,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "src/load-generator/locustfile.py:WebsiteUser.on_start"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/load-generator/locustfile.py:WebsiteUser"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::context.get_current"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::logging.info"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::self.client.get"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::self.tracer.start_as_current_span"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::task"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/load-generator/locustfile.py:WebsiteUser.index.var::self"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/load-generator/locustfile.py:WebsiteUser.index.var::self"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/load-generator/locustfile.py:WebsiteUser.index.var::self"
+        }
+      ]
+    },
+    {
+      "source_file": "src/checkout/main.go",
+      "source_name": "shipOrder",
+      "source_line": 622,
+      "language_extension": ".go",
+      "source_excerpt": "622: func (cs *checkout) shipOrder(ctx context.Context, address *pb.Address, items []*pb.CartItem) (string, error) {\n623: \tshipPayload, err := json.Marshal(map[string]interface{}{\n624: \t\t\"address\": address,\n625: \t\t\"items\":   items,\n626: \t})\n627: \tif err != nil {\n628: \t\treturn \"\", fmt.Errorf(\"failed to marshal ship order request: %+v\", err)\n629: \t}\n630: \n631: \treq, err := http.NewRequestWithContext(ctx, \"POST\", cs.shippingSvcAddr+\"/ship-order\", bytes.NewBuffer(shipPayload))\n632: \tif err != nil {\n633: \t\treturn \"\", fmt.Errorf(\"failed to create request: %+v\", err)",
+      "graph_node": "src/checkout/main.go:checkout.shipOrder",
+      "graph_line": 622,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CALLS",
+          "other": "src/checkout/main.go:checkout.PlaceOrder"
+        },
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/checkout/main.go:checkout"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::bytes.NewBuffer"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::cs.httpClient.Do"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::fmt.Errorf"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::http.NewRequestWithContext"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::io.ReadAll"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::json.Marshal"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::json.Unmarshal"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::req.Header.Set"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::resp.Body.Close"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::req"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::resp"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::shipPayload"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::shipResp"
+        },
+        {
+          "direction": "out",
+          "relation": "DEFINES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::trackingRespBytes"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::address"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::ctx"
+        },
+        {
+          "direction": "out",
+          "relation": "PASSES_ARG",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::items"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::628"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::633"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::638"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::643"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::648"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::655"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::658"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/checkout/main.go:checkout.shipOrder.return::661"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::address"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::ctx"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::err"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::items"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::req"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::req"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::req"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::resp"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::resp"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::resp"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::resp"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::resp"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::shipPayload"
+        },
+        {
+          "direction": "out",
+          "relation": "USES",
+          "other": "src/checkout/main.go:checkout.shipOrder.var::shipPayload"
+        }
+      ]
+    },
+    {
+      "source_file": "src/react-native-app/utils/SessionIdProcessor.ts",
+      "source_name": "forceFlush",
+      "source_line": 15,
+      "language_extension": ".ts",
+      "source_excerpt": "15:   forceFlush(): Promise<void> {\n16:     return Promise.resolve();\n17:   }\n18: \n19:   // eslint-disable-next-line @typescript-eslint/no-unused-vars\n20:   onStart(span: Span, parentContext: Context): void {\n21:     SessionGateway.getSession().then(({ userId }) => {\n22:       span.setAttribute(\"session.id\", userId);\n23:     });\n24:   }\n25: \n26:   // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function",
+      "graph_node": "src/react-native-app/utils/SessionIdProcessor.ts:SessionIdProcessor.forceFlush",
+      "graph_line": 15,
+      "edges": [
+        {
+          "direction": "in",
+          "relation": "CONTAINS",
+          "other": "src/react-native-app/utils/SessionIdProcessor.ts:SessionIdProcessor"
+        },
+        {
+          "direction": "out",
+          "relation": "CALLS",
+          "other": "external::Promise.resolve"
+        },
+        {
+          "direction": "out",
+          "relation": "RETURNS",
+          "other": "src/react-native-app/utils/SessionIdProcessor.ts:SessionIdProcessor.forceFlush.return::16"
+        }
+      ]
+    }
+  ]
+}
