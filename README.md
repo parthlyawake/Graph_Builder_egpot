@@ -2,6 +2,8 @@
 
 A polyglot, multi-repository Source Code Knowledge Graph (SCKG) construction engine for distributed software systems. SCKG Graph Builder parses source code across multiple programming languages and Git repositories simultaneously, producing a single unified directed graph that captures syntactic structure, dependency relationships, dataflow chains, semantic similarity, and cross-service API contracts.
 
+Run the [local graph viewer](TEAMMATE_GRAPH_GUIDE.md) on your repository, read the [contract graph guide](CONTRACTS.md), or review the [hybrid retrieval experiments](HYBRID_RETRIEVAL_EXPERIMENTS.md).
+
 ---
 
 ## Overview

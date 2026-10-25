@@ -152,6 +152,17 @@ class TreeSitterExtractor:
         )
         self._register_imports(builder, rel_path, text, file_id)
         self._visit(builder, self.parser.parse(source).root_node, source)
+        # Next-style file routes have no explicit router-registration call.
+        parts = rel_path.replace("\\", "/").split("/")
+        if len(parts) >= 3 and parts[-1] in {"route.ts", "route.tsx", "route.js", "route.jsx"}:
+            api_positions = [i for i in range(len(parts) - 2) if parts[i:i + 2] == ["app", "api"]]
+            if api_positions:
+                suffix = "/".join(parts[api_positions[-1] + 2:-1])
+                route_path = "/api" + ("/" + suffix if suffix else "")
+                for method in ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"):
+                    handler_id = f"{builder.current_file_ctx}:{method}"
+                    if handler_id in builder.graph and builder.graph.nodes[handler_id].get("type") == "function":
+                        builder.http_endpoints.setdefault((method, route_path), []).append(handler_id)
 
     # ------------------------------------------------------------------
     # IMPORTS
@@ -257,9 +268,16 @@ class TreeSitterExtractor:
 
                 heritage = next((c for c in node.named_children if c.type in ("class_heritage", "superclass", "super_interfaces")), None)
                 if heritage:
-                    base = re.sub(r"^(?:extends|implements)\s+", "", self._text(heritage, source)).strip()
+                    heritage_text = self._text(heritage, source)
+                    base = re.sub(r"^(?:extends|implements)\s+", "", heritage_text).split("implements", 1)[0].strip()
                     if base:
                         builder.class_base_records.append((class_id, base, builder.current_file, builder.scope_depth))
+                    implemented = re.search(r"\bimplements\s+(.+)$", heritage_text)
+                    if implemented:
+                        for spelling in implemented.group(1).split(","):
+                            builder.interface_implementation_records.append(
+                                (class_id, spelling.strip(), builder.current_file, builder.scope_depth)
+                            )
                 self._with_scope(builder, name, lambda: self._visit_children(builder, node, source))
                 if self.is_java:
                     builder._current_route_prefix = old_prefix
@@ -273,9 +291,11 @@ class TreeSitterExtractor:
             name_node = node.child_by_field_name("name")
             if name_node:
                 name = self._text(name_node, source)
-                type_kind = "class" if "class" in node.type or "interface" in node.type else "type"
+                type_kind = ("interface" if node.type == "interface_declaration" else
+                             "class" if "class" in node.type else "type")
                 node_id = builder.get_node_id(name)
-                builder.add_ckg_node(node_id, type_kind, "Lsyn", name, self._line(node))
+                builder.add_ckg_node(node_id, type_kind, "Lsyn", name, self._line(node),
+                                     code=self._text(node, source)[:4000])
                 builder.register_symbol(node_id, name)
                 docstring = self._extract_doc_comment(node, source)
                 if docstring:
@@ -286,7 +306,27 @@ class TreeSitterExtractor:
                     ann = self._extract_java_annotations(node, source)
                     if "FeignClient" in ann and ann["FeignClient"]:
                         builder.grpc_client_vars.setdefault(builder.current_file, {})[name] = ann["FeignClient"]
+                if type_kind == "interface":
+                    heritage = next((c for c in node.named_children if c.type == "extends_type_clause"), None)
+                    if heritage:
+                        for spelling in re.sub(r"^extends\s+", "", self._text(heritage, source)).split(","):
+                            builder.interface_extension_records.append(
+                                (node_id, spelling.strip(), builder.current_file, builder.scope_depth)
+                            )
                 self._with_scope(builder, name, lambda: self._visit_children(builder, node, source))
+                return
+
+        if node.type in {"method_signature", "property_signature"} and builder.current_scope:
+            owner_id = builder.get_current_scope_id()
+            if builder.graph.nodes.get(owner_id, {}).get("type") == "interface":
+                name_node = node.child_by_field_name("name")
+                if name_node:
+                    name = self._text(name_node, source)
+                    member_id = builder.get_node_id(name)
+                    kind = "method" if node.type == "method_signature" else "property"
+                    builder.add_ckg_node(member_id, kind, "Lcontract", name, self._line(node),
+                                         code=self._text(node, source))
+                    builder.add_ckg_edge(owner_id, member_id, "DECLARES", "Lcontract")
                 return
 
         if node.type in {"function_declaration", "method_definition", "method_declaration"}:
@@ -576,7 +616,10 @@ class TreeSitterExtractor:
                 continue
             name = self._text(name_node, source)
             type_id = builder.get_node_id(name)
-            builder.add_ckg_node(type_id, "class", "Lsyn", name, self._line(spec))
+            body = spec.child_by_field_name("type")
+            type_kind = "interface" if body and body.type == "interface_type" else "class"
+            builder.add_ckg_node(type_id, type_kind, "Lsyn", name, self._line(spec),
+                                 code=self._text(spec, source)[:4000])
             builder.register_symbol(type_id, name)
             docstring = self._extract_doc_comment(spec, source) or self._extract_doc_comment(node, source)
             if docstring:
@@ -634,9 +677,8 @@ class TreeSitterExtractor:
                 path = path_arg.strip("'\"`")
                 if path.startswith("/"):
                     h_name = handler_arg.rsplit(".", 1)[-1]
-                    h_id = builder.get_node_id(h_name)
-                    builder.http_endpoints.setdefault(("GET", path), []).append(h_id)
-                    builder.http_endpoints.setdefault(("POST", path), []).append(h_id)
+                    h_id = f"{builder.current_file_ctx}:{h_name}"
+                    builder.http_endpoints.setdefault(("*", path), []).append(h_id)
 
         # Go client HTTP call: http.Get("http://...") or http.Post("...")
         if raw_callee in ("http.Get", "http.Post"):

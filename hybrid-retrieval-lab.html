@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GRAFT-CKG hybrid code retrieval experiment dashboard">
+  <title>GRAFT-CKG — Hybrid Retrieval Lab</title>
+  <style>
+    :root {
+      --ink: #142019;
+      --muted: #6b756e;
+      --line: #e7e9e5;
+      --paper: #fcfcfa;
+      --soft: #f4f6f2;
+      --mint: #dff5e5;
+      --mint-ink: #17623a;
+      --amber: #fff0cc;
+      --amber-ink: #8a5a00;
+      --blue: #e5efff;
+      --blue-ink: #1c4f9c;
+      --violet: #eee9ff;
+      --violet-ink: #563eb5;
+      --danger: #fff0ef;
+      --danger-ink: #9d332d;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 0 24px 72px; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      padding: 22px 0; border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 750; letter-spacing: -.02em; }
+    .brand-mark { width: 24px; height: 24px; display: grid; place-items: center; color: #fff; background: var(--ink); border-radius: 7px; font-size: 12px; }
+    .meta, .eyebrow, .subtle { color: var(--muted); }
+    .meta { font-size: 12px; white-space: nowrap; }
+    header { padding: 58px 0 36px; max-width: 760px; }
+    .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin: 10px 0 13px; font-size: clamp(32px, 5vw, 54px); line-height: 1.04; letter-spacing: -.055em; }
+    h2 { margin-bottom: 6px; font-size: 18px; letter-spacing: -.02em; }
+    h3 { margin-bottom: 5px; font-size: 14px; letter-spacing: -.01em; }
+    .lead { max-width: 680px; margin: 0; color: var(--muted); font-size: 16px; }
+    .notice { margin: 4px 0 34px; padding: 12px 14px; color: var(--amber-ink); background: var(--amber); border-radius: 10px; font-size: 13px; }
+    .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .score {
+      min-height: 126px; padding: 17px; background: #fff; border: 1px solid var(--line); border-radius: 13px;
+    }
+    .score-label { display: block; min-height: 38px; color: var(--muted); font-size: 12px; }
+    .score-value { display: block; margin-top: 5px; font-size: 31px; font-weight: 750; letter-spacing: -.055em; }
+    .score-detail { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; }
+    .section { margin-top: 58px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+    .section-head p { margin: 0; color: var(--muted); }
+    .implementation { display: grid; grid-template-columns: 1.05fr .95fr; gap: 16px; }
+    .panel { padding: 20px; background: #fff; border: 1px solid var(--line); border-radius: 13px; }
+    .capability-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 17px 0 0; padding: 0; list-style: none; }
+    .capability-list li { display: flex; align-items: flex-start; gap: 8px; color: #3c4740; font-size: 13px; }
+    .check { flex: 0 0 auto; width: 18px; height: 18px; display: grid; place-items: center; color: var(--mint-ink); background: var(--mint); border-radius: 50%; font-size: 11px; font-weight: 800; }
+    .status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+    .tag { display: inline-flex; align-items: center; min-height: 23px; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .tag.live { color: var(--mint-ink); background: var(--mint); }
+    .tag.next { color: var(--blue-ink); background: var(--blue); }
+    .tag.later { color: var(--violet-ink); background: var(--violet); }
+    .tag.verify { color: var(--amber-ink); background: var(--amber); }
+    .metric-row { margin-top: 13px; }
+    .metric-line { display: grid; grid-template-columns: 118px 1fr 54px; align-items: center; gap: 9px; margin: 10px 0; font-size: 12px; }
+    .track { height: 8px; overflow: hidden; background: var(--soft); border-radius: 99px; }
+    .bar { height: 100%; background: var(--ink); border-radius: inherit; }
+    .bar.graft { background: #277d4e; }
+    .bar.bm25 { background: #476fae; }
+    .bar.flat { background: #9a7013; }
+    .bar.ast { background: #7c599d; }
+    .metric-value { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .tab {
+      cursor: pointer; padding: 7px 11px; color: var(--muted); background: transparent;
+      border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 12px;
+    }
+    .tab[aria-pressed="true"] { color: #fff; background: var(--ink); border-color: var(--ink); }
+    .experiments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .experiment { padding: 15px 16px; background: #fff; border: 1px solid var(--line); border-radius: 11px; }
+    .experiment[hidden] { display: none; }
+    .experiment-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .code { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; font-weight: 700; }
+    .experiment p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .method-card { padding: 15px 16px; background: #fff; border: 1px solid var(--line); border-radius: 11px; }
+    .method-card h3 { margin-top: 8px; }
+    .method-card p { margin: 0; color: var(--muted); font-size: 12px; }
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px; }
+    .flow-step { position: relative; min-height: 96px; padding: 13px; background: #fff; border: 1px solid var(--line); border-radius: 11px; }
+    .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -15px; top: 35px; color: var(--muted); z-index: 1; font-size: 18px; }
+    .step-number { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
+    .flow-step strong { display: block; margin-top: 7px; font-size: 13px; }
+    .flow-step span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .next-list { margin: 14px 0 0; padding-left: 18px; }
+    .next-list li { margin: 9px 0; color: #39433d; }
+    .next-list strong { color: var(--ink); }
+    footer { margin-top: 50px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    @media (max-width: 760px) {
+      .shell { padding: 0 16px 48px; }
+      .topbar { align-items: flex-start; }
+      .meta { white-space: normal; text-align: right; }
+      header { padding: 42px 0 26px; }
+      .score-grid, .implementation, .bottom-grid, .method-grid { grid-template-columns: 1fr 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -17px; }
+    }
+    @media (max-width: 520px) {
+      .score-grid, .implementation, .bottom-grid, .experiments, .capability-list, .method-grid { grid-template-columns: 1fr; }
+      .section-head { display: block; }
+      .section-head p { margin-top: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar" aria-label="Dashboard header">
+      <div class="brand"><span class="brand-mark">G</span> GRAFT-CKG <span class="subtle">/ Hybrid Retrieval Lab</span></div>
+      <div class="meta">Research workspace · local dashboard</div>
+    </nav>
+
+    <header>
+      <div class="eyebrow">Experiment program · v0.1</div>
+      <h1>One codebase. Many retrieval strategies.</h1>
+      <p class="lead">A controlled program to compare flat, structural, graph, temporal, and polyglot retrieval under the same context budget.</p>
+    </header>
+
+    <div class="notice"><strong>Publication guardrail:</strong> the scores below are the repository’s reported results from 26 Sep 2026. They are useful baselines, but require a clean dependency install and independent rerun before being used as paper claims.</div>
+
+    <section aria-labelledby="score-heading">
+      <div class="section-head">
+        <div><div class="eyebrow">Current reported baseline</div><h2 id="score-heading">GRAFT-CKG on 12 multilingual microservice queries</h2></div>
+        <span class="tag verify">existing results need clean rerun</span>
+      </div>
+      <div class="score-grid">
+        <article class="score"><span class="score-label">Context Recall@10</span><strong class="score-value">77.1%</strong><span class="score-detail">reported GRAFT-CKG result</span></article>
+        <article class="score"><span class="score-label">Hits@5</span><strong class="score-value">83.3%</strong><span class="score-detail">reported GRAFT-CKG result</span></article>
+        <article class="score"><span class="score-label">MRR@5</span><strong class="score-value">0.561</strong><span class="score-detail">reported GRAFT-CKG result</span></article>
+        <article class="score"><span class="score-label">Contract F1</span><strong class="score-value">1.00</strong><span class="score-detail">21 consumes · 9 implements · 1 HTTP</span></article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="implementation-heading">
+      <div class="section-head"><div><div class="eyebrow">What exists now</div><h2 id="implementation-heading">Current implementation</h2></div></div>
+      <div class="implementation">
+        <article class="panel">
+          <h3>Typed, code-native graph foundation</h3>
+          <p class="subtle">The graph is the retrieval substrate—not yet a fully evaluated hybrid retriever.</p>
+          <ul class="capability-list">
+            <li><span class="check">✓</span><span>AST symbols and syntax hierarchy</span></li>
+            <li><span class="check">✓</span><span>Imports, calls, inheritance and resolution</span></li>
+            <li><span class="check">✓</span><span>Definitions, uses, returns and mutations</span></li>
+            <li><span class="check">✓</span><span>HTTP, gRPC and Protobuf contract links</span></li>
+            <li><span class="check">✓</span><span>Multi-repository namespacing and skew checks</span></li>
+            <li><span class="check">✓</span><span>Git lineage, traversal and Neo4j export</span></li>
+          </ul>
+          <div class="status-row"><span class="tag live">Python / JS / TS</span><span class="tag verify">Go parser install pending locally</span><span class="tag later">Java / C# optional</span></div>
+        </article>
+        <article class="panel">
+          <h3>Reported retrieval comparison</h3>
+          <p class="subtle">MRR@5 and Context Recall@10 are different objectives; compare both before calling a winner.</p>
+          <div class="metric-row" aria-label="Context Recall at 10 comparison">
+            <div class="metric-line"><span>GRAFT-CKG</span><div class="track"><div class="bar graft" style="width:77.1%"></div></div><span class="metric-value">77.1%</span></div>
+            <div class="metric-line"><span>BM25 lexical</span><div class="track"><div class="bar bm25" style="width:46.5%"></div></div><span class="metric-value">46.5%</span></div>
+            <div class="metric-line"><span>Flat chunks</span><div class="track"><div class="bar flat" style="width:72.2%"></div></div><span class="metric-value">72.2%</span></div>
+            <div class="metric-line"><span>Naive AST</span><div class="track"><div class="bar ast" style="width:29.2%"></div></div><span class="metric-value">29.2%</span></div>
+          </div>
+          <div class="status-row"><span class="tag verify">Flat chunks: 251% token redundancy</span><span class="tag live">Contract ablation: −43.1 pts recall</span></div>
+        </article>
+      </div>
+      <div class="notice" style="margin:16px 0 0"><strong>New experiment layer:</strong> R0–R13 are implemented in one common harness and all 14 execute on the three-query labelled smoke fixture. Fixture-only result: R3, R5 and R12 reached 1.000 MRR@5; the current deterministic R13 reranker reached 0.833, so it is not promoted without real-benchmark evidence.</div>
+    </section>
+
+    <section class="section" aria-labelledby="architecture-heading">
+      <div class="section-head"><div><div class="eyebrow">Target system</div><h2 id="architecture-heading">Hybrid retrieval path</h2></div><p>Every experiment swaps or adds a stage while preserving the same evaluation harness.</p></div>
+      <div class="flow" aria-label="Hybrid retrieval architecture">
+        <div class="flow-step"><div class="step-number">01</div><strong>Understand query</strong><span>Issue, symbol, stack trace or architecture question</span></div>
+        <div class="flow-step"><div class="step-number">02</div><strong>Retrieve seeds</strong><span>BM25, vectors, symbol index, tests and history</span></div>
+        <div class="flow-step"><div class="step-number">03</div><strong>Fuse & rerank</strong><span>RRF first; reranker later</span></div>
+        <div class="flow-step"><div class="step-number">04</div><strong>Expand evidence</strong><span>AST, calls, dataflow, contracts and lineage</span></div>
+        <div class="flow-step"><div class="step-number">05</div><strong>Pack context</strong><span>Minimal evidence under a fixed token budget</span></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="latest-results-heading">
+      <div class="section-head"><div><div class="eyebrow">Latest executed experiment</div><h2 id="latest-results-heading">Multi-repository polyglot smoke run</h2></div><p>Three labelled Python / Go / TypeScript queries · 2,048-token budget · fixture-only</p></div>
+      <div class="implementation">
+        <article class="panel">
+          <h3>Current signal</h3>
+          <p class="subtle">Semantic retrieval is the current leader on this cross-service fixture. The graph variants need tuning before they can be called better.</p>
+          <div class="score-grid" style="grid-template-columns:1fr 1fr; margin-top:16px">
+            <div class="score"><span class="score-label">Current leader</span><strong class="score-value">R1</strong><span class="score-detail">LSA semantic vectors</span></div>
+            <div class="score"><span class="score-label">R1 MRR@5</span><strong class="score-value">0.750</strong><span class="score-detail">Hits@1: 66.7%</span></div>
+          </div>
+          <div class="status-row"><span class="tag verify">not a paper claim</span><span class="tag verify">fixture-only evidence</span></div>
+        </article>
+        <article class="panel">
+          <h3>Multi-repository MRR@5</h3>
+          <p class="subtle">Comparison of the most informative methods from the R0–R13 run.</p>
+          <div class="metric-row" aria-label="Multi-repository smoke benchmark MRR at 5">
+            <div class="metric-line"><span>R1 semantic</span><div class="track"><div class="bar graft" style="width:75%"></div></div><span class="metric-value">0.750</span></div>
+            <div class="metric-line"><span>R3 AST hybrid</span><div class="track"><div class="bar bm25" style="width:52.8%"></div></div><span class="metric-value">0.528</span></div>
+            <div class="metric-line"><span>R5 static hybrid</span><div class="track"><div class="bar bm25" style="width:52.8%"></div></div><span class="metric-value">0.528</span></div>
+            <div class="metric-line"><span>R9 contract hybrid</span><div class="track"><div class="bar ast" style="width:52.8%"></div></div><span class="metric-value">0.528</span></div>
+            <div class="metric-line"><span>R12 adaptive</span><div class="track"><div class="bar ast" style="width:52.8%"></div></div><span class="metric-value">0.528</span></div>
+            <div class="metric-line"><span>R13 reranker</span><div class="track"><div class="bar flat" style="width:36.1%"></div></div><span class="metric-value">0.361</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="experiments-heading">
+      <div class="section-head"><div><div class="eyebrow">Ablation roadmap</div><h2 id="experiments-heading">Experiment registry</h2></div><p id="experiment-count" aria-live="polite">14 experiments</p></div>
+      <div class="tabs" role="group" aria-label="Filter experiment registry">
+        <button class="tab" type="button" aria-pressed="true" data-filter="all">All</button>
+        <button class="tab" type="button" aria-pressed="false" data-filter="baseline">Baseline</button>
+        <button class="tab" type="button" aria-pressed="false" data-filter="priority">Priority</button>
+        <button class="tab" type="button" aria-pressed="false" data-filter="graph">Graph & polyglot</button>
+        <button class="tab" type="button" aria-pressed="false" data-filter="advanced">Advanced</button>
+      </div>
+      <div class="experiments" id="experiments">
+        <article class="experiment" data-group="baseline"><div class="experiment-top"><span class="code">R0</span><span class="tag live">implemented</span></div><h3>BM25 lexical</h3><p>Identifier-aware sparse retrieval. Mandatory control baseline.</p></article>
+        <article class="experiment" data-group="baseline"><div class="experiment-top"><span class="code">R1</span><span class="tag live">implemented</span></div><h3>LSA semantic vectors</h3><p>Low-rank semantic code vectors; neural embeddings are a separately named future backend.</p></article>
+        <article class="experiment" data-group="priority"><div class="experiment-top"><span class="code">R2</span><span class="tag live">implemented</span></div><h3>BM25 + semantic RRF</h3><p>Cheap hybrid candidate generation; strongest non-graph baseline.</p></article>
+        <article class="experiment" data-group="priority"><div class="experiment-top"><span class="code">R3</span><span class="tag live">implemented</span></div><h3>R2 + AST scope</h3><p>Expands symbols to coherent function, class and import context.</p></article>
+        <article class="experiment" data-group="priority"><div class="experiment-top"><span class="code">R4</span><span class="tag live">implemented</span></div><h3>R2 + call/import graph</h3><p>Retrieves a small dependency neighborhood around the best seeds.</p></article>
+        <article class="experiment" data-group="priority"><div class="experiment-top"><span class="code">R5</span><span class="tag live">implemented</span></div><h3>Static hybrid</h3><p>R3 + R4. Primary single-repository candidate for the paper.</p></article>
+        <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R6</span><span class="tag live">implemented</span></div><h3>Static + dataflow</h3><p>Adds definitions, uses, returns and mutations for root-cause questions.</p></article>
+        <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R7</span><span class="tag live">implemented</span></div><h3>Static + tests</h3><p>Uses test-to-code evidence when matching test symbols are present.</p></article>
+        <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R8</span><span class="tag verify">optional input</span></div><h3>Static + Git history</h3><p>Uses Git TOUCHES edges after `--ingest-lineage` is supplied.</p></article>
+        <article class="experiment" data-group="graph"><div class="experiment-top"><span class="code">R9</span><span class="tag live">implemented</span></div><h3>Polyglot hybrid</h3><p>Static hybrid + HTTP/gRPC/Protobuf contract expansion.</p></article>
+        <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R10</span><span class="tag verify">optional input</span></div><h3>Polyglot + traces</h3><p>Consumes optional runtime trace links over static service topology.</p></article>
+        <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R11</span><span class="tag live">implemented</span></div><h3>Docs + architecture</h3><p>Adds README, Markdown and text-document evidence.</p></article>
+        <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R12</span><span class="tag live">implemented</span></div><h3>Adaptive router</h3><p>Selects the smallest relevant strategy by query type and budget.</p></article>
+        <article class="experiment" data-group="advanced"><div class="experiment-top"><span class="code">R13</span><span class="tag live">implemented</span></div><h3>Adaptive + reranker</h3><p>Uses deterministic evidence reranking; real-benchmark promotion remains evidence-driven.</p></article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="methods-heading">
+      <div class="section-head"><div><div class="eyebrow">Method guide</div><h2 id="methods-heading">What each retrieval method contributes</h2></div><p>Plain-language summaries for the experiment registry.</p></div>
+      <div class="method-grid">
+        <article class="method-card"><div class="code">R0 · lexical</div><h3>BM25 lexical search</h3><p>Matches query words, identifiers and filenames using sparse term scoring. It is the transparent control for exact-name and rare-token lookups.</p></article>
+        <article class="method-card"><div class="code">R1 · semantic</div><h3>LSA semantic vectors</h3><p>Projects text into a low-rank vector space so related concepts can match even when the query and code use different words.</p></article>
+        <article class="method-card"><div class="code">R2 · fusion</div><h3>BM25 + semantic RRF</h3><p>Combines lexical and semantic rankings with reciprocal-rank fusion, giving exact matches and conceptual matches a shared candidate list.</p></article>
+        <article class="method-card"><div class="code">R3 · structure</div><h3>R2 + AST scope</h3><p>Uses the abstract syntax tree to expand a hit to its function, class, imports and nearby declarations instead of returning an arbitrary text slice.</p></article>
+        <article class="method-card"><div class="code">R4 · dependencies</div><h3>R2 + call/import graph</h3><p>Follows calls and imports around seed files, exposing the small dependency neighborhood needed to understand a symbol.</p></article>
+        <article class="method-card"><div class="code">R5 · static hybrid</div><h3>AST + dependency graph</h3><p>Combines structural scope and dependency expansion. This is the main single-repository graph baseline in the current study.</p></article>
+        <article class="method-card"><div class="code">R6 · dataflow</div><h3>Static + dataflow</h3><p>Adds definitions, uses, returns and mutations, which helps trace how a value or error moves through code.</p></article>
+        <article class="method-card"><div class="code">R7 · tests</div><h3>Static + test evidence</h3><p>Links matching tests to implementation nodes, prioritising executable evidence for debugging and change-impact questions.</p></article>
+        <article class="method-card"><div class="code">R8 · temporal</div><h3>Static + Git history</h3><p>Adds file and symbol lineage from commits, making historically coupled or frequently changed code retrievable when lineage is ingested.</p></article>
+        <article class="method-card"><div class="code">R9 · polyglot</div><h3>Contract-aware hybrid</h3><p>Extends the static graph across HTTP, gRPC and Protobuf contracts so a request can connect producer, consumer and handler across languages.</p></article>
+        <article class="method-card"><div class="code">R10 · runtime</div><h3>Polyglot + traces</h3><p>Optionally adds observed runtime links to the static service topology, distinguishing declared relationships from paths seen in execution.</p></article>
+        <article class="method-card"><div class="code">R11 · documentation</div><h3>Docs + architecture</h3><p>Indexes README, Markdown and text evidence so architectural intent and operational notes can complement code-level matches.</p></article>
+        <article class="method-card"><div class="code">R12 · routing</div><h3>Adaptive router</h3><p>Selects the smallest relevant combination by query type and token budget, reducing unnecessary graph expansion for simple lookups.</p></article>
+        <article class="method-card"><div class="code">R13 · ordering</div><h3>Adaptive + reranker</h3><p>Reorders candidates using deterministic evidence signals such as graph distance, contract edges and source authority after retrieval.</p></article>
+      </div>
+    </section>
+
+    <section class="section bottom-grid" aria-label="Evaluation evidence">
+      <article class="panel">
+        <div class="eyebrow">Decision rule</div><h2>How a winner is chosen</h2>
+        <ul class="next-list">
+          <li><strong>Retrieval:</strong> Recall@K, MRR, nDCG and evidence precision.</li>
+          <li><strong>Context:</strong> Recall under 4K / 8K / 16K token budgets and redundancy.</li>
+          <li><strong>Downstream:</strong> completion accuracy and issue-resolution test pass rate.</li>
+          <li><strong>Operations:</strong> indexing time, query latency, graph size and cost.</li>
+        </ul>
+      </article>
+      <article class="panel">
+        <div class="eyebrow">Completed in this branch</div><h2>Evidence already produced</h2>
+        <ul class="next-list">
+          <li><strong>Retrieval:</strong> R0–R13 share one interface and a deterministic 2,048-token context packer.</li>
+          <li><strong>Polyglot:</strong> Python, JavaScript, TypeScript and Go API edges are represented in the graph.</li>
+          <li><strong>Evaluation:</strong> fixture, multi-repository and Polyglot API reports are checked in as JSON.</li>
+          <li><strong>Verification:</strong> the repository test suite passes 60/60; API-link checks pass 6/6 positive and 2/2 negative cases.</li>
+        </ul>
+      </article>
+    </section>
+
+    <footer>Data source: <code>bench/results/multi_repo_benchmark.json</code> and <code>RESULTS.md</code> · reported run timestamp: 2026-09-26 23:23:34</footer>
+  </main>
+  <script>
+    const filterButtons = document.querySelectorAll('[data-filter]');
+    const experiments = document.querySelectorAll('.experiment');
+    const count = document.getElementById('experiment-count');
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const filter = button.dataset.filter;
+        let visible = 0;
+        filterButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        experiments.forEach((experiment) => {
+          const show = filter === 'all' || experiment.dataset.group === filter;
+          experiment.hidden = !show;
+          if (show) visible += 1;
+        });
+        count.textContent = `${visible} experiment${visible === 1 ? '' : 's'}`;
+      });
+    });
+  </script>
+</body>
+</html>

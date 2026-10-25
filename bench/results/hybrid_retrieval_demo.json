@@ -1,0 +1,669 @@
+{
+  "task_count": 3,
+  "top_k": 5,
+  "token_budget": 2048,
+  "methods": {
+    "R0": {
+      "title": "BM25 lexical",
+      "MRR@5": 0.8333,
+      "Hits@1": 66.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 204.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:list_orders",
+            "app.py:DemoApp"
+          ],
+          "effective_config": "R0"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "file::helpers.py",
+            "app.py:DemoApp",
+            "app.py:DemoApp.get"
+          ],
+          "effective_config": "R0"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 2,
+          "top_matches": [
+            "file::helpers.py",
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "app.py:list_orders",
+            "app.py:DemoApp"
+          ],
+          "effective_config": "R0"
+        }
+      ]
+    },
+    "R1": {
+      "title": "LSA semantic vectors",
+      "MRR@5": 0.8333,
+      "Hits@1": 66.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 213.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:list_orders",
+            "file::app.py"
+          ],
+          "effective_config": "R1"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "app.py:list_orders",
+            "file::helpers.py",
+            "app.py:DemoApp.get"
+          ],
+          "effective_config": "R1"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 2,
+          "top_matches": [
+            "file::helpers.py",
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "app.py:list_orders",
+            "file::app.py"
+          ],
+          "effective_config": "R1"
+        }
+      ]
+    },
+    "R2": {
+      "title": "BM25 + LSA reciprocal-rank fusion",
+      "MRR@5": 0.8333,
+      "Hits@1": 66.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 205.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:list_orders",
+            "file::app.py"
+          ],
+          "effective_config": "R2"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "file::helpers.py",
+            "app.py:list_orders",
+            "app.py:DemoApp.get"
+          ],
+          "effective_config": "R2"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 2,
+          "top_matches": [
+            "file::helpers.py",
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "app.py:list_orders",
+            "file::app.py"
+          ],
+          "effective_config": "R2"
+        }
+      ]
+    },
+    "R3": {
+      "title": "R2 + AST scope",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 308.3,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "file::app.py",
+            "app.py:list_orders"
+          ],
+          "effective_config": "R3"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py",
+            "app.py:DemoApp"
+          ],
+          "effective_config": "R3"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "file::app.py",
+            "file::helpers.py",
+            "helpers.py:calculate_total",
+            "app.py:list_orders"
+          ],
+          "effective_config": "R3"
+        }
+      ]
+    },
+    "R4": {
+      "title": "R2 + dependency graph",
+      "MRR@5": 0.8333,
+      "Hits@1": 66.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 236.7,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:list_orders",
+            "app.py:DemoApp.post"
+          ],
+          "effective_config": "R4"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "app.py:list_orders"
+          ],
+          "effective_config": "R4"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 2,
+          "top_matches": [
+            "file::helpers.py",
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "app.py:list_orders",
+            "app.py:DemoApp.post"
+          ],
+          "effective_config": "R4"
+        }
+      ]
+    },
+    "R5": {
+      "title": "Static hybrid",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R5"
+        }
+      ]
+    },
+    "R6": {
+      "title": "Static hybrid + data flow",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R6"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R6"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R6"
+        }
+      ]
+    },
+    "R7": {
+      "title": "Static hybrid + tests",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R7"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R7"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R7"
+        }
+      ]
+    },
+    "R8": {
+      "title": "Static hybrid + Git lineage",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R8"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R8"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R8"
+        }
+      ]
+    },
+    "R9": {
+      "title": "Polyglot contract hybrid",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R9"
+        }
+      ]
+    },
+    "R10": {
+      "title": "Polyglot hybrid + runtime trace",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R10"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R10"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R10"
+        }
+      ]
+    },
+    "R11": {
+      "title": "Static hybrid + documentation",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 397.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R11"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "doc::C:/Users/shrey/Desktop/arvr_sop/repo_traversal/official-sckg/examples/hybrid_retrieval_system/README.md"
+          ],
+          "effective_config": "R11"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "doc::C:/Users/shrey/Desktop/arvr_sop/repo_traversal/official-sckg/examples/hybrid_retrieval_system/README.md",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total"
+          ],
+          "effective_config": "R11"
+        }
+      ]
+    },
+    "R12": {
+      "title": "Adaptive query router",
+      "MRR@5": 1.0,
+      "Hits@1": 100.0,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R5"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R9"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "app.py:DemoApp.post",
+            "file::app.py",
+            "helpers.py:calculate_total",
+            "file::helpers.py"
+          ],
+          "effective_config": "R9"
+        }
+      ]
+    },
+    "R13": {
+      "title": "Adaptive query router + reranker",
+      "MRR@5": 0.8333,
+      "Hits@1": 66.7,
+      "Hits@5": 100.0,
+      "Context_Recall": 100.0,
+      "Mean_BPE_Tokens": 354.0,
+      "queries": [
+        {
+          "id": "calculation",
+          "rank": 1,
+          "top_matches": [
+            "helpers.py:calculate_total",
+            "app.py:create_order",
+            "file::helpers.py",
+            "app.py:list_orders",
+            "app.py:DemoApp.post"
+          ],
+          "effective_config": "R13"
+        },
+        {
+          "id": "creation-route",
+          "rank": 1,
+          "top_matches": [
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "file::helpers.py",
+            "app.py:DemoApp.post",
+            "file::app.py"
+          ],
+          "effective_config": "R13"
+        },
+        {
+          "id": "order-architecture",
+          "rank": 2,
+          "top_matches": [
+            "file::helpers.py",
+            "app.py:create_order",
+            "helpers.py:calculate_total",
+            "app.py:list_orders",
+            "app.py:DemoApp.post"
+          ],
+          "effective_config": "R13"
+        }
+      ]
+    }
+  },
+  "source": "examples\\hybrid_retrieval_system",
+  "implemented_configurations": [
+    "R0",
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8",
+    "R9",
+    "R10",
+    "R11",
+    "R12",
+    "R13"
+  ],
+  "note": "Run on fixed repository revisions and labels. Do not compare against results from different corpora or token budgets."
+}

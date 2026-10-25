@@ -104,5 +104,35 @@ class PolyglotIntegrationTests(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+
+    def test_go_handlefunc_uses_wildcard_route_binding(self) -> None:
+        import tempfile, shutil, os
+        tmp = tempfile.mkdtemp()
+        try:
+            go_code = """package main
+
+import "net/http"
+
+func handler(w http.ResponseWriter, r *http.Request) {}
+
+func main() {
+    http.HandleFunc("/health", handler)
+    http.Get("/health")
+}
+"""
+            with open(os.path.join(tmp, "main.go"), "w") as f:
+                f.write(go_code)
+            builder = CKGBuilder(tmp)
+            graph = builder.build()
+            self.assertIn(("*", "/health"), builder.http_endpoints)
+            self.assertNotIn(("GET", "/health"), builder.http_endpoints)
+            self.assertNotIn(("POST", "/health"), builder.http_endpoints)
+            http_edges = [
+                (u, v) for u, v, d in graph.edges(data=True)
+                if d.get("relation") == "HTTP_CALLS"
+            ]
+            self.assertIn(("main.go:main", "main.go:handler"), http_edges)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 if __name__ == "__main__":
     unittest.main()

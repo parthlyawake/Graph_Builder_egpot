@@ -1,0 +1,17 @@
+[
+  {
+    "id": "checkout-handler",
+    "query": "Which Python endpoint handles checkout submission?",
+    "relevant": ["handle_checkout"]
+  },
+  {
+    "id": "shipping-contract",
+    "query": "Which Go service implements the gRPC shipping quote method?",
+    "relevant": ["GetQuote"]
+  },
+  {
+    "id": "frontend-to-backend",
+    "query": "Which TypeScript function submits checkout to the API endpoint?",
+    "relevant": ["submitCheckout"]
+  }
+]
