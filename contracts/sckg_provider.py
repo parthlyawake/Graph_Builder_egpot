@@ -276,6 +276,54 @@ class SCKGGraphProvider(GraphProvider):
             metadata=meta,
         )
 
+    def _matches_file(self, n_file: str, frame_path: str) -> bool:
+        if not n_file or not frame_path:
+            return False
+        f1 = n_file.replace("\\", "/").strip("/").lower()
+        f2 = frame_path.replace("\\", "/").strip("/").lower()
+        if f1 == f2:
+            return True
+        if f1.endswith("/" + f2) or f2.endswith("/" + f1):
+            return True
+        return False
+
+    def _is_test_node(self, nid: str, ndata: Optional[dict] = None) -> bool:
+        if ndata is None:
+            ndata = self.graph.nodes.get(nid, {})
+        if ndata.get("is_test"):
+            return True
+        file_path = ndata.get("file") or ""
+        norm = file_path.replace("\\", "/").lower()
+        parts = norm.split("/")
+        filename = parts[-1]
+        if "tests" in parts or "test" in parts or "__tests__" in parts or "__test__" in parts:
+            return True
+        if filename.startswith("test_") or filename.endswith("_test.py") or filename.endswith("_test.go"):
+            return True
+        if filename.endswith(".test.js") or filename.endswith(".test.ts") or filename.endswith(".test.jsx") or filename.endswith(".test.tsx"):
+            return True
+        if filename.endswith(".spec.js") or filename.endswith(".spec.ts") or filename.endswith(".spec.jsx") or filename.endswith(".spec.tsx"):
+            return True
+        name = ndata.get("name", "")
+        if name.startswith("test_") or name.startswith("Test"):
+            return True
+        return False
+
+    def _is_excluded_candidate(self, nid: str, ndata: dict, policy: TraversalPolicy) -> bool:
+        if self._is_test_node(nid, ndata):
+            return True
+        raw_type = ndata.get("type", "").lower()
+        if raw_type in ("file", "module", "variable", "return", "symbol_ref", "external_func", "parameter"):
+            return True
+        node_obj = self._to_code_node(nid, ndata)
+        if node_obj.node_type in (NodeType.FILE, NodeType.MODULE, NodeType.DEPLOYMENT):
+            return True
+        if policy.include_node_types and node_obj.node_type not in policy.include_node_types:
+            return True
+        if policy.exclude_node_types and node_obj.node_type in policy.exclude_node_types:
+            return True
+        return False
+
     # -------------------------------------------------------------------------
     # GraphProvider Interface Implementation
     # -------------------------------------------------------------------------
@@ -283,74 +331,72 @@ class SCKGGraphProvider(GraphProvider):
     def resolve_symptom(self, symptom: TelemetryEvent) -> list[CodeNode]:
         """
         Map an unstructured telemetry event to concrete code nodes.
-
-        Combines:
-          1. Stack trace parsing (extracts file/line/function)
-          2. Explicit service filtering
-          3. Keyword / symbol matching on error message and type
-          4. Fuzzy contract / endpoint resolution
         """
         matched_node_ids: List[str] = []
         seen: Set[str] = set()
 
         # Step 1: Parse stack trace if present
         if symptom.stack_trace:
-            # Python style: File "path/to/file.py", line 123, in func_name
             py_matches = re.findall(r'File "([^"]+)", line (\d+)(?:, in (\w+))?', symptom.stack_trace)
             for file_path, line_no, func_name in py_matches:
                 line_int = int(line_no)
+                frame_candidates = []
                 for nid, ndata in self.graph.nodes(data=True):
                     n_file = ndata.get("file", "")
-                    if n_file and (file_path.endswith(n_file) or n_file.endswith(file_path)):
-                        if func_name and ndata.get("name") == func_name:
-                            if nid not in seen:
-                                seen.add(nid)
-                                matched_node_ids.append(nid)
-                        elif ndata.get("line_no") == line_int:
-                            if nid not in seen:
-                                seen.add(nid)
-                                matched_node_ids.append(nid)
+                    if n_file and self._matches_file(n_file, file_path):
+                        if func_name:
+                            if ndata.get("name") == func_name and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
+                                frame_candidates.append(nid)
+                        else:
+                            n_line = int(ndata.get("line_no", 0)) if str(ndata.get("line_no", "")).isdigit() else 0
+                            n_line_end = int(ndata.get("line_end", n_line)) if str(ndata.get("line_end", "")).isdigit() else n_line
+                            if ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
+                                if n_line <= line_int <= n_line_end:
+                                    frame_candidates.append(nid)
 
-            # Go / generic style: file.go:123
+                for nid in frame_candidates:
+                    if nid not in seen:
+                        seen.add(nid)
+                        matched_node_ids.append(nid)
+
             go_matches = re.findall(r'([\w\/\.\-]+(?:\.go|\.js|\.ts|\.py)):(\d+)', symptom.stack_trace)
             for file_path, line_no in go_matches:
                 line_int = int(line_no)
                 for nid, ndata in self.graph.nodes(data=True):
                     n_file = ndata.get("file", "")
-                    if n_file and (file_path.endswith(n_file) or n_file.endswith(file_path)):
-                        if ndata.get("line_no") == line_int:
+                    if n_file and self._matches_file(n_file, file_path) and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
+                        n_line = int(ndata.get("line_no", 0)) if str(ndata.get("line_no", "")).isdigit() else 0
+                        n_line_end = int(ndata.get("line_end", n_line)) if str(ndata.get("line_end", "")).isdigit() else n_line
+                        if n_line <= line_int <= n_line_end:
                             if nid not in seen:
                                 seen.add(nid)
                                 matched_node_ids.append(nid)
 
-        # Step 2: Extract keywords from error message & error type
-        combined_text = f"{symptom.error_type} {symptom.message}"
-        tokens = set(re.findall(r'[A-Za-z0-9_]{3,}', combined_text))
+        # Step 2: Extract keywords from error message & error type ONLY if stack trace produced no matches
+        if not matched_node_ids:
+            combined_text = f"{symptom.error_type} {symptom.message}"
+            tokens = set(re.findall(r'[A-Za-z0-9_]{3,}', combined_text))
 
-        # Check for specific RPC or method mentions
-        for token in tokens:
-            resolved = self.traversal._resolve_node_id(token)
-            if resolved and resolved not in seen:
-                seen.add(resolved)
-                matched_node_ids.append(resolved)
+            for token in tokens:
+                resolved = self.traversal._resolve_node_id(token)
+                if resolved and resolved not in seen:
+                    seen.add(resolved)
+                    matched_node_ids.append(resolved)
 
-            # Contract lookup
-            resolved_c = self.traversal._resolve_contract_or_endpoint(token)
-            if resolved_c and resolved_c not in seen:
-                seen.add(resolved_c)
-                matched_node_ids.append(resolved_c)
+                resolved_c = self.traversal._resolve_contract_or_endpoint(token)
+                if resolved_c and resolved_c not in seen:
+                    seen.add(resolved_c)
+                    matched_node_ids.append(resolved_c)
 
-        # Step 3: Service-level filtering / fallback
+        # Step 3: Service-level filtering / fallback if still empty
         if not matched_node_ids and symptom.service_name:
             svc_nodes = []
             for nid, ndata in self.graph.nodes(data=True):
                 svc = ndata.get("repo") or self.traversal._extract_service_name(ndata.get("file", ""), nid)
                 if svc.lower() == symptom.service_name.lower():
-                    # Prefer entrypoint functions or service contracts
                     if ndata.get("type") in ("function", "method", "service_contract"):
                         svc_nodes.append(nid)
 
-            # Rank svc_nodes by keyword overlap
             ranked = sorted(
                 svc_nodes,
                 key=lambda n: sum(1 for t in tokens if t.lower() in n.lower()),
@@ -369,18 +415,11 @@ class SCKGGraphProvider(GraphProvider):
         """
         From a symptom-linked node, walk backward through the graph
         to find ranked candidate root causes.
-
-        Explores:
-          - Direct callers (in-edges via CALLS)
-          - Upstream dataflow and argument sources
-          - Contract implementations if node consumes an RPC
-          - Defect and contract skew attribution from self-healing diagnostics
         """
         start_id = self.traversal._resolve_node_id(node.node_id) or node.node_id
         if start_id not in self.graph:
             return []
 
-        # Run diagnostics if available to cross-reference defects
         active_defects = []
         if self.remediation:
             try:
@@ -398,34 +437,39 @@ class SCKGGraphProvider(GraphProvider):
             if c_node:
                 defect_map[c_node] = attr
 
-        # BFS Backward walk
-        visited: Set[str] = {start_id}
-        queue: List[Tuple[str, int, float, List[str]]] = [(start_id, 0, 1.0, ["Symptom entrypoint"])]
         candidates: List[CandidateRootCause] = []
+        visited: Set[str] = {start_id}
+        depth_map: Dict[str, int] = {start_id: 0}
+
+        # D1: Add the start/symptom node itself first with confidence 1.0
+        start_data = self.graph.nodes.get(start_id, {})
+        if not self._is_excluded_candidate(start_id, start_data, policy):
+            candidates.append(
+                CandidateRootCause(
+                    node=self._to_code_node(start_id, start_data),
+                    confidence=1.0,
+                    evidence=["Symptom location (stack frame)"],
+                    rank=1,
+                )
+            )
+
+        # BFS walk
+        queue: List[Tuple[str, int, float, List[str]]] = [(start_id, 0, 1.0, ["Symptom entrypoint"])]
 
         while queue and len(candidates) < policy.max_nodes:
             curr, depth, curr_conf, path_evidence = queue.pop(0)
 
             if depth > 0:
-                curr_node_obj = self._to_code_node(curr)
-
-                # Type filtering
-                skip = False
-                if policy.include_node_types and curr_node_obj.node_type not in policy.include_node_types:
-                    skip = True
-                if policy.exclude_node_types and curr_node_obj.node_type in policy.exclude_node_types:
-                    skip = True
-
-                if not skip:
+                curr_data = self.graph.nodes.get(curr, {})
+                if not self._is_excluded_candidate(curr, curr_data, policy):
                     final_conf = curr_conf
-                    # Boost confidence if implicated in a known contract defect
                     if curr in defect_map:
                         final_conf = max(final_conf, 0.95)
                         path_evidence.append(f"Implicated in detected defect: {defect_map[curr].get('type')}")
 
                     candidates.append(
                         CandidateRootCause(
-                            node=curr_node_obj,
+                            node=self._to_code_node(curr, curr_data),
                             confidence=round(min(1.0, max(0.05, final_conf)), 3),
                             evidence=list(path_evidence),
                             rank=len(candidates) + 1,
@@ -435,40 +479,57 @@ class SCKGGraphProvider(GraphProvider):
             if depth >= policy.max_depth:
                 continue
 
-            # In-edges (who calls, produces, imports, or flows into curr)
+            # D2: Out-edges: Causal dependencies (callees, used symbols, imported modules, consumed contracts)
+            for _, tgt, data in self.graph.out_edges(curr, data=True):
+                rel = data.get("relation", "DEPENDS_ON")
+                if rel in ("CALLS", "POLYMORPHIC_CALL", "USES", "IMPORTS", "CONSUMES", "IMPLEMENTS", "HTTP_CALLS"):
+                    edge_weight = 0.9 if rel in ("CALLS", "POLYMORPHIC_CALL") else 0.85
+                    if rel in ("CONSUMES", "IMPLEMENTS"):
+                        edge_weight = 0.95
+                    new_conf = curr_conf * edge_weight
+                    new_evidence = path_evidence + [f"Dependency [{rel}] -> {tgt}"]
+                    if tgt not in visited:
+                        visited.add(tgt)
+                        depth_map[tgt] = depth + 1
+                        queue.append((tgt, depth + 1, new_conf, new_evidence))
+
+            # D2: In-edges: Incoming dataflow into curr
             for src, _, data in self.graph.in_edges(curr, data=True):
                 rel = data.get("relation", "DEPENDS_ON")
-                edge_weight = 0.85
-                if rel in ("CALLS", "POLYMORPHIC_CALL"):
-                    edge_weight = 0.9
-                elif rel in ("MUTATES", "FLOWS_TO"):
+                if rel in ("PASSES_ARG", "FLOWS_TO", "MUTATES", "RETURNS"):
                     edge_weight = 0.8
-                elif rel in ("CONSUMES", "IMPLEMENTS"):
-                    edge_weight = 0.95
+                    new_conf = curr_conf * edge_weight
+                    new_evidence = path_evidence + [f"Dataflow [{rel}] from {src}"]
+                    if src not in visited:
+                        visited.add(src)
+                        depth_map[src] = depth + 1
+                        queue.append((src, depth + 1, new_conf, new_evidence))
+                elif rel in ("CALLS", "POLYMORPHIC_CALL"):
+                    # Callers ("bad argument" hypothesis) - lower confidence than direct dependencies
+                    edge_weight = 0.5
+                    new_conf = curr_conf * edge_weight
+                    new_evidence = path_evidence + [f"Caller [{rel}] from {src}"]
+                    if src not in visited:
+                        visited.add(src)
+                        depth_map[src] = depth + 1
+                        queue.append((src, depth + 1, new_conf, new_evidence))
 
-                new_conf = curr_conf * edge_weight
-                new_evidence = path_evidence + [f"Walked backwards via [{rel}] from {curr}"]
-
-                if src not in visited:
-                    visited.add(src)
-                    queue.append((src, depth + 1, new_conf, new_evidence))
-
-            # Special cross-service jump: if curr consumes a contract, explore implementers
+            # D2: Cross-service jump: if curr consumes a contract, explore implementers
             for _, tgt, data in self.graph.out_edges(curr, data=True):
                 if data.get("relation") == "CONSUMES":
-                    # tgt is contract node
                     for impl_src, _, impl_data in self.graph.in_edges(tgt, data=True):
                         if impl_data.get("relation") == "IMPLEMENTS" and impl_src not in visited:
                             visited.add(impl_src)
+                            depth_map[impl_src] = depth + 1
                             queue.append((
                                 impl_src,
                                 depth + 1,
                                 curr_conf * 0.92,
-                                path_evidence + [f"Cross-service jump: consumed contract {tgt} implemented by {impl_src}"]
+                                path_evidence + [f"Cross-service: contract {tgt} implemented by {impl_src}"]
                             ))
 
-        # Re-sort candidates by confidence descending
-        candidates.sort(key=lambda c: c.confidence, reverse=True)
+        # D4: Deterministic ranking: sort by (-confidence, depth, node_id)
+        candidates.sort(key=lambda c: (-round(c.confidence, 4), depth_map.get(c.node.node_id, 99), c.node.node_id))
         for i, c in enumerate(candidates):
             c.rank = i + 1
 
@@ -501,6 +562,15 @@ class SCKGGraphProvider(GraphProvider):
                     visited_nodes.add(tgt)
                     queue.append((tgt, depth + 1))
 
+            # Callers of curr (functions and tests that call curr) are downstream affected nodes
+            for caller_src, _, in_data in self.graph.in_edges(curr, data=True):
+                rel = in_data.get("relation")
+                if rel in ("CALLS", "POLYMORPHIC_CALL"):
+                    collected_edges.append(self._to_typed_edge(caller_src, curr, in_data))
+                    if caller_src not in visited_nodes:
+                        visited_nodes.add(caller_src)
+                        queue.append((caller_src, depth + 1))
+
             # If curr is a contract or implements one, find downstream consumers (in-edges with CONSUMES)
             curr_data = self.graph.nodes.get(curr, {})
             if "contract" in curr_data.get("type", "") or "contract::" in curr:
@@ -522,7 +592,6 @@ class SCKGGraphProvider(GraphProvider):
                 continue
             result_nodes.append(c_node)
 
-        # Retain edges whose endpoints are present in the filtered nodes
         node_id_set = {n.node_id for n in result_nodes}
         filtered_edges = [e for e in collected_edges if e.source_id in node_id_set and e.target_id in node_id_set]
 
@@ -533,11 +602,10 @@ class SCKGGraphProvider(GraphProvider):
         )
 
     def get_node_detail(self, node_id: str) -> CodeNode:
-        """Fetch full details for a single node by ID."""
-        resolved = self.traversal._resolve_node_id(node_id) or node_id
-        if resolved not in self.graph:
+        """Fetch full details for a single node by ID (exact ID only)."""
+        if node_id not in self.graph:
             raise KeyError(f"Node '{node_id}' not found in SCKG")
-        return self._to_code_node(resolved, self.graph.nodes[resolved])
+        return self._to_code_node(node_id, self.graph.nodes[node_id])
 
     def explain_path(
         self, node_a: CodeNode, node_b: CodeNode
@@ -546,8 +614,8 @@ class SCKGGraphProvider(GraphProvider):
         Construct a causal explanation chain from node_a to node_b.
         Uses NetworkX shortest path over directed or undirected graph.
         """
-        src = self.traversal._resolve_node_id(node_a.node_id) or node_a.node_id
-        dst = self.traversal._resolve_node_id(node_b.node_id) or node_b.node_id
+        src = node_a.node_id if node_a.node_id in self.graph else (self.traversal._resolve_node_id(node_a.node_id) or node_a.node_id)
+        dst = node_b.node_id if node_b.node_id in self.graph else (self.traversal._resolve_node_id(node_b.node_id) or node_b.node_id)
 
         if src not in self.graph or dst not in self.graph:
             return CausalPath(nodes=[], edges=[])
@@ -583,13 +651,18 @@ class SCKGGraphProvider(GraphProvider):
             u, v = path_nodes[i], path_nodes[i + 1]
             if self.graph.has_edge(u, v):
                 edge_dict = self.graph.get_edge_data(u, v)
-                # NetworkX MultiDiGraph stores dict of edge keys {0: {...}, 1: {...}}
-                edge_data = list(edge_dict.values())[0] if isinstance(edge_dict, dict) and 0 in edge_dict else edge_dict
+                if isinstance(edge_dict, dict) and edge_dict:
+                    edge_data = next(iter(edge_dict.values()))
+                else:
+                    edge_data = edge_dict or {}
                 typed_edges.append(self._to_typed_edge(u, v, edge_data or {}))
             elif self.graph.has_edge(v, u):
                 edge_dict = self.graph.get_edge_data(v, u)
-                edge_data = list(edge_dict.values())[0] if isinstance(edge_dict, dict) and 0 in edge_dict else edge_dict
-                # Reverse edge
+                if isinstance(edge_dict, dict) and edge_dict:
+                    edge_data = next(iter(edge_dict.values()))
+                else:
+                    edge_data = edge_dict or {}
+                # Return edge in its real direction (source = actual source node)
                 typed_edges.append(self._to_typed_edge(v, u, edge_data or {}))
             else:
                 typed_edges.append(TypedEdge(source_id=u, target_id=v, edge_type=EdgeType.DEPENDS_ON))

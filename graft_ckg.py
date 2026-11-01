@@ -270,9 +270,31 @@ class CKGBuilder(ast.NodeVisitor):
                 self.file_symbols[self.current_file] = []
             self.file_symbols[self.current_file].append(node_id)
 
+    def _is_test_path(self, file_path: str) -> bool:
+        if not file_path:
+            return False
+        norm = file_path.replace("\\", "/").lower()
+        parts = norm.split("/")
+        filename = parts[-1]
+        if "tests" in parts or "test" in parts or "__tests__" in parts or "__test__" in parts:
+            return True
+        if filename.startswith("test_") or filename.endswith("_test.py") or filename.endswith("_test.go"):
+            return True
+        if filename.endswith(".test.js") or filename.endswith(".test.ts") or filename.endswith(".test.jsx") or filename.endswith(".test.tsx"):
+            return True
+        if filename.endswith(".spec.js") or filename.endswith(".spec.ts") or filename.endswith(".spec.jsx") or filename.endswith(".spec.tsx"):
+            return True
+        return False
+
     def add_ckg_node(self, node_id, node_type, layer="Lsyn", name="", line_no=0, doc="", code="", repo=None, docstring=None):
         if docstring is not None:
             doc = docstring
+        try:
+            parsed_line = int(line_no) if line_no is not None and str(line_no).isdigit() else 0
+        except (ValueError, TypeError):
+            parsed_line = 0
+            
+        is_test = self._is_test_path(self.current_file_ctx)
         self.graph.add_node(
             node_id,
             id=node_id,
@@ -281,9 +303,10 @@ class CKGBuilder(ast.NodeVisitor):
             name=name,
             file=self.current_file_ctx,
             repo=repo if repo is not None else (self.repo_id or ""),
-            line_no=line_no,
+            line_no=parsed_line,
             docstring=doc,
             code=code,
+            is_test=is_test,
         )
         if doc:
             self.docstrings[node_id] = doc
