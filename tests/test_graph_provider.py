@@ -155,3 +155,22 @@ def test_get_contract_between(multi_repo_provider):
     for c in contracts:
         assert isinstance(c, CodeNode)
         assert c.node_type == NodeType.CONTRACT
+
+
+def test_get_contract_between_unrelated(multi_repo_provider):
+    """Test get_contract_between returns empty list when no contract exists."""
+    contracts = multi_repo_provider.get_contract_between("order_service", "non_existent_service")
+    assert contracts == []
+
+
+def test_resolve_symptom_java_stacktrace(polyglot_provider):
+    """Test resolve_symptom parses Java-style stack traces."""
+    event = TelemetryEvent(
+        event_id="evt-java-001",
+        service_name="shipping_service",
+        error_type="NullPointerException",
+        message="Null reference",
+        stack_trace='at com.example.ShippingServer.GetQuote(main.go:12)',
+    )
+    res = polyglot_provider.resolve_symptom(event)
+    assert isinstance(res, list)

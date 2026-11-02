@@ -225,8 +225,10 @@ class SCKGGraphProvider(GraphProvider):
         language = self._map_language(data.get("language"), file_path)
         service_name = data.get("repo") or self.traversal._extract_service_name(file_path or "", node_id)
 
-        line_start = data.get("line_no")
-        line_end = data.get("line_end") or line_start
+        raw_start = data.get("line_no")
+        line_start = int(raw_start) if raw_start is not None and str(raw_start).lstrip("-").isdigit() else None
+        raw_end = data.get("line_end")
+        line_end = int(raw_end) if raw_end is not None and str(raw_end).lstrip("-").isdigit() else line_start
         source_snippet = data.get("code")
 
         signature = data.get("signature")
@@ -345,7 +347,8 @@ class SCKGGraphProvider(GraphProvider):
                     n_file = ndata.get("file", "")
                     if n_file and self._matches_file(n_file, file_path):
                         if func_name:
-                            if ndata.get("name") == func_name and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
+                            name_matched = (ndata.get("name") == func_name or nid.endswith(":" + func_name) or nid.endswith("." + func_name))
+                            if name_matched and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
                                 frame_candidates.append(nid)
                         else:
                             n_line = int(ndata.get("line_no", 0)) if str(ndata.get("line_no", "")).isdigit() else 0
@@ -359,7 +362,20 @@ class SCKGGraphProvider(GraphProvider):
                         seen.add(nid)
                         matched_node_ids.append(nid)
 
-            go_matches = re.findall(r'([\w\/\.\-]+(?:\.go|\.js|\.ts|\.py)):(\d+)', symptom.stack_trace)
+            java_matches = re.findall(r'at (?:[\w\.\$]+)\(([\w\.\-]+\.java):(\d+)\)', symptom.stack_trace)
+            for file_path, line_no in java_matches:
+                line_int = int(line_no)
+                for nid, ndata in self.graph.nodes(data=True):
+                    n_file = ndata.get("file", "")
+                    if n_file and self._matches_file(n_file, file_path) and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
+                        n_line = int(ndata.get("line_no", 0)) if str(ndata.get("line_no", "")).isdigit() else 0
+                        n_line_end = int(ndata.get("line_end", n_line)) if str(ndata.get("line_end", "")).isdigit() else n_line
+                        if n_line <= line_int <= n_line_end:
+                            if nid not in seen:
+                                seen.add(nid)
+                                matched_node_ids.append(nid)
+
+            go_matches = re.findall(r'([\w\/\.\-]+(?:\.go|\.js|\.ts|\.py|\.java)):(\d+)', symptom.stack_trace)
             for file_path, line_no in go_matches:
                 line_int = int(line_no)
                 for nid, ndata in self.graph.nodes(data=True):
@@ -593,7 +609,14 @@ class SCKGGraphProvider(GraphProvider):
             result_nodes.append(c_node)
 
         node_id_set = {n.node_id for n in result_nodes}
-        filtered_edges = [e for e in collected_edges if e.source_id in node_id_set and e.target_id in node_id_set]
+        seen_edges = set()
+        filtered_edges: List[TypedEdge] = []
+        for e in collected_edges:
+            if e.source_id in node_id_set and e.target_id in node_id_set:
+                edge_key = (e.source_id, e.target_id, e.edge_type)
+                if edge_key not in seen_edges:
+                    seen_edges.add(edge_key)
+                    filtered_edges.append(e)
 
         return InducedSubgraph(
             root_node_id=start_id,
@@ -729,8 +752,13 @@ class SCKGGraphProvider(GraphProvider):
         Identifies contracts where one service implements/produces and the other consumes.
         """
         contracts_found: Set[str] = set()
-        svc_a_lower = service_a.lower()
-        svc_b_lower = service_b.lower()
+        svc_a_lower = service_a.lower().strip()
+        svc_b_lower = service_b.lower().strip()
+
+        def _svc_matches(target: str, candidate: str) -> bool:
+            t = target.lower().replace("-", "_")
+            c = candidate.lower().replace("-", "_")
+            return t == c or t in c or c in t
 
         # Iterate all contract nodes in graph
         for nid, data in self.graph.nodes(data=True):
@@ -748,7 +776,7 @@ class SCKGGraphProvider(GraphProvider):
                         self.graph.nodes[src].get("file", ""), src
                     )
                     if src_svc:
-                        producers.add(src_svc.lower())
+                        producers.add(src_svc)
 
             # Check consumers (in-edges with CONSUMES / HTTP_CALLS or out-edges with CONSUMES)
             consumers: Set[str] = set()
@@ -759,22 +787,22 @@ class SCKGGraphProvider(GraphProvider):
                         self.graph.nodes[src].get("file", ""), src
                     )
                     if src_svc:
-                        consumers.add(src_svc.lower())
+                        consumers.add(src_svc)
 
             # Check if (service_a produces and service_b consumes) OR vice-versa
-            a_produces_b_consumes = (svc_a_lower in producers and svc_b_lower in consumers)
-            b_produces_a_consumes = (svc_b_lower in producers and svc_a_lower in consumers)
+            a_prod = any(_svc_matches(svc_a_lower, p) for p in producers)
+            b_prod = any(_svc_matches(svc_b_lower, p) for p in producers)
+            a_cons = any(_svc_matches(svc_a_lower, c) for c in consumers)
+            b_cons = any(_svc_matches(svc_b_lower, c) for c in consumers)
 
-            if a_produces_b_consumes or b_produces_a_consumes:
+            if (a_prod and b_cons) or (b_prod and a_cons):
                 contracts_found.add(nid)
 
-        # Fallback: Check proto_services metadata if available on builder
-        if hasattr(self.builder, "proto_services"):
-            for sname, sinfo in self.builder.proto_services.items():
-                s_node = sinfo.get("node_id")
-                if s_node in self.graph:
-                    # Check if either service is related to this contract
-                    contracts_found.add(s_node)
+        # Include parent contract service nodes for any matched RPC contracts
+        for nid in list(contracts_found):
+            for parent_src, _, edata in self.graph.in_edges(nid, data=True):
+                if edata.get("relation") == "DEFINES_RPC":
+                    contracts_found.add(parent_src)
 
         return [self._to_code_node(c) for c in contracts_found]
 
