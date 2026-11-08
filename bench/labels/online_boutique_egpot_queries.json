@@ -1,0 +1,906 @@
+[
+  {
+    "id": "ob01_explicit",
+    "link_id": 1,
+    "type": "explicit",
+    "query": "In Online Boutique, where is GetSupportedCurrencies implemented for getCurrencies?",
+    "start_node": "frontend/rpc.go:frontendServer.getCurrencies",
+    "contract_node": "contract::CurrencyService.GetSupportedCurrencies",
+    "handler_node": "currencyservice/server.js:getSupportedCurrencies",
+    "gold_nodes": [
+      "contract::CurrencyService.GetSupportedCurrencies",
+      "currencyservice/server.js:getSupportedCurrencies"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getCurrencies",
+      "contract::CurrencyService.GetSupportedCurrencies",
+      "currencyservice/server.js:getSupportedCurrencies"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "currencyservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:32",
+      "handler": "src/currencyservice/server.js:128",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob01_indirect",
+    "link_id": 1,
+    "type": "indirect",
+    "query": "Which service supplies the available currency choices for display?",
+    "start_node": "frontend/rpc.go:frontendServer.getCurrencies",
+    "contract_node": "contract::CurrencyService.GetSupportedCurrencies",
+    "handler_node": "currencyservice/server.js:getSupportedCurrencies",
+    "gold_nodes": [
+      "contract::CurrencyService.GetSupportedCurrencies",
+      "currencyservice/server.js:getSupportedCurrencies"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getCurrencies",
+      "contract::CurrencyService.GetSupportedCurrencies",
+      "currencyservice/server.js:getSupportedCurrencies"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "currencyservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:32",
+      "handler": "src/currencyservice/server.js:128",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob02_explicit",
+    "link_id": 2,
+    "type": "explicit",
+    "query": "In Online Boutique, where is Convert implemented for convertCurrency?",
+    "start_node": "frontend/rpc.go:frontendServer.convertCurrency",
+    "contract_node": "contract::CurrencyService.Convert",
+    "handler_node": "currencyservice/server.js:convert",
+    "gold_nodes": [
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.convertCurrency",
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "currencyservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:82",
+      "handler": "src/currencyservice/server.js:138",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob02_indirect",
+    "link_id": 2,
+    "type": "indirect",
+    "query": "Which service turns a price in one currency into another when a shopper changes the display currency?",
+    "start_node": "frontend/rpc.go:frontendServer.convertCurrency",
+    "contract_node": "contract::CurrencyService.Convert",
+    "handler_node": "currencyservice/server.js:convert",
+    "gold_nodes": [
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.convertCurrency",
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "currencyservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:82",
+      "handler": "src/currencyservice/server.js:138",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob03_explicit",
+    "link_id": 3,
+    "type": "explicit",
+    "query": "In Online Boutique, where is ListProducts implemented for getProducts?",
+    "start_node": "frontend/rpc.go:frontendServer.getProducts",
+    "contract_node": "contract::ProductCatalogService.ListProducts",
+    "handler_node": "productcatalogservice/product_catalog.go:productCatalog.ListProducts",
+    "gold_nodes": [
+      "contract::ProductCatalogService.ListProducts",
+      "productcatalogservice/product_catalog.go:productCatalog.ListProducts"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getProducts",
+      "contract::ProductCatalogService.ListProducts",
+      "productcatalogservice/product_catalog.go:productCatalog.ListProducts"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "productcatalogservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:47",
+      "handler": "src/productcatalogservice/product_catalog.go:41",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob03_indirect",
+    "link_id": 3,
+    "type": "indirect",
+    "query": "Which service returns the full catalog of items shown on the home page?",
+    "start_node": "frontend/rpc.go:frontendServer.getProducts",
+    "contract_node": "contract::ProductCatalogService.ListProducts",
+    "handler_node": "productcatalogservice/product_catalog.go:productCatalog.ListProducts",
+    "gold_nodes": [
+      "contract::ProductCatalogService.ListProducts",
+      "productcatalogservice/product_catalog.go:productCatalog.ListProducts"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getProducts",
+      "contract::ProductCatalogService.ListProducts",
+      "productcatalogservice/product_catalog.go:productCatalog.ListProducts"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "productcatalogservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:47",
+      "handler": "src/productcatalogservice/product_catalog.go:41",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob04_explicit",
+    "link_id": 4,
+    "type": "explicit",
+    "query": "In Online Boutique, where is GetProduct implemented for getProduct?",
+    "start_node": "frontend/rpc.go:frontendServer.getProduct",
+    "contract_node": "contract::ProductCatalogService.GetProduct",
+    "handler_node": "productcatalogservice/product_catalog.go:productCatalog.GetProduct",
+    "gold_nodes": [
+      "contract::ProductCatalogService.GetProduct",
+      "productcatalogservice/product_catalog.go:productCatalog.GetProduct"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getProduct",
+      "contract::ProductCatalogService.GetProduct",
+      "productcatalogservice/product_catalog.go:productCatalog.GetProduct"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "productcatalogservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:53",
+      "handler": "src/productcatalogservice/product_catalog.go:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob04_indirect",
+    "link_id": 4,
+    "type": "indirect",
+    "query": "Which service looks up the details of a single item on a product page?",
+    "start_node": "frontend/rpc.go:frontendServer.getProduct",
+    "contract_node": "contract::ProductCatalogService.GetProduct",
+    "handler_node": "productcatalogservice/product_catalog.go:productCatalog.GetProduct",
+    "gold_nodes": [
+      "contract::ProductCatalogService.GetProduct",
+      "productcatalogservice/product_catalog.go:productCatalog.GetProduct"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getProduct",
+      "contract::ProductCatalogService.GetProduct",
+      "productcatalogservice/product_catalog.go:productCatalog.GetProduct"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "productcatalogservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:53",
+      "handler": "src/productcatalogservice/product_catalog.go:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob05_explicit",
+    "link_id": 5,
+    "type": "explicit",
+    "query": "In Online Boutique, where is GetCart implemented for getCart?",
+    "start_node": "frontend/rpc.go:frontendServer.getCart",
+    "contract_node": "contract::CartService.GetCart",
+    "handler_node": "cartservice/src/services/CartService.cs:CartService.GetCart",
+    "gold_nodes": [
+      "contract::CartService.GetCart",
+      "cartservice/src/services/CartService.cs:CartService.GetCart"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getCart",
+      "contract::CartService.GetCart",
+      "cartservice/src/services/CartService.cs:CartService.GetCart"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "cartservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:58",
+      "handler": "src/cartservice/src/services/CartService.cs:40",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob05_indirect",
+    "link_id": 5,
+    "type": "indirect",
+    "query": "Which service returns the items a shopper currently has in their basket?",
+    "start_node": "frontend/rpc.go:frontendServer.getCart",
+    "contract_node": "contract::CartService.GetCart",
+    "handler_node": "cartservice/src/services/CartService.cs:CartService.GetCart",
+    "gold_nodes": [
+      "contract::CartService.GetCart",
+      "cartservice/src/services/CartService.cs:CartService.GetCart"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getCart",
+      "contract::CartService.GetCart",
+      "cartservice/src/services/CartService.cs:CartService.GetCart"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "cartservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:58",
+      "handler": "src/cartservice/src/services/CartService.cs:40",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob06_explicit",
+    "link_id": 6,
+    "type": "explicit",
+    "query": "In Online Boutique, where is AddItem implemented for insertCart?",
+    "start_node": "frontend/rpc.go:frontendServer.insertCart",
+    "contract_node": "contract::CartService.AddItem",
+    "handler_node": "cartservice/src/services/CartService.cs:CartService.AddItem",
+    "gold_nodes": [
+      "contract::CartService.AddItem",
+      "cartservice/src/services/CartService.cs:CartService.AddItem"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.insertCart",
+      "contract::CartService.AddItem",
+      "cartservice/src/services/CartService.cs:CartService.AddItem"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "cartservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:68",
+      "handler": "src/cartservice/src/services/CartService.cs:34",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob06_indirect",
+    "link_id": 6,
+    "type": "indirect",
+    "query": "Which service stores a newly selected product in the shopper's basket?",
+    "start_node": "frontend/rpc.go:frontendServer.insertCart",
+    "contract_node": "contract::CartService.AddItem",
+    "handler_node": "cartservice/src/services/CartService.cs:CartService.AddItem",
+    "gold_nodes": [
+      "contract::CartService.AddItem",
+      "cartservice/src/services/CartService.cs:CartService.AddItem"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.insertCart",
+      "contract::CartService.AddItem",
+      "cartservice/src/services/CartService.cs:CartService.AddItem"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "cartservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:68",
+      "handler": "src/cartservice/src/services/CartService.cs:34",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob07_explicit",
+    "link_id": 7,
+    "type": "explicit",
+    "query": "In Online Boutique, where is EmptyCart implemented for emptyCart?",
+    "start_node": "frontend/rpc.go:frontendServer.emptyCart",
+    "contract_node": "contract::CartService.EmptyCart",
+    "handler_node": "cartservice/src/services/CartService.cs:CartService.EmptyCart",
+    "gold_nodes": [
+      "contract::CartService.EmptyCart",
+      "cartservice/src/services/CartService.cs:CartService.EmptyCart"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.emptyCart",
+      "contract::CartService.EmptyCart",
+      "cartservice/src/services/CartService.cs:CartService.EmptyCart"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "cartservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:63",
+      "handler": "src/cartservice/src/services/CartService.cs:45",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob07_indirect",
+    "link_id": 7,
+    "type": "indirect",
+    "query": "Which service removes everything from a shopper's basket?",
+    "start_node": "frontend/rpc.go:frontendServer.emptyCart",
+    "contract_node": "contract::CartService.EmptyCart",
+    "handler_node": "cartservice/src/services/CartService.cs:CartService.EmptyCart",
+    "gold_nodes": [
+      "contract::CartService.EmptyCart",
+      "cartservice/src/services/CartService.cs:CartService.EmptyCart"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.emptyCart",
+      "contract::CartService.EmptyCart",
+      "cartservice/src/services/CartService.cs:CartService.EmptyCart"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "cartservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:63",
+      "handler": "src/cartservice/src/services/CartService.cs:45",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob08_explicit",
+    "link_id": 8,
+    "type": "explicit",
+    "query": "In Online Boutique, where is ListRecommendations implemented for getRecommendations?",
+    "start_node": "frontend/rpc.go:frontendServer.getRecommendations",
+    "contract_node": "contract::RecommendationService.ListRecommendations",
+    "handler_node": "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations",
+    "gold_nodes": [
+      "contract::RecommendationService.ListRecommendations",
+      "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getRecommendations",
+      "contract::RecommendationService.ListRecommendations",
+      "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "recommendationservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:100",
+      "handler": "src/recommendationservice/recommendation_server.py:70",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob08_indirect",
+    "link_id": 8,
+    "type": "indirect",
+    "query": "Which service suggests other products a shopper might like?",
+    "start_node": "frontend/rpc.go:frontendServer.getRecommendations",
+    "contract_node": "contract::RecommendationService.ListRecommendations",
+    "handler_node": "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations",
+    "gold_nodes": [
+      "contract::RecommendationService.ListRecommendations",
+      "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getRecommendations",
+      "contract::RecommendationService.ListRecommendations",
+      "recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "recommendationservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:100",
+      "handler": "src/recommendationservice/recommendation_server.py:70",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob09_explicit",
+    "link_id": 9,
+    "type": "explicit",
+    "query": "In Online Boutique, where is GetQuote implemented for getShippingQuote?",
+    "start_node": "frontend/rpc.go:frontendServer.getShippingQuote",
+    "contract_node": "contract::ShippingService.GetQuote",
+    "handler_node": "shippingservice/main.go:server.GetQuote",
+    "gold_nodes": [
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getShippingQuote",
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "shippingservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:88",
+      "handler": "src/shippingservice/main.go:119",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob09_indirect",
+    "link_id": 9,
+    "type": "indirect",
+    "query": "Which service estimates the delivery cost for the items in a basket?",
+    "start_node": "frontend/rpc.go:frontendServer.getShippingQuote",
+    "contract_node": "contract::ShippingService.GetQuote",
+    "handler_node": "shippingservice/main.go:server.GetQuote",
+    "gold_nodes": [
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getShippingQuote",
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "shippingservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:88",
+      "handler": "src/shippingservice/main.go:119",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob10_explicit",
+    "link_id": 10,
+    "type": "explicit",
+    "query": "In Online Boutique, where is GetAds implemented for getAd?",
+    "start_node": "frontend/rpc.go:frontendServer.getAd",
+    "contract_node": "contract::AdService.GetAds",
+    "handler_node": "adservice/src/main/java/hipstershop/AdService.java:AdService.AdServiceImpl.getAds",
+    "gold_nodes": [
+      "contract::AdService.GetAds",
+      "adservice/src/main/java/hipstershop/AdService.java:AdService.AdServiceImpl.getAds"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getAd",
+      "contract::AdService.GetAds",
+      "adservice/src/main/java/hipstershop/AdService.java:AdService.AdServiceImpl.getAds"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "adservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:123",
+      "handler": "src/adservice/src/main/java/hipstershop/AdService.java:94",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob10_indirect",
+    "link_id": 10,
+    "type": "indirect",
+    "query": "Which service picks the advertisement text shown on a page?",
+    "start_node": "frontend/rpc.go:frontendServer.getAd",
+    "contract_node": "contract::AdService.GetAds",
+    "handler_node": "adservice/src/main/java/hipstershop/AdService.java:AdService.AdServiceImpl.getAds",
+    "gold_nodes": [
+      "contract::AdService.GetAds",
+      "adservice/src/main/java/hipstershop/AdService.java:AdService.AdServiceImpl.getAds"
+    ],
+    "gold_path": [
+      "frontend/rpc.go:frontendServer.getAd",
+      "contract::AdService.GetAds",
+      "adservice/src/main/java/hipstershop/AdService.java:AdService.AdServiceImpl.getAds"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "frontend",
+    "service_handler": "adservice",
+    "evidence": {
+      "caller": "src/frontend/rpc.go:123",
+      "handler": "src/adservice/src/main/java/hipstershop/AdService.java:94",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob11_explicit",
+    "link_id": 11,
+    "type": "explicit",
+    "query": "In Online Boutique, where is Charge implemented for chargeCard?",
+    "start_node": "checkoutservice/main.go:checkoutService.chargeCard",
+    "contract_node": "contract::PaymentService.Charge",
+    "handler_node": "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler",
+    "gold_nodes": [
+      "contract::PaymentService.Charge",
+      "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.chargeCard",
+      "contract::PaymentService.Charge",
+      "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "paymentservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:370",
+      "handler": "src/paymentservice/server.js:41",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob11_indirect",
+    "link_id": 11,
+    "type": "indirect",
+    "query": "Which service takes the card details and completes the payment for an order?",
+    "start_node": "checkoutservice/main.go:checkoutService.chargeCard",
+    "contract_node": "contract::PaymentService.Charge",
+    "handler_node": "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler",
+    "gold_nodes": [
+      "contract::PaymentService.Charge",
+      "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.chargeCard",
+      "contract::PaymentService.Charge",
+      "paymentservice/server.js:HipsterShopServer.ChargeServiceHandler"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "paymentservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:370",
+      "handler": "src/paymentservice/server.js:41",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob12_explicit",
+    "link_id": 12,
+    "type": "explicit",
+    "query": "In Online Boutique, where is SendOrderConfirmation implemented for sendOrderConfirmation?",
+    "start_node": "checkoutservice/main.go:checkoutService.sendOrderConfirmation",
+    "contract_node": "contract::EmailService.SendOrderConfirmation",
+    "handler_node": "emailservice/email_server.py:DummyEmailService.SendOrderConfirmation",
+    "gold_nodes": [
+      "contract::EmailService.SendOrderConfirmation",
+      "emailservice/email_server.py:DummyEmailService.SendOrderConfirmation"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.sendOrderConfirmation",
+      "contract::EmailService.SendOrderConfirmation",
+      "emailservice/email_server.py:DummyEmailService.SendOrderConfirmation"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "emailservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:380",
+      "handler": "src/emailservice/email_server.py:109",
+      "basis": "source"
+    },
+    "accepted_alternatives": [
+      "emailservice/email_server.py:EmailService.SendOrderConfirmation"
+    ]
+  },
+  {
+    "id": "ob12_indirect",
+    "link_id": 12,
+    "type": "indirect",
+    "query": "Which service notifies the customer by email after an order is placed?",
+    "start_node": "checkoutservice/main.go:checkoutService.sendOrderConfirmation",
+    "contract_node": "contract::EmailService.SendOrderConfirmation",
+    "handler_node": "emailservice/email_server.py:DummyEmailService.SendOrderConfirmation",
+    "gold_nodes": [
+      "contract::EmailService.SendOrderConfirmation",
+      "emailservice/email_server.py:DummyEmailService.SendOrderConfirmation"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.sendOrderConfirmation",
+      "contract::EmailService.SendOrderConfirmation",
+      "emailservice/email_server.py:DummyEmailService.SendOrderConfirmation"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "emailservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:380",
+      "handler": "src/emailservice/email_server.py:109",
+      "basis": "source"
+    },
+    "accepted_alternatives": [
+      "emailservice/email_server.py:EmailService.SendOrderConfirmation"
+    ]
+  },
+  {
+    "id": "ob13_explicit",
+    "link_id": 13,
+    "type": "explicit",
+    "query": "In Online Boutique, where is ShipOrder implemented for shipOrder?",
+    "start_node": "checkoutservice/main.go:checkoutService.shipOrder",
+    "contract_node": "contract::ShippingService.ShipOrder",
+    "handler_node": "shippingservice/main.go:server.ShipOrder",
+    "gold_nodes": [
+      "contract::ShippingService.ShipOrder",
+      "shippingservice/main.go:server.ShipOrder"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.shipOrder",
+      "contract::ShippingService.ShipOrder",
+      "shippingservice/main.go:server.ShipOrder"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "shippingservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:387",
+      "handler": "src/shippingservice/main.go:142",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob13_indirect",
+    "link_id": 13,
+    "type": "indirect",
+    "query": "Which service arranges dispatch and returns a tracking number once an order is paid?",
+    "start_node": "checkoutservice/main.go:checkoutService.shipOrder",
+    "contract_node": "contract::ShippingService.ShipOrder",
+    "handler_node": "shippingservice/main.go:server.ShipOrder",
+    "gold_nodes": [
+      "contract::ShippingService.ShipOrder",
+      "shippingservice/main.go:server.ShipOrder"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.shipOrder",
+      "contract::ShippingService.ShipOrder",
+      "shippingservice/main.go:server.ShipOrder"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "shippingservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:387",
+      "handler": "src/shippingservice/main.go:142",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob14_explicit",
+    "link_id": 14,
+    "type": "explicit",
+    "query": "In Online Boutique, where is GetQuote implemented for quoteShipping?",
+    "start_node": "checkoutservice/main.go:checkoutService.quoteShipping",
+    "contract_node": "contract::ShippingService.GetQuote",
+    "handler_node": "shippingservice/main.go:server.GetQuote",
+    "gold_nodes": [
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.quoteShipping",
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "shippingservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:315",
+      "handler": "src/shippingservice/main.go:119",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob14_indirect",
+    "link_id": 14,
+    "type": "indirect",
+    "query": "Which service does the order-placement flow ask for the shipping price when totalling an order?",
+    "start_node": "checkoutservice/main.go:checkoutService.quoteShipping",
+    "contract_node": "contract::ShippingService.GetQuote",
+    "handler_node": "shippingservice/main.go:server.GetQuote",
+    "gold_nodes": [
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.quoteShipping",
+      "contract::ShippingService.GetQuote",
+      "shippingservice/main.go:server.GetQuote"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "shippingservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:315",
+      "handler": "src/shippingservice/main.go:119",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob15_explicit",
+    "link_id": 15,
+    "type": "explicit",
+    "query": "In Online Boutique, where is Convert implemented for convertCurrency?",
+    "start_node": "checkoutservice/main.go:checkoutService.convertCurrency",
+    "contract_node": "contract::CurrencyService.Convert",
+    "handler_node": "currencyservice/server.js:convert",
+    "gold_nodes": [
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.convertCurrency",
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "currencyservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:360",
+      "handler": "src/currencyservice/server.js:138",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  },
+  {
+    "id": "ob15_indirect",
+    "link_id": 15,
+    "type": "indirect",
+    "query": "Which service does the order-placement flow use to express item prices in the customer's chosen currency?",
+    "start_node": "checkoutservice/main.go:checkoutService.convertCurrency",
+    "contract_node": "contract::CurrencyService.Convert",
+    "handler_node": "currencyservice/server.js:convert",
+    "gold_nodes": [
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "gold_path": [
+      "checkoutservice/main.go:checkoutService.convertCurrency",
+      "contract::CurrencyService.Convert",
+      "currencyservice/server.js:convert"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "checkoutservice",
+    "service_handler": "currencyservice",
+    "evidence": {
+      "caller": "src/checkoutservice/main.go:360",
+      "handler": "src/currencyservice/server.js:138",
+      "basis": "source"
+    },
+    "accepted_alternatives": []
+  }
+]
