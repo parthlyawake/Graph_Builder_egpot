@@ -23,6 +23,7 @@ import os
 import re
 import sys
 import time
+from urllib.parse import urlsplit
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -58,6 +59,7 @@ class WorkspaceConfig:
     repositories: List[RepoConfig] = field(default_factory=list)
     shared_contracts: List[str] = field(default_factory=list)
     ignore_patterns: List[str] = field(default_factory=list)
+    exclude_nonproduction: bool = False
 
     @classmethod
     def from_file(cls, config_path: str) -> "WorkspaceConfig":
@@ -99,6 +101,7 @@ class WorkspaceConfig:
             repositories=repos,
             shared_contracts=data.get("shared_contracts", []),
             ignore_patterns=data.get("ignore_patterns", []),
+            exclude_nonproduction=data.get("exclude_nonproduction", False),
         )
 
     @staticmethod
@@ -263,6 +266,7 @@ class WorkspaceCKGBuilder:
                 continue
 
             builder = CKGBuilder(repo_full_path, repo_id=repo_cfg.id)
+            builder.exclude_nonproduction = self.config.exclude_nonproduction
             if self.config.ignore_patterns:
                 builder.ignore_patterns.extend(self.config.ignore_patterns)
             builder.build()
@@ -496,13 +500,53 @@ class WorkspaceCKGBuilder:
 
     def _resolve_cross_repo_http_calls(self):
         """Binds frontend and client HTTP calls in Repo A to routes declared in Repo B."""
+        aliases, environments = self._http_deployment_context()
         resolved = 0
         for caller_repo_id, builder in self.repo_builders.items():
+            requests = self._source_http_requests(builder, environments.get(caller_repo_id, {}))
+            for request in requests:
+                caller_id, url, method, source_file, line, kind = request
+                parsed = urlsplit(url)
+                host = (parsed.hostname or "").lower()
+                # Unknown/ambiguous authorities must never fall back to path-only matching.
+                repos = aliases.get(host, set())
+                if len(repos) != 1 or "{" in host:
+                    continue
+                destination = next(iter(repos))
+                if destination == caller_repo_id:
+                    continue
+                matches = set()
+                for (verb, path), handlers in self.http_endpoints.items():
+                    if verb not in {method, "*"} or not self._http_path_matches(path, parsed.path):
+                        continue
+                    matches.update(h for h in handlers if self.graph.nodes[h].get("repo") == destination)
+                if len(matches) != 1:
+                    continue
+                target_id = next(iter(matches))
+                if self.graph.nodes[target_id].get("http_ambiguous_definition"):
+                    continue
+                meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx=source_file)
+                evidence = f"{source_file}:{line}"
+                key = f"w_http_source_{caller_id}_{target_id}_{source_file}_{line}"
+                self.graph.add_edge(caller_id, target_id, key=key, relation="HTTP_CALLS", layer="Ldep",
+                                    metadata=meta.to_dict(), **meta.to_dict(), match_kind=kind,
+                                    source_evidence=evidence, http_method=method, http_url=url)
+                resolved += 1
             for caller_id, clean_path, method, id_ctx in builder.http_calls_to_resolve:
+                # These languages are resolved from complete source expressions above;
+                # legacy Java tuples discard the host and used to guess exchange's verb.
+                if id_ctx.endswith((".java", ".py")) and not clean_path.startswith("/"):
+                    continue
+                if id_ctx.endswith(".java"):
+                    continue
+                if id_ctx.endswith(".py") and any(r[0] == caller_id for r in requests):
+                    continue
                 targets = list(dict.fromkeys([
                     *self.http_endpoints.get((method.upper(), clean_path), []),
                     *self.http_endpoints.get(("*", clean_path), []),
                 ]))
+                if len(targets) != 1:
+                    continue
                 for target_id in targets:
                     if target_id == caller_id:
                         continue
@@ -529,6 +573,406 @@ class WorkspaceCKGBuilder:
                     resolved += 1
         if resolved:
             print(f"[*] Cross-Repository HTTP Resolution: {resolved} cross-service HTTP bindings created.")
+
+    @staticmethod
+    def _http_path_matches(route, requested):
+        """Match complete path segments; parameters cannot absorb slashes or prefixes."""
+        def segments(path):
+            return path.split("/")
+        left, right = segments(route), segments(requested)
+        if len(left) != len(right):
+            return False
+        for a, b in zip(left, right):
+            variable = re.fullmatch(r"\{[^{}]+\}|<[^<>]+>", a)
+            if variable:
+                if not b:
+                    return False
+            elif a != b or "{" in b or "<" in b:
+                return False
+        return True
+
+    def _http_deployment_context(self):
+        """Read literal compose/Kubernetes host aliases and scoped environment values.
+
+        Conflicting declarations stay ambiguous. No process environment, DNS,
+        interpolation, deployment execution or network lookup is consulted.
+        """
+        from collections import defaultdict
+        aliases, envs = defaultdict(set), defaultdict(lambda: defaultdict(set))
+        roots = {r.id: Path(self._resolve_path(r.path)).resolve() for r in self.config.repositories}
+        for rid, root in roots.items():
+            aliases[root.name.lower()].add(rid)
+            aliases[rid.lower()].add(rid)
+        try:
+            import yaml
+        except ImportError:
+            return aliases, {}
+        documents = []
+        for base, dirs, files in os.walk(self.config.base_dir):
+            dirs[:] = sorted(d for d in dirs if d not in {".git", "node_modules", "vendor", "build", "dist", "target", ".venv"})
+            for name in sorted(files):
+                if not name.endswith((".yaml", ".yml")):
+                    continue
+                path = Path(base, name)
+                if path.stat().st_size > 2_000_000:
+                    continue
+                try:
+                    documents.extend((path, doc) for doc in yaml.safe_load_all(path.read_text(encoding="utf-8")) if isinstance(doc, dict))
+                except (OSError, ValueError, yaml.YAMLError):
+                    continue
+        configmaps = defaultdict(list)
+        for _, doc in documents:
+            if doc.get("kind") == "ConfigMap":
+                configmaps[doc.get("metadata", {}).get("name")].append(doc.get("data", {}))
+        def owners(names):
+            return set().union(*(aliases.get(str(n).lower(), set()) for n in names)) if names else set()
+        def add_env(rids, values):
+            for rid in rids:
+                for key, value in values.items():
+                    if isinstance(value, (str, int)) and "$" not in str(value):
+                        envs[rid][key].add(str(value))
+        for path, doc in documents:
+            services = doc.get("services", {})
+            if isinstance(services, dict):
+                for name, service in services.items():
+                    if not isinstance(service, dict):
+                        continue
+                    build = service.get("build", {})
+                    context = build.get("context") if isinstance(build, dict) else build
+                    rids = owners([name, service.get("container_name", "")])
+                    if context and "$" not in str(context):
+                        resolved = (path.parent / str(context)).resolve()
+                        rids |= {rid for rid, root in roots.items() if resolved == root}
+                    if len(rids) == 1:
+                        aliases[str(name).lower()].update(rids)
+                    values = service.get("environment", {})
+                    if isinstance(values, list):
+                        values = dict(v.split("=", 1) for v in values if isinstance(v, str) and "=" in v)
+                    if isinstance(values, dict):
+                        add_env(rids, values)
+            metadata = doc.get("metadata", {})
+            spec = doc.get("spec", {})
+            if not isinstance(spec, dict):
+                continue
+            template = spec.get("template", {})
+            podspec = template.get("spec", spec) if isinstance(template, dict) else spec
+            labels = template.get("metadata", {}).get("labels", {}) if isinstance(template, dict) else {}
+            containers = podspec.get("containers", [])
+            if doc.get("kind") == "Service":
+                selector = spec.get("selector", {})
+                rids = owners(list(selector.values()) if isinstance(selector, dict) else [])
+                aliases[str(metadata.get("name", "")).lower()].update(rids)
+            for container in containers if isinstance(containers, list) else []:
+                rids = owners([metadata.get("name", ""), container.get("name", ""), *labels.values()])
+                for ref in container.get("envFrom", []):
+                    for values in configmaps.get(ref.get("configMapRef", {}).get("name"), []):
+                        add_env(rids, values)
+                for entry in container.get("env", []):
+                    if "value" in entry:
+                        add_env(rids, {entry.get("name"): entry["value"]})
+                    else:
+                        ref = entry.get("valueFrom", {}).get("configMapKeyRef", {})
+                        for values in configmaps.get(ref.get("name"), []):
+                            if ref.get("key") in values:
+                                add_env(rids, {entry.get("name"): values[ref["key"]]})
+        return aliases, {rid: {k: next(iter(v)) for k, v in values.items() if len(v) == 1}
+                         for rid, values in envs.items()}
+
+    def _source_http_requests(self, builder, environment):
+        requests = []
+        for file, lines in sorted(builder.raw_file_lines.items()):
+            text = "\n".join(line.rstrip("\r\n") for line in lines)
+            if file.endswith(".java"):
+                requests.extend(self._java_http_requests(builder, file, text))
+            elif file.endswith(".py"):
+                requests.extend(self._python_http_requests(builder, file, text, environment))
+        return list(dict.fromkeys(requests))
+
+    @staticmethod
+    def _http_caller(builder, file, line):
+        candidates = [(int(d.get("line_no", 0)), n) for n, d in builder.graph.nodes(data=True)
+                      if n.startswith(f"{builder.repo_prefix}{file}:") and d.get("type") == "function"
+                      and int(d.get("line_no", 0)) <= line]
+        return max(candidates, default=(0, None))[1]
+
+    def _java_http_requests(self, builder, file, text):
+        """Evaluate literal Java URL expressions and one-level pure string helpers."""
+        from polyglot import TreeSitterExtractor
+        source = text.encode("utf-8")
+        root = TreeSitterExtractor(".java").parser.parse(source).root_node
+        def raw(n):
+            return source[n.start_byte:n.end_byte].decode("utf-8") if n else ""
+        def walk(n):
+            yield n
+            for child in n.named_children:
+                yield from walk(child)
+        methods = [n for n in walk(root) if n.type == "method_declaration"]
+        helpers = {}
+        for method in methods:
+            returns = [n for n in walk(method) if n.type == "return_statement"]
+            if len(returns) == 1 and returns[0].named_children:
+                params = method.child_by_field_name("parameters")
+                names = [raw(p.child_by_field_name("name")) for p in params.named_children] if params else []
+                helpers.setdefault(raw(method.child_by_field_name("name")), []).append((names, returns[0].named_children[0]))
+        def evaluate(n, values, depth=0):
+            if n is None:
+                return None
+            if n.type == "string_literal":
+                try:
+                    return json.loads(raw(n))
+                except ValueError:
+                    return None
+            if n.type in {"identifier", "field_access"}:
+                return values.get(raw(n), "{*}")
+            if n.type == "parenthesized_expression" and n.named_children:
+                return evaluate(n.named_children[0], values, depth)
+            if n.type == "binary_expression" and n.child_by_field_name("operator") and raw(n.child_by_field_name("operator")) == "+":
+                a, b = evaluate(n.child_by_field_name("left"), values, depth), evaluate(n.child_by_field_name("right"), values, depth)
+                return a + b if isinstance(a, str) and isinstance(b, str) else None
+            if n.type == "method_invocation":
+                name = raw(n.child_by_field_name("name"))
+                args = n.child_by_field_name("arguments")
+                args = list(args.named_children) if args else []
+                if name in {"create", "of"} and args and raw(n.child_by_field_name("object")) in {"URI", "java.net.URI"}:
+                    return evaluate(args[0], values, depth)
+                options = helpers.get(name, [])
+                if depth == 0 and len(options) == 1:
+                    params, expression = options[0]
+                    if len(params) == len(args):
+                        bound = {p: evaluate(a, values, 1) for p, a in zip(params, args)}
+                        return evaluate(expression, bound, 1)
+                return "{*}"
+            return "{*}"
+        receivers = set(re.findall(r"\b(?:RestTemplate|WebClient|HttpClient)\s+(\w+)", text))
+        result = []
+        for method in methods:
+            caller = self._http_caller(builder, file, method.start_point.row + 1)
+            if not caller:
+                continue
+            values = {}
+            def flow(n):
+                # Unknown runtime conditions require a join, never last-branch wins.
+                if n.type == "if_statement":
+                    before = dict(values)
+                    consequence = n.child_by_field_name("consequence")
+                    alternative = n.child_by_field_name("alternative")
+                    if consequence:
+                        yield from flow(consequence)
+                    left = dict(values)
+                    values.clear(); values.update(before)
+                    if alternative:
+                        yield from flow(alternative)
+                    right = dict(values)
+                    values.clear()
+                    values.update({k: left.get(k) if left.get(k) == right.get(k) else None
+                                   for k in left.keys() | right.keys()})
+                    return
+                yield n
+                for child in n.named_children:
+                    yield from flow(child)
+            for n in flow(method):
+                if n.type == "variable_declarator":
+                    values[raw(n.child_by_field_name("name"))] = evaluate(n.child_by_field_name("value"), values)
+                elif n.type == "assignment_expression":
+                    values[raw(n.child_by_field_name("left"))] = evaluate(n.child_by_field_name("right"), values)
+                if n.type != "method_invocation":
+                    continue
+                name, obj = raw(n.child_by_field_name("name")), raw(n.child_by_field_name("object"))
+                args = n.child_by_field_name("arguments")
+                args = list(args.named_children) if args else []
+                verb = None
+                url = None
+                if obj in receivers and args:
+                    if name == "exchange" and len(args) > 1:
+                        found = re.fullmatch(r"(?:\w+\.)*HttpMethod\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)", raw(args[1]))
+                        verb = found.group(1) if found else None
+                    else:
+                        found = re.fullmatch(r"(get|post|put|delete|patch|head|options)(?:ForObject|ForEntity)?", name)
+                        verb = found.group(1).upper() if found else None
+                    url = evaluate(args[0], values)
+                if name == "uri" and args and any(re.match(r"\b" + re.escape(r) + r"\.", obj) for r in receivers):
+                    found = re.search(r"\.(get|post|put|delete|patch|head|options)\(\)", obj)
+                    verb = found.group(1).upper() if found else None
+                    url = evaluate(args[0], values)
+                if name == "uri" and args and "HttpRequest.newBuilder(" in obj:
+                    parent = n
+                    while parent.parent and parent.parent.type == "method_invocation":
+                        parent = parent.parent
+                    chain = raw(parent)
+                    found = re.search(r"\.(GET|POST|PUT|DELETE|HEAD)\(", chain)
+                    # A URI builder is only a request if passed to send/sendAsync.
+                    declaration = parent.parent
+                    request_name = raw(declaration.child_by_field_name("name")) if declaration and declaration.type == "variable_declarator" else None
+                    if found and request_name and re.search(r"\b(?:" + "|".join(map(re.escape, receivers)) + r")\.send(?:Async)?\(\s*" + re.escape(request_name) + r"\b", raw(method)):
+                        verb, url = found.group(1), evaluate(args[0], values)
+                if verb and isinstance(url, str) and url.startswith(("http://", "https://")):
+                    result.append((caller, url, verb, file, n.start_point.row + 1,
+                                   "helper" if any(re.search(r"\b" + re.escape(h) + r"\(", raw(method))
+                                                   for h in helpers if h != raw(method.child_by_field_name("name"))) else "literal_host"))
+        return result
+
+    def _python_http_requests(self, builder, file, text, environment):
+        """Resolve static URL dataflow, including one imported helper module.
+
+        This is a small AST evaluator, never Python execution. Unknown values
+        become path placeholders; an unknown host is rejected by the resolver.
+        Only syntactically imported HTTP clients are recognized.
+        """
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            return []
+        result, modules, imports = [], {file: tree}, {}
+        def name(n):
+            return ast.unparse(n) if n is not None else ""
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                module = (node.module or "").replace(".", "/") + ".py"
+                possible = [module, str(Path(file).parent / module).replace("\\", "/")]
+                local = next((p for p in possible if p in builder.raw_file_lines), None)
+                if local:
+                    try:
+                        modules[local] = ast.parse("\n".join(x.rstrip("\r\n") for x in builder.raw_file_lines[local]))
+                        for alias in node.names:
+                            imports[alias.asname or alias.name] = (local, alias.name)
+                    except SyntaxError:
+                        pass
+        client_aliases = {}
+        for module, parsed in modules.items():
+            aliases = {}
+            for n in ast.walk(parsed):
+                if isinstance(n, ast.Import):
+                    for alias in n.names:
+                        if alias.name in {"requests", "httpx", "urllib.request"}:
+                            aliases[alias.asname or alias.name] = alias.name
+                if isinstance(n, ast.ImportFrom) and n.module in {"requests", "httpx", "urllib.request"}:
+                    for alias in n.names:
+                        aliases[alias.asname or alias.name] = n.module + "." + alias.name
+            client_aliases[module] = aliases
+        definitions = {(m, n.name): n for m, parsed in modules.items()
+                       for n in parsed.body if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
+        referenced_methods = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+        globals_ = {}
+        active = set()
+        caller = None
+        def evaluate(n, values, module=file, depth=0, emit=False, evidence=None):
+            if n is None:
+                return "{*}"
+            if isinstance(n, ast.Constant):
+                return n.value if isinstance(n.value, (str, int)) else "{*}"
+            key = name(n)
+            if key in values:
+                return values[key]
+            if isinstance(n, ast.Name):
+                return globals_.get(n.id, "{*}")
+            if isinstance(n, ast.Attribute):
+                obj = evaluate(n.value, values, module, depth)
+                return obj.get(n.attr, "{*}") if isinstance(obj, dict) else "{*}"
+            if isinstance(n, ast.Subscript):
+                if name(n.value) in {"os.environ", "environ"}:
+                    return environment.get(evaluate(n.slice, values), "{*}")
+                return globals_.get(key, "{*}")
+            if isinstance(n, ast.JoinedStr):
+                return "".join(str(evaluate(v.value if isinstance(v, ast.FormattedValue) else v, values, module, depth)) for v in n.values)
+            if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Add):
+                return str(evaluate(n.left, values, module, depth)) + str(evaluate(n.right, values, module, depth))
+            if not isinstance(n, ast.Call):
+                return "{*}"
+            callee = name(n.func)
+            args = [evaluate(a, values, module, depth) for a in n.args]
+            kwargs = {k.arg: evaluate(k.value, values, module, depth) for k in n.keywords if k.arg}
+            if callee in {"os.getenv", "os.environ.get", "environ.get"}:
+                return environment.get(args[0], "{*}") if args else "{*}"
+            if isinstance(n.func, ast.Attribute) and n.func.attr == "format":
+                template = evaluate(n.func.value, values, module, depth)
+                if isinstance(template, str):
+                    try:
+                        return template.format(*args, **kwargs)
+                    except (ValueError, IndexError, KeyError):
+                        return "{*}"
+            aliases = client_aliases[module]
+            head, _, tail = callee.partition(".")
+            canonical = aliases.get(head, head) + ("." + tail if tail else "")
+            action = canonical.rsplit(".", 1)[-1]
+            if canonical.startswith(("requests.", "httpx.", "urllib.request.")):
+                verb = action.upper() if action in {"get", "post", "put", "patch", "delete", "head", "options"} else "GET" if action == "urlopen" else None
+                if action == "request":
+                    verb = kwargs.get("method", args[0] if args else None)
+                    url = kwargs.get("url", args[1] if len(args) > 1 else None)
+                else:
+                    url = kwargs.get("url", args[0] if args else None)
+                if emit and caller and verb and isinstance(url, str) and url.startswith(("http://", "https://")):
+                    result.append((caller, url, str(verb).upper(), module, n.lineno,
+                                   "helper" if module != file else "env_via_config" if environment and ("config" in text or "environ" in text or "getenv" in text) else "literal_host"))
+                return "{*}"
+            target = imports.get(callee, (module, callee))
+            definition = definitions.get(target)
+            # One helper-module boundary; constructors merely carry data.
+            if definition is not None and depth < 2 and target not in active:
+                active.add(target)
+                try:
+                    if isinstance(definition, ast.ClassDef):
+                        obj = {"__class__": target}
+                        init = next((x for x in definition.body if isinstance(x, ast.FunctionDef) and x.name == "__init__"), None)
+                        if init:
+                            bound = dict(zip([p.arg for p in init.args.args][1:], args))
+                            bound.update(kwargs);bound["self"] = obj
+                            for statement in ast.walk(init):
+                                if isinstance(statement, ast.Assign):
+                                    value = evaluate(statement.value, bound, target[0], depth + 1)
+                                    for dest in statement.targets:
+                                        if isinstance(dest, ast.Attribute) and name(dest.value) == "self":
+                                            obj[dest.attr] = value
+                        if emit:
+                            for method in definition.body:
+                                if isinstance(method, ast.FunctionDef) and method.name in referenced_methods and method.name != "__init__":
+                                    scan(method, {"self": obj}, target[0], depth + 1, evidence or n.lineno)
+                        return obj
+                    bound = dict(zip([p.arg for p in definition.args.args], args));bound.update(kwargs)
+                    if emit:
+                        scan(definition, bound, target[0], depth + 1, evidence or n.lineno)
+                    returns = [r for r in ast.walk(definition) if isinstance(r, ast.Return)]
+                    return evaluate(returns[0].value, bound, target[0], depth + 1) if len(returns) == 1 else "{*}"
+                finally:
+                    active.remove(target)
+            return "{*}"
+        # Configuration initializers often occur below nested Flask handlers.
+        # Collect only unique, statically resolved global/config assignments.
+        candidates = {}
+        for _ in range(3):
+            for statement in ast.walk(tree):
+                if isinstance(statement, ast.Assign):
+                    for dest in statement.targets:
+                        key = name(dest)
+                        if isinstance(dest, ast.Subscript) or isinstance(dest, ast.Name) and statement in tree.body:
+                            value = evaluate(statement.value, globals_)
+                            if isinstance(value, str) and "{*}" not in value:
+                                candidates.setdefault(key, set()).add(value)
+            for key, choices in candidates.items():
+                if len(choices) == 1:
+                    globals_[key] = next(iter(choices))
+                else:
+                    globals_.pop(key, None)
+        def scan(function, values, module, depth=0, evidence=None):
+            # Walk statements in source order, excluding nested functions/classes.
+            def nodes(n):
+                for child in ast.iter_child_nodes(n):
+                    if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                        continue
+                    yield child
+                    yield from nodes(child)
+            for n in nodes(function):
+                if isinstance(n, ast.Assign):
+                    value = evaluate(n.value, values, module, depth)
+                    for dest in n.targets:
+                        values[name(dest)] = value
+                if isinstance(n, ast.Call):
+                    evaluate(n, values, module, depth, True, evidence)
+        for function in ast.walk(tree):
+            if isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                caller = self._http_caller(builder, file, function.lineno)
+                scan(function, dict(globals_), file)
+        return result
 
     def _resolve_cross_repo_grpc_calls(self):
         """Binds stub calls in Repo A to contracts declared in Repo B or shared contracts."""

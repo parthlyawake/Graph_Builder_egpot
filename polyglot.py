@@ -456,8 +456,14 @@ class TreeSitterExtractor:
                         arg0_text = self._text(arguments.named_children[0], source)
                         p_match = re.search(r'["\'](?:https?://[^/"\']+)?(/[^"\']+)["\']', arg0_text)
                         if p_match:
-                            h_method = "POST" if "post" in m_name.lower() else "GET"
-                            builder.http_calls_to_resolve.append((scope_id, p_match.group(1), h_method, builder.current_file))
+                            # exchange's verb is an argument, not encoded in its name.
+                            verb = re.search(r"HttpMethod\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)",
+                                             self._text(arguments, source))
+                            h_method = verb.group(1) if verb else next(
+                                (v for v in ("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS")
+                                 if m_name.lower().startswith(v.lower())), None)
+                            if h_method:
+                                builder.http_calls_to_resolve.append((scope_id, p_match.group(1), h_method, builder.current_file))
 
                 # Feign client method call: inventoryClient.checkStock(...)
                 if obj_text and obj_text in builder.grpc_client_vars.get(builder.current_file, {}):
@@ -848,7 +854,11 @@ class TreeSitterExtractor:
             builder.current_scope.append(receiver)
             builder.scope_depth += 1
         function_id = builder.get_node_id(name)
+        ambiguous_definition = (self.is_java and function_id in builder.graph
+                                and builder.graph.nodes[function_id].get("type") == "function")
         builder.add_ckg_node(function_id, "function", "Lsyn", name, self._line(node))
+        if ambiguous_definition:
+            builder.graph.nodes[function_id]["http_ambiguous_definition"] = True
         if self.is_csharp and any(c.type == "modifier" and self._text(c, source) == "override"
                                   for c in node.named_children):
             builder.graph.nodes[function_id]["is_override"] = True
@@ -876,10 +886,14 @@ class TreeSitterExtractor:
                 "PutMapping": "PUT",
                 "DeleteMapping": "DELETE",
                 "PatchMapping": "PATCH",
-                "RequestMapping": "GET",
+                "RequestMapping": "*",
             }
             for ann_name, verb in http_verbs.items():
                 if ann_name in ann:
+                    if ann_name == "RequestMapping":
+                        modifiers = next((c for c in node.named_children if c.type == "modifiers"), node)
+                        verbs = re.findall(r"RequestMethod\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)",
+                                           self._text(modifiers, source))
                     m_path = ann[ann_name]
                     prefix = getattr(builder, "_current_route_prefix", "")
                     if not m_path.startswith("/") and prefix and m_path:
@@ -887,7 +901,8 @@ class TreeSitterExtractor:
                     full_path = (prefix + m_path) if (prefix or m_path) else "/"
                     if not full_path.startswith("/"):
                         full_path = "/" + full_path
-                    builder.http_endpoints.setdefault((verb, full_path), []).append(function_id)
+                    for effective_verb in (verbs if ann_name == "RequestMapping" and verbs else [verb]):
+                        builder.http_endpoints.setdefault((effective_verb, full_path), []).append(function_id)
                     break
 
             if "KafkaListener" in ann or "RabbitListener" in ann:
