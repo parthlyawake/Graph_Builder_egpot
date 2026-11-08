@@ -57,6 +57,8 @@ class Language(str, Enum):
     JAVA = "java"
     JAVASCRIPT = "javascript"
     TYPESCRIPT = "typescript"
+    CSHARP = "csharp"
+    KOTLIN = "kotlin"
     PROTOBUF = "protobuf"
     UNKNOWN = "unknown"
 

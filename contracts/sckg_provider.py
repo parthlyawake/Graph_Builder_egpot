@@ -163,6 +163,10 @@ class SCKGGraphProvider(GraphProvider):
                 return Language.TYPESCRIPT
             if "javascript" in l or l == "js":
                 return Language.JAVASCRIPT
+            if "csharp" in l or l == "cs":
+                return Language.CSHARP
+            if "kotlin" in l or l == "kt":
+                return Language.KOTLIN
             if "proto" in l:
                 return Language.PROTOBUF
 
@@ -170,12 +174,17 @@ class SCKGGraphProvider(GraphProvider):
             ext = os.path.splitext(file_path)[1].lower()
             mapping = {
                 ".py": Language.PYTHON,
+                ".pyi": Language.PYTHON,
                 ".go": Language.GO,
                 ".java": Language.JAVA,
                 ".ts": Language.TYPESCRIPT,
                 ".tsx": Language.TYPESCRIPT,
+                ".d.ts": Language.TYPESCRIPT,
                 ".js": Language.JAVASCRIPT,
                 ".jsx": Language.JAVASCRIPT,
+                ".cs": Language.CSHARP,
+                ".kt": Language.KOTLIN,
+                ".kts": Language.KOTLIN,
                 ".proto": Language.PROTOBUF,
             }
             if ext in mapping:
