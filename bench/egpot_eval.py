@@ -1,20 +1,25 @@
-"""Exact-ID EG-POT comparisons; read-only inputs and console-only output.
+"""Exact-ID EG-POT comparisons; read-only inputs and console output.
 
 Run: python -B -m bench.egpot_eval
 The test split requires both --split test and --confirm-test.
+Locked test-final mode additionally requires a clean tree and writes one record.
 """
 
 from __future__ import annotations
 
 import argparse
 from collections import deque
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, replace
+from datetime import datetime, timezone
 import hashlib
 import json
 import math
 from pathlib import Path
 from statistics import fmean
 import sys
+import subprocess
+import platform
+from importlib.metadata import version
 import weakref
 from time import perf_counter
 from typing import Protocol
@@ -626,7 +631,8 @@ def make_ablations(view: GraphView, scorer: QueryScorer) -> dict[str, Retriever]
             for name, spec in ablation_configs().items()}
 
 
-def evaluate(rows: list[dict], retrievers: dict[str, Retriever], node_budget: int) -> list[dict]:
+def evaluate(rows: list[dict], retrievers: dict[str, Retriever], node_budget: int,
+             *, include_found: bool = False) -> list[dict]:
     records = []
     for row in sorted(rows, key=lambda r: r["id"]):
         # Explicit allowlist: labels, IDs, gold targets, paths, alternatives and
@@ -648,6 +654,8 @@ def evaluate(rows: list[dict], retrievers: dict[str, Retriever], node_budget: in
             records.append({"id": row["id"], "link_id": row["link_id"], "type": row["type"],
                             "method": method, "node_budget": node_budget,
                             **metrics(result, row["gold_nodes"], row["gold_path"])})
+            if include_found:
+                records[-1]["gold_found"] = sorted(set(row["gold_nodes"]) & result.visited)
     return records
 
 
@@ -1071,14 +1079,301 @@ def run_weights(rows, view, scorer):
     return vectors,records,summaries,misses
 
 
+FINAL_METHODS = ("egpot_full", "egpot_full_mcts", "egpot_no_pareto",
+    "egpot_no_pareto_mcts", "egpot_no_entropy", "egpot_no_contracts",
+    "egpot_no_choke_point", "vector_topk", "bfs", "greedy_walk",
+    "vector_bfs_k2", "ppr", "scalar_beam", "community_graphrag", "mcts_standard")
+FINAL_BUDGETS = (10, 20, 40)
+
+
+def _final_locks(args):
+    """Check authorization and git BEFORE opening any graph or query input.
+
+    Ignored paths are excluded by git's normal porcelain status. An exclusive
+    result reservation below closes the same-filename race and records failed
+    or interrupted looks as well as completed ones.
+    """
+    if args.split != "test" or not args.confirm_test:
+        raise ValueError("test-final requires BOTH --split test and --confirm-test; no queries loaded")
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
+                           check=True, capture_output=True, text=True).stdout
+    if dirty.strip():
+        raise ValueError("test-final requires a clean git tree. Dirty files:\n" + dirty.rstrip())
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                            check=True, capture_output=True, text=True).stdout.strip()
+    if len(commit) < 8 or any(c not in "0123456789abcdefABCDEF" for c in commit):
+        raise ValueError("git returned an invalid HEAD commit hash")
+    directory = ROOT / "bench/results"
+    previous = sorted(directory.glob("test_final_*.json"))
+    if previous and not args.acknowledge_second_look:
+        raise ValueError("TEST SPLIT WAS ALREADY LOOKED AT: " + ", ".join(p.name for p in previous)
+            + ". Refusing; --acknowledge-second-look is required; the new filename will have suffix _secondlook.json.")
+    second = bool(previous)
+    if second:
+        print("\n!!! WARNING: THE TEST SPLIT HAS BEEN LOOKED AT BEFORE. THIS IS A SECOND LOOK, NOT AN UNSEEN FINAL TEST. !!!", flush=True)
+    stem = "test_final_" + commit[:8]
+    path = directory / (stem + ("_secondlook" if second else "") + ".json")
+    index = 2
+    while path.exists() and second:
+        path = directory / f"{stem}_{index}_secondlook.json"
+        index += 1
+    return commit, path, second, [p.name for p in previous]
+
+
+def _load_final_inputs(graph_path, query_path):
+    """Production loader; unit tests replace this with tiny synthetic inputs."""
+    graph = nx.read_graphml(graph_path, force_multigraph=True)
+    with query_path.open(encoding="utf-8") as stream:
+        rows = json.load(stream)
+    if len(rows) != 30 or {r["link_id"] for r in rows} != set(range(1,16)):
+        raise ValueError("expected 30 rows, 15 paired links, for the locked final experiment")
+    if len({r["id"] for r in rows}) != 30:
+        raise ValueError("query IDs must be unique")
+    for link in range(1,16):
+        if sorted(r["type"] for r in rows if r["link_id"] == link) != ["explicit","indirect"]:
+            raise ValueError(f"link {link} must have explicit and indirect queries")
+    for row in rows:
+        if any(n not in graph for n in [row["start_node"],*row["gold_nodes"],*row["gold_path"]]):
+            raise ValueError(f"{row['id']} references missing exact node IDs")
+    return graph, rows
+
+
+def _final_methods(view, scorer, query_ids):
+    methods = make_fairness_retrievers(view, scorer, query_ids=query_ids)
+    methods["egpot_no_entropy"] = EGPOTRetriever(EGPOTConfig(use_mcts=False,use_entropy=False),view,scorer)
+    methods["egpot_no_contracts"] = EGPOTRetriever(EGPOTConfig(use_mcts=False,use_contracts=False),view,scorer)
+    return methods
+
+
+def _final_seed_method(name, seed, view, scorer, query_ids):
+    if name == "mcts_standard":
+        return StandardMCTS(view,scorer,seed=seed,query_ids=query_ids)
+    return EGPOTRetriever(EGPOTConfig(use_mcts=True,seed=seed,
+        use_pareto=name != "egpot_no_pareto_mcts"),view,scorer)
+
+
+def _final_config(name, engine, budgets):
+    """Record effective settings without adjusting any retrieval parameters."""
+    record = {"class":type(engine).__name__,"budgets":list(budgets),
+              "choke_point":engine.graph_view.use_choke_point,"start_counts_toward_budget":True}
+    if hasattr(engine,"config"):
+        record["config"] = asdict(engine.config)
+        record["effective_configs"] = {str(b):asdict(replace(engine.config,node_budget=b)) for b in budgets}
+    else:
+        base = name.removesuffix("_no_choke")
+        parameters = {
+            "vector_topk":{"ranking":"global TF-IDF relevance; reserve start, then rank selected nodes"},
+            "bfs":{"order":"breadth-first deterministic GraphView.neighbors"},
+            "greedy_walk":{"ranking":"highest relevance unvisited neighbor; node-ID tie break"},
+            "vector_bfs_k2":{"k":2,"vector_seeds":3,"start_first":True},
+            "ppr":{"alpha":.85,"tol":1e-10,"max_iter":500,"weight":"weight",
+                   "personalization":"start node","query_used":False},
+            "scalar_beam":{"beam_width":4,"path_score":"sum of relevance"},
+            "community_graphrag":{"seed":0,"resolution":1.0,"weight":None,
+                "adjacency":"undirected simple allowed moves","cluster_score":"mean of top 5 relevance scores"},
+            "mcts_standard":{"seed":getattr(engine,"seed",0),"iterations":300,"exploration":1.4,
+                "rollout_depth":3,"rollout_policy":"uniform distinct unvisited neighbors",
+                "reward":"maximum relevance reached","seed_key":"sha256(query_id, start_node)",
+                "ranking":"tree visits, node ID, path; deduplicate afterwards"},
+        }
+        record["config"] = parameters[base]
+    return record
+
+
+def _final_summary(rows, labels):
+    """All numbers printed by final mode are taken from this saved summary."""
+    def select(experiment, **filters):
+        return [r for r in rows if r["experiment"] == experiment
+                and all(r.get(k) == v for k,v in filters.items())]
+
+    per_method, comparisons, choke, seeds, weights, thresholds, misses = [], [], [], [], [], [], []
+    for split in ("dev","test"):
+        for budget in FINAL_BUDGETS:
+            for method in FINAL_METHODS:
+                values = select("main",split=split,node_budget=budget,method=method)
+                per_method.append({"split":split,"budget":budget,"method":method,"n":len(values),**summarize(values)})
+    for budget in FINAL_BUDGETS:
+        for method in FINAL_METHODS:
+            a,b = [next(s for s in per_method if s["split"]==split and s["budget"]==budget and s["method"]==method)
+                   for split in ("dev","test")]
+            comparisons.append({"method":method,"budget":budget,"dev_hits":a["hit_count"],"dev_n":a["n"],
+                "test_hits":b["hit_count"],"test_n":b["n"],"delta_hit_rate_points":100*(b["hit"]-a["hit"])})
+    for budget in (20,40):
+        for normal,off in CHOKE_PAIRS:
+            a = select("main",split="test",node_budget=budget,method=normal)
+            b = select("main" if off=="egpot_no_choke_point" else "choke",split="test",node_budget=budget,method=off)
+            sa,sb = summarize(a),summarize(b)
+            choke.append({"method":normal,"off_method":off,"budget":budget,"n":len(a),"on_hits":sa["hit_count"],
+                "off_hits":sb["hit_count"],"on_nodes":sa["nodes_returned"],"off_nodes":sb["nodes_returned"],
+                "delta_queries":sb["hit_count"]-sa["hit_count"]})
+        for method in STOCHASTIC_METHODS:
+            runs = [{"seed":seed,"n":len(v),**summarize(v)} for seed in range(5)
+                    for v in [select("seeds",split="test",node_budget=budget,method=method,seed=seed)]]
+            hits = [r["hit_count"] for r in runs]
+            seeds.append({"method":method,"budget":budget,"runs":runs,"mean_hits":fmean(hits),
+                          "min_hits":min(hits),"max_hits":max(hits)})
+    names = [name for name in weight_experiment_vectors() if name != "equal"]
+    for budget in (10,20):
+        values = select("weights",split="test",node_budget=budget)
+        reference = select("pareto_reference",split="test",node_budget=budget)
+        for kind in (None,"explicit","indirect"):
+            equal = [r for r in values if r["method"]=="equal" and (kind is None or r["type"]==kind)]
+            weights.append({"budget":budget,"type":kind or "all",**weight_distribution(values,names,reference,kind),
+                            "equal_control_hits":sum(r["hit"] for r in equal)})
+    lookup = {r["id"]:r for r in labels}
+    for method in FINAL_METHODS:
+        reached = [s["budget"] for s in per_method if s["split"]=="test" and s["method"]==method and s["hit"]>=.9]
+        thresholds.append({"method":method,"minimum_budget_90_percent":min(reached) if reached else None})
+    for method in ("egpot_full","egpot_no_pareto","mcts_standard"):
+        for row in select("main",split="test",node_budget=20,method=method):
+            if not row["hit"]:
+                label = lookup[row["id"]]
+                misses.append({"method":method,"query_id":row["id"],"query":label["query"],
+                    "missing_gold_nodes":sorted(set(label["gold_nodes"])-set(row["gold_found"]))})
+    return {"per_method":per_method,"dev_vs_test":comparisons,"choke":choke,"seeds":seeds,
+            "weight_distribution":weights,"test_90_percent_thresholds":thresholds,"test_misses_budget20":misses}
+
+
+def _print_final_summary(summary):
+    # JSON values are also used for formatting every table: the saved record is
+    # the source of truth for the printed summaries, including denominators.
+    def table(title, headers, records):
+        print("\n"+title,flush=True)
+        print("| "+" | ".join(headers)+" |",flush=True)
+        print("|"+"|".join("---" for _ in headers)+"|",flush=True)
+        for values in records:
+            print("| "+" | ".join("—" if v is None else f"{v:.6f}" if isinstance(v,float) else str(v) for v in values)+" |",flush=True)
+    for split in ("dev","test"):
+        for budget in FINAL_BUDGETS:
+            table(f"{split.upper()} budget {budget}",["Method","Hit k/N","Recall","Path coverage","Mean nodes","Nodes-to-hit (hits only)","Hit count","Precision-at-hit"],
+                [[s["method"],f"{s['hit_count']}/{s['n']}",s["gold_recall"],s["path_coverage"],s["nodes_returned"],s["nodes_to_hit"],s["hit_count"],s["precision_at_hit"]]
+                 for s in summary["per_method"] if s["split"]==split and s["budget"]==budget])
+    table("DEV vs TEST (TEST minus DEV, percentage points)",["Method","Budget","DEV hit","TEST hit","Change pp"],
+        [[s["method"],s["budget"],f"{s['dev_hits']}/{s['dev_n']}",f"{s['test_hits']}/{s['test_n']}",s["delta_hit_rate_points"]] for s in summary["dev_vs_test"]])
+    table("TEST choke-point rule (OFF minus ON)",["Method","Budget","ON hits","OFF hits","ON nodes","OFF nodes","Delta queries"],
+        [[s["method"],s["budget"],f"{s['on_hits']}/{s['n']}",f"{s['off_hits']}/{s['n']}",s["on_nodes"],s["off_nodes"],s["delta_queries"]] for s in summary["choke"]])
+    table("TEST seeds",["Method","Budget","Seed","Hit k/N","Mean nodes"],
+        [[s["method"],s["budget"],r["seed"],f"{r['hit_count']}/{r['n']}",r["nodes_returned"]] for s in summary["seeds"] for r in s["runs"]])
+    table("TEST seed summaries",["Method","Budget","Mean hits","Min hits","Max hits"],
+        [[s[k] for k in ("method","budget","mean_hits","min_hits","max_hits")] for s in summary["seeds"]])
+    columns=["budget","type","queries","vectors","pareto","min","q25","median","q75","max","mean","below","equal","above","equal_control_hits"]
+    table("TEST weight DISTRIBUTION, not tuning: 54 study vectors (equal control excluded); linear percentiles",columns,
+          [[s[k] for k in columns] for s in summary["weight_distribution"]])
+    table("TEST smallest measured budget reaching >=90% hits",["Method","Budget (10/20/40)"],
+          [[s["method"],s["minimum_budget_90_percent"] if s["minimum_budget_90_percent"] is not None else "not reached"] for s in summary["test_90_percent_thresholds"]])
+    for method in ("egpot_full","egpot_no_pareto","mcts_standard"):
+        table("TEST misses at budget 20: "+method,["Query ID","Query","Missing gold node IDs"],
+            [[s["query_id"],s["query"],json.dumps(s["missing_gold_nodes"])] for s in summary["test_misses_budget20"] if s["method"]==method])
+
+
+def final_deterministic_content(value):
+    """Remove timing/provenance-only fields when comparing repeated records."""
+    if isinstance(value,dict):
+        return {k:final_deterministic_content(v) for k,v in value.items()
+                if k not in {"latency_s","utc_timestamp","status","second_look","previous_results","deterministic_sha256"}}
+    if isinstance(value,list):
+        return [final_deterministic_content(v) for v in value]
+    return value
+
+
+def run_test_final(args):
+    commit,path,second,previous = _final_locks(args)
+    payload = {"schema":1,"commit":commit,"utc_timestamp":datetime.now(timezone.utc).isoformat(),
+        "versions":{"python":platform.python_version(),"networkx":version("networkx"),
+                    "scikit-learn":version("scikit-learn"),"numpy":version("numpy")},
+        "second_look":second,"previous_results":previous,"status":"started",
+        "inputs":{"graph":str(args.graph),"queries":str(args.queries)},
+        "configs":{},"rows":[],"summary":{}}
+    path.parent.mkdir(parents=True,exist_ok=True)
+    # Exclusive creation: never replace a previous result, even in second-look mode.
+    try:
+        with path.open("x",encoding="utf-8") as stream:
+            json.dump(payload,stream,sort_keys=True,indent=2,allow_nan=False)
+    except FileExistsError as exc:
+        raise ValueError(f"Final result was reserved concurrently: {path.name}; no queries loaded") from exc
+    print(f"FINAL RECORD: {path.name}; commit={commit}; seeds=0..4; no tuning.",flush=True)
+    try:
+        graph,labels = _load_final_inputs(args.graph,args.queries)
+        splits = split_by_link(labels)
+        view = GraphView(graph,use_choke_point=True)
+        scorer = QueryScorer(view)
+        query_ids = {(r["query"],r["start_node"]):r["id"] for r in labels}
+        methods = _final_methods(view,scorer,query_ids)
+        off_names = [off for _,off in CHOKE_PAIRS if off.endswith("_no_choke")]
+        vectors = weight_experiment_vectors()
+        seed_engines = {(name,seed):methods[name] if seed==0 else _final_seed_method(name,seed,view,scorer,query_ids)
+                        for name in STOCHASTIC_METHODS for seed in range(5)}
+        weight_engines = {name:EGPOTRetriever(EGPOTConfig(use_mcts=False,use_pareto=False,weights=vector),view,scorer)
+                          for name,vector in vectors.items()}
+        configs = {"main":{n:_final_config(n,methods[n],FINAL_BUDGETS) for n in FINAL_METHODS},
+            "choke":{n:_final_config(n,methods[n],(20,40)) for n in off_names},
+            "seeds":{n:{str(seed):_final_config(n,seed_engines[n,seed],(20,40)) for seed in range(5)} for n in STOCHASTIC_METHODS},
+            "weights":{n:_final_config("egpot_no_pareto",e,(10,20)) for n,e in weight_engines.items()},
+            "pareto_reference":_final_config("egpot_full",methods["egpot_full"],(10,20)),
+            "protocol":{"main_splits":["dev","test"],"auxiliary_split":"test","seeds":list(range(5)),
+                "weight_sampler":"RandomState(0), Dirichlet(1,1,1,1), rounded 4 decimals then renormalized",
+                "weight_vectors":vectors,"shared_scorer":"one QueryScorer fit on all graph node text; no labels used",
+                "scorer_config":{"normalizer":"eg_pot.normalize_text (same for queries and node text)",
+                    "node_text":"name + docstring + file + first 150 code characters",
+                    "vectorizer":json.loads(json.dumps(scorer.vectorizer.get_params(deep=False),
+                        default=lambda value:value.__module__+"."+value.__qualname__))},
+                "latency_comparison":"latency_s is excluded from determinism comparisons",
+                "reused_runs":"main test seed-0 runs and Pareto references reused without rerunning"}}
+        payload["configs"] = configs
+        payload["split_links"] = {k:sorted({r["link_id"] for r in v}) for k,v in splits.items()}
+        print("LOCKED FULL CONFIGS (effective configs include each budget):\n"+json.dumps(configs,sort_keys=True,indent=2),flush=True)
+        print("SPLIT LINKS: "+json.dumps(payload["split_links"],sort_keys=True),flush=True)
+        payload["status"] = "running"
+        path.write_text(json.dumps(payload,sort_keys=True,indent=2,allow_nan=False)+"\n",encoding="utf-8")
+        cache = {}
+        def run(experiment,split,name,budget,engine,seed=0):
+            key = split,name,budget,seed
+            if key not in cache:
+                cache[key] = evaluate(splits[split],{name:engine},budget,include_found=True)
+            payload["rows"].extend({**r,"experiment":experiment,"split":split,"seed":seed} for r in cache[key])
+        for split in ("dev","test"):
+            for budget in FINAL_BUDGETS:
+                for name in FINAL_METHODS:
+                    run("main",split,name,budget,methods[name])
+        for budget in (20,40):
+            for name in off_names:
+                run("choke","test",name,budget,methods[name])
+            for name in STOCHASTIC_METHODS:
+                for seed in range(5):
+                    run("seeds","test",name,budget,seed_engines[name,seed],seed)
+        for budget in (10,20):
+            for name,engine in weight_engines.items():
+                run("weights","test",name,budget,engine)
+            run("pareto_reference","test","egpot_full",budget,methods["egpot_full"])
+        payload["summary"] = _final_summary(payload["rows"],labels)
+        payload["status"] = "completed"
+        payload["deterministic_sha256"] = hashlib.sha256(json.dumps(final_deterministic_content(payload),
+            sort_keys=True,separators=(",",":"),allow_nan=False).encode()).hexdigest()
+        _print_final_summary(payload["summary"])
+    except BaseException as exc:
+        payload["status"] = "failed"
+        payload["error"] = f"{type(exc).__name__}: {exc}"
+        raise
+    finally:
+        path.write_text(json.dumps(payload,sort_keys=True,indent=2,allow_nan=False)+"\n",encoding="utf-8")
+    print(f"Final record saved: {path}",flush=True)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--graph", type=Path, default=ROOT / "bench/results/online_boutique_graph_fresh.graphml")
     parser.add_argument("--queries", type=Path, default=ROOT / "bench/labels/online_boutique_egpot_queries.json")
     parser.add_argument("--split", choices=("dev", "test"), default="dev")
     parser.add_argument("--confirm-test", action="store_true")
-    parser.add_argument("--mode", choices=("all", "ablations", "sweep", "comparison", "fairness", "weights"), default="all")
+    parser.add_argument("--mode", choices=("all", "ablations", "sweep", "comparison", "fairness", "weights", "test-final"), default="all")
+    parser.add_argument("--acknowledge-second-look", action="store_true")
     args = parser.parse_args(argv)
+    if args.mode == "test-final":
+        try:
+            return run_test_final(args)
+        except (ValueError, subprocess.CalledProcessError, OSError) as exc:
+            parser.error(str(exc))
     if args.split == "test" and not args.confirm_test:
         parser.error("--split test requires --confirm-test; no test data was evaluated")
     if args.mode in {"fairness", "weights"} and args.split != "dev":
