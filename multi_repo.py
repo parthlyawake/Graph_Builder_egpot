@@ -16,6 +16,7 @@ Key Architectural Guarantees:
 from __future__ import annotations
 
 import ast
+import copy
 import hashlib
 import json
 import os
@@ -251,6 +252,7 @@ class WorkspaceCKGBuilder:
         print(f"[*] Repositories to index: {len(self.config.repositories)}")
 
         t0 = time.perf_counter()
+        self.repo_builders = {}
 
         # Step 1: Parse and build each repository graph with strict repo_id namespacing
         for repo_cfg in self.config.repositories:
@@ -266,10 +268,40 @@ class WorkspaceCKGBuilder:
             builder.build()
             self.repo_builders[repo_cfg.id] = builder
 
+        self._compose_workspace()
+
+        elapsed = time.perf_counter() - t0
+        kloc = self.total_loc / 1000.0 if self.total_loc else 0.001
+        throughput = elapsed / kloc
+
+        print(f"[*] Workspace Construction Complete:")
+        print(f"    - Repositories:    {len(self.repo_builders)}")
+        print(f"    - Total LOC:       {self.total_loc}")
+        print(f"    - Graph Nodes:     {self.graph.number_of_nodes()}")
+        print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
+        print(f"    - Build Latency:   {elapsed:.3f}s ({throughput:.4f} s/kLOC)")
+        print(f"    - Contract Skews:  {len(self.contract_skews)}")
+        self._print_layer_statistics()
+        return self.graph
+
+    def _compose_workspace(self):
+        """Refresh composition from parsed repositories, including shared producers."""
+        self.graph.clear()
+        self.canonical_contracts = {}
+        self.contract_skews = []
+        self.http_endpoints = {}
+        self.symbols_by_name = {}
+        self.docstrings = {}
+        self.raw_file_lines = {}
+        self.total_loc = 0
+        self.edge_counter = 0
+        self.vectorizer = self.tfidf_matrix = self.bm25_index = None
+        self.indexed_node_ids = []
+        for repo_id, builder in self.repo_builders.items():
             # Aggregate statistics and registries
             self.total_loc += builder.total_loc
             for k, lines in builder.raw_file_lines.items():
-                self.raw_file_lines[f"{repo_cfg.id}/{k}"] = lines
+                self.raw_file_lines[f"{repo_id}/{k}"] = lines
             for sym, nids in builder.symbols_by_name.items():
                 self.symbols_by_name.setdefault(sym, []).extend(nids)
             for nid, doc in builder.docstrings.items():
@@ -287,7 +319,7 @@ class WorkspaceCKGBuilder:
         for repo_id, builder in self.repo_builders.items():
             for n, d in builder.graph.nodes(data=True):
                 if n not in self.graph:
-                    self.graph.add_node(n, **d)
+                    self.graph.add_node(n, **copy.deepcopy(d))
                 else:
                     curr = self.graph.nodes[n]
                     if "definitions" in d:
@@ -299,6 +331,7 @@ class WorkspaceCKGBuilder:
 
         # Step 4: Unify canonical contract layer (Lcontract) & check for CONTRACT_SKEW
         self._unify_contract_layer()
+        self._resolve_cross_repo_producers()
 
         # Step 5: Resolve cross-repository HTTP dependency calls
         self._resolve_cross_repo_http_calls()
@@ -309,20 +342,17 @@ class WorkspaceCKGBuilder:
         # Step 7: Build workspace-level Semantic Layer (Lsem)
         self._build_semantic_layer()
 
-        elapsed = time.perf_counter() - t0
-        kloc = self.total_loc / 1000.0 if self.total_loc else 0.001
-        throughput = elapsed / kloc
-
-        print(f"[*] Workspace Construction Complete:")
-        print(f"    - Repositories:    {len(self.repo_builders)}")
-        print(f"    - Total LOC:       {self.total_loc}")
-        print(f"    - Graph Nodes:     {self.graph.number_of_nodes()}")
-        print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
-        print(f"    - Build Latency:   {elapsed:.3f}s ({throughput:.4f} s/kLOC)")
-        print(f"    - Contract Skews:  {len(self.contract_skews)}")
-        self._print_layer_statistics()
-
         return self.graph
+
+    def _resolve_cross_repo_producers(self):
+        """Revisit registrations skipped before shared contracts were available."""
+        for builder in self.repo_builders.values():
+            builder._bind_contract_producers(self.canonical_contracts, self.graph)
+
+    def update_files(self, repo_id, changed_rel_paths, deleted_rel_paths=()):
+        """Update one service, then refresh shared bindings and workspace indexes."""
+        self.repo_builders[repo_id].update_files(changed_rel_paths, deleted_rel_paths)
+        return self._compose_workspace()
 
     def _index_shared_contracts(self):
         """Parse standalone protobuf files declared in shared_contracts."""

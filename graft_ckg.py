@@ -99,6 +99,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.grpc_server_registrations = []  # (service, impl_arg, file, scope_id)
         self.grpc_servicer_records = [] # (class_id, service_name, file)
         self.js_add_service_records = []# (service, handler_map, file, scope_id)
+        self.managed_grpc_registrations = []  # (language, class spelling, file, scope_id)
 
         # RAG index structures
         self.vectorizer = None
@@ -473,15 +474,18 @@ class CKGBuilder(ast.NodeVisitor):
         Incremental streaming construction (HR-Build) updating the graph for changed files.
         Avoids full batch rebuilds by surgically updating only modified/deleted ASTs and resolving relations.
         """
+        changed_rel_paths = sorted({p.replace("\\", "/") for p in changed_rel_paths})
+        deleted_rel_paths = sorted({p.replace("\\", "/") for p in deleted_rel_paths})
         all_affected = set(changed_rel_paths) | set(deleted_rel_paths)
         if not all_affected:
             return
 
-        for rel_path in all_affected:
+        for rel_path in sorted(all_affected):
             norm = rel_path.replace("\\", "/")
+            context = f"{self.repo_prefix}{norm}"
             nodes_to_remove = [
                 n for n, d in list(self.graph.nodes(data=True))
-                if d.get("file") == norm or n.startswith(f"{norm}:") or n == f"file::{norm}"
+                if d.get("file") == context or n.startswith(f"{context}:") or n == f"file::{context}"
             ]
 
             # Invalidate associated Protobuf contract nodes
@@ -505,13 +509,21 @@ class CKGBuilder(ast.NodeVisitor):
             for n in nodes_to_remove:
                 if self.graph.has_node(n):
                     self.graph.remove_node(n)
-            self.raw_file_lines.pop(norm, None)
+            self.total_loc -= len(self.raw_file_lines.pop(norm, []))
             self.imports_by_file.pop(norm, None)
             self.file_symbols.pop(norm, None)
             self.grpc_client_vars.pop(norm, None)
             self.go_type_vars.pop(norm, None)
             for node_id in nodes_to_remove:
                 self.go_struct_fields.pop(node_id, None)
+                self.docstrings.pop(node_id, None)
+
+        # Replace registrations from changed/deleted files instead of retaining
+        # stale implementations or accumulating duplicate parser records.
+        self.grpc_servicer_records = [r for r in self.grpc_servicer_records if r[2] not in all_affected]
+        self.grpc_server_registrations = [r for r in self.grpc_server_registrations if r[2] not in all_affected]
+        self.js_add_service_records = [r for r in self.js_add_service_records if r[2] not in all_affected]
+        self.managed_grpc_registrations = [r for r in self.managed_grpc_registrations if r[2] not in all_affected]
 
         edges_to_remove = []
         for u, v, k, d in list(self.graph.edges(keys=True, data=True)):
@@ -522,11 +534,16 @@ class CKGBuilder(ast.NodeVisitor):
             if self.graph.has_edge(u, v, key=k):
                 self.graph.remove_edge(u, v, key=k)
 
-        self.calls_to_resolve = []
+        # Dependency edges are rebuilt globally below. Keep call records from
+        # unchanged files, including a separate Java server-registration file.
+        affected_contexts = all_affected | {f"{self.repo_prefix}{p}" for p in all_affected}
+        self.calls_to_resolve = [r for r in self.calls_to_resolve if r[3] not in affected_contexts]
         self.http_calls_to_resolve = []
         self.dynamic_http_calls = []
         self.grpc_calls_to_resolve = []
-        self.class_base_records = []
+        self.class_base_records = [r for r in self.class_base_records if r[2] not in all_affected]
+        self.class_bases = {}
+        self.class_subclasses = {}
         self.interface_implementation_records = []
         self.interface_extension_records = []
         self.symbols_by_name = {}
@@ -921,6 +938,15 @@ class CKGBuilder(ast.NodeVisitor):
             canonical = imports[base]
             if separator:
                 canonical = f"{canonical}.{remainder}"
+
+        # Explicit same-file class qualification is safe; do not fall back to
+        # a same-named method on an unrelated class or imported receiver.
+        local_class = f"{self.repo_prefix}{caller_file}:{base}"
+        if (separator and not imported_base and local_class in self.graph
+                and self.graph.nodes[local_class].get("type") == "class"):
+            local_member = f"{local_class}.{remainder}"
+            if local_member in self.graph and self.graph.nodes[local_member].get("type") == "function":
+                return [local_member]
 
         prefix = self.repo_prefix
         module_name, dot, symbol_name = canonical.rpartition(".")
@@ -1386,10 +1412,31 @@ class CKGBuilder(ast.NodeVisitor):
         finally:
             self.current_file = prev_file
 
-    def _resolve_contract_layer(self):
-        """Bind producers (IMPLEMENTS) and consumers (CONSUMES) to contracts."""
+    def _bind_contract_producers(self, contracts=None, graph=None):
+        """Bind recorded producers against local or composed contracts, once.
+
+        The optional target graph lets workspace composition supply shared
+        schemas without injecting them into service-local parser state.
+        """
+        contracts = self.proto_services if contracts is None else contracts
+        graph = self.graph if graph is None else graph
         produced = 0
-        consumed = 0
+
+        def bind(source, target, file):
+            nonlocal produced
+            if source not in graph or target not in graph:
+                return
+            if any(d.get("relation") == "IMPLEMENTS" and d.get("layer") == "Lcontract"
+                   for d in graph.get_edge_data(source, target, default={}).values()):
+                return
+            metadata = HyperEdgeMetadata(d_scope=0, id_ctx=file)
+            if graph is self.graph:
+                self.add_ckg_edge(source, target, "IMPLEMENTS", "Lcontract", metadata)
+            else:
+                graph.add_edge(source, target, key=f"w_producer_{source}_{target}",
+                               relation="IMPLEMENTS", layer="Lcontract",
+                               metadata=metadata.to_dict(), **metadata.to_dict())
+            produced += 1
 
         # Python servicers: class X(pb2_grpc.<Service>Servicer) with rpc methods.
         # The rpc method may be implemented on the servicer class itself OR on
@@ -1407,22 +1454,20 @@ class CKGBuilder(ast.NodeVisitor):
                     _descendants(sub, seen)
             return seen
 
-        for class_id, service_name, file in self.grpc_servicer_records:
-            contract = self.proto_services.get(service_name)
+        for class_id, service_name, file in sorted(set(self.grpc_servicer_records)):
+            contract = contracts.get(service_name)
             if not contract:
                 continue
-            self.add_ckg_edge(class_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
-            produced += 1
-            for rpc_name, rpc_id in contract["rpcs"].items():
+            bind(class_id, contract["node_id"], file)
+            for rpc_name, rpc_id in sorted(contract["rpcs"].items()):
                 for impl_class in [class_id, *sorted(_descendants(class_id))]:
                     direct = f"{impl_class}.{rpc_name}"
                     if direct in self.graph and self.graph.nodes[direct].get("type") == "function":
-                        self.add_ckg_edge(direct, rpc_id, "IMPLEMENTS", "Lcontract")
-                        produced += 1
+                        bind(direct, rpc_id, file)
 
         # Go servers: pb.Register<Service>Server(srv, impl) + methods on impl type
-        for service_name, impl_arg, file, scope_id in self.grpc_server_registrations:
-            contract = self.proto_services.get(service_name)
+        for service_name, impl_arg, file, scope_id in sorted(set(self.grpc_server_registrations)):
+            contract = contracts.get(service_name)
             if not contract:
                 continue
             impl_type = (impl_arg or "").strip("&").strip()
@@ -1436,29 +1481,69 @@ class CKGBuilder(ast.NodeVisitor):
                 if len(candidates) == 1:
                     impl_id = candidates[0]
             if impl_id in self.graph:
-                self.add_ckg_edge(impl_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
-                produced += 1
-                for rpc_name, rpc_id in contract["rpcs"].items():
+                bind(impl_id, contract["node_id"], file)
+                for rpc_name, rpc_id in sorted(contract["rpcs"].items()):
                     method_id = self._find_method(impl_id, rpc_name)
                     if method_id:
-                        self.add_ckg_edge(method_id, rpc_id, "IMPLEMENTS", "Lcontract")
-                        produced += 1
+                        bind(method_id, rpc_id, file)
 
         # JS servers: server.addService(pkg.<Service>.service, {rpc: handler})
         for service_name, handlers, file, scope_id in self.js_add_service_records:
-            contract = self.proto_services.get(service_name)
+            contract = contracts.get(service_name)
             if not contract:
                 continue
-            self.add_ckg_edge(scope_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
-            produced += 1
-            for rpc_key, handler_expr in handlers.items():
+            bind(scope_id, contract["node_id"], file)
+            for rpc_key, handler_expr in sorted(handlers.items()):
                 rpc_id = self._match_rpc_case(contract, rpc_key)
                 if not rpc_id:
                     continue
                 target_ids = self._resolve_reference(file, handler_expr)
                 for tid in target_ids:
-                    self.add_ckg_edge(tid, rpc_id, "IMPLEMENTS", "Lcontract")
-                    produced += 1
+                    bind(tid, rpc_id, file)
+        # Java/C# require an actual server registration, not merely a matching
+        # base class or method name. Resolve lexical local classes first, then
+        # a unique class elsewhere in this repository (e.g. C# Startup.cs).
+        for language, spelling, file, scope_id in sorted(set(self.managed_grpc_registrations)):
+            candidates = [n for n, d in self.graph.nodes(data=True)
+                          if d.get("type") == "class" and d.get("grpc_language") == language
+                          and (n.rsplit(":", 1)[-1] == spelling
+                               or n.rsplit(":", 1)[-1].endswith(f".{spelling}")
+                               or d.get("grpc_qualified_name") == spelling)]
+            local_prefix = f"{self.repo_prefix}{file}:"
+            scope = scope_id.split(":", 1)[-1].split(".") if ":" in scope_id else []
+            resolved = None
+            for depth in range(len(scope), -1, -1):
+                qualified = ".".join([*scope[:depth], spelling])
+                node_id = local_prefix + qualified
+                if node_id in candidates:
+                    resolved = node_id
+                    break
+            if resolved is None:
+                same_file = [n for n in candidates if n.startswith(local_prefix)]
+                choices = same_file if same_file else candidates
+                if len(choices) == 1:
+                    resolved = choices[0]
+            if resolved is None:
+                continue
+            service = self.graph.nodes[resolved]["grpc_service"]
+            contract = contracts.get(service)
+            if not contract or contract["node_id"] not in graph:
+                continue
+            bind(resolved, contract["node_id"], file)
+            for rpc_name, rpc_id in sorted(contract["rpcs"].items()):
+                method_name = rpc_name if language == "csharp" else rpc_name[:1].lower() + rpc_name[1:]
+                method = f"{resolved}.{method_name}"
+                data = self.graph.nodes.get(method, {})
+                # Java @Override is optional; a matching method on the explicit
+                # generated-base subclass supplies the override implementation.
+                if data.get("type") == "function" and (language == "java" or data.get("is_override")):
+                    bind(method, rpc_id, file)
+        return produced
+
+    def _resolve_contract_layer(self):
+        """Bind producers (IMPLEMENTS) and consumers (CONSUMES) to contracts."""
+        produced = self._bind_contract_producers()
+        consumed = 0
 
         # Python stub calls whose stub variable was bound anywhere in the file
         for caller_id, var, method, file in self.pending_attr_calls:
