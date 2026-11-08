@@ -301,5 +301,28 @@ repositories:
         self.assertGreaterEqual(len(res["affected_services"]), 2)
 
 
+    def test_cross_repo_grpc_producer_resolution(self):
+        """Verify cross-repository gRPC server implementations bind to canonical contract RPCs."""
+        ws_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "examples", "multi_repo_system", "workspace.yaml"
+        )
+        if not os.path.isfile(ws_path):
+            self.skipTest("Showcase fixture workspace.yaml not found.")
+
+        ws_builder = WorkspaceCKGBuilder(ws_path)
+        ws_builder.build()
+
+        implements_edges = [
+            (u, v) for u, v, d in ws_builder.graph.edges(data=True)
+            if d.get("relation") == "IMPLEMENTS"
+        ]
+        self.assertGreater(len(implements_edges), 0)
+        # Verify ShippingServer.GetQuote implements contract::ShippingService.GetQuote
+        quote_impls = [u for u, v in implements_edges if v == "contract::ShippingService.GetQuote"]
+        self.assertGreaterEqual(len(quote_impls), 1)
+        self.assertTrue(any("GetQuote" in u for u in quote_impls))
+
+
 if __name__ == "__main__":
     unittest.main()

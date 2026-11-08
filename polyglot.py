@@ -266,12 +266,22 @@ class TreeSitterExtractor:
                     if "FeignClient" in ann and ann["FeignClient"]:
                         builder.grpc_client_vars.setdefault(builder.current_file, {})[name] = ann["FeignClient"]
 
-                heritage = next((c for c in node.named_children if c.type in ("class_heritage", "superclass", "super_interfaces")), None)
+                heritage = next((c for c in node.named_children if c.type in ("class_heritage", "superclass", "super_interfaces", "base_list")), None)
                 if heritage:
                     heritage_text = self._text(heritage, source)
-                    base = re.sub(r"^(?:extends|implements)\s+", "", heritage_text).split("implements", 1)[0].strip()
+                    base = re.sub(r"^(?:extends|implements|:)\s*", "", heritage_text).split("implements", 1)[0].strip()
                     if base:
                         builder.class_base_records.append((class_id, base, builder.current_file, builder.scope_depth))
+                        # Java gRPC servicer: class X extends <Service>Grpc.<Service>ImplBase
+                        java_match = re.search(r"(\w+?)(?:Grpc)?\.\w*ImplBase$", base) or re.search(r"(\w+?)ImplBase$", base)
+                        if java_match:
+                            builder.grpc_servicer_records.append((class_id, java_match.group(1), builder.current_file))
+                        # C# gRPC servicer: class X : <Service>.<Service>Base
+                        csharp_match = re.search(r"(\w+?)\.\w*ServiceBase$", base) or re.search(r"(\w+?)Base$", base)
+                        if csharp_match:
+                            svc_cand = csharp_match.group(1)
+                            if svc_cand.endswith("Service"):
+                                builder.grpc_servicer_records.append((class_id, svc_cand, builder.current_file))
                     implemented = re.search(r"\bimplements\s+(.+)$", heritage_text)
                     if implemented:
                         for spelling in implemented.group(1).split(","):

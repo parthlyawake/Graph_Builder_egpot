@@ -300,10 +300,13 @@ class WorkspaceCKGBuilder:
         # Step 4: Unify canonical contract layer (Lcontract) & check for CONTRACT_SKEW
         self._unify_contract_layer()
 
-        # Step 5: Resolve cross-repository HTTP dependency calls
+        # Step 5: Resolve cross-repository gRPC server implementation bindings (producers)
+        self._resolve_cross_repo_grpc_producers()
+
+        # Step 6: Resolve cross-repository HTTP dependency calls
         self._resolve_cross_repo_http_calls()
 
-        # Step 6: Resolve cross-repository unresolved gRPC calls
+        # Step 7: Resolve cross-repository unresolved gRPC calls (consumers)
         self._resolve_cross_repo_grpc_calls()
 
         # Step 7: Build workspace-level Semantic Layer (Lsem)
@@ -463,6 +466,154 @@ class WorkspaceCKGBuilder:
                     self.graph.nodes[service_node]["skew"] = True
                     self.graph.nodes[service_node]["skew_details"] = skew_record
                 print(f"[!] Warning: {skew_record['message']}")
+
+    def _resolve_cross_repo_grpc_producers(self):
+        """Binds server handlers across repositories to canonical contract nodes (IMPLEMENTS)."""
+        resolved = 0
+
+        def _already_bound(src: str, tgt: str) -> bool:
+            return any(
+                v == tgt and d.get("relation") == "IMPLEMENTS"
+                for _, v, d in self.graph.out_edges(src, data=True)
+            )
+
+        for repo_id, builder in self.repo_builders.items():
+            # 1. Python, Java, C# servicers: class inheriting from <Service>Servicer / ImplBase / ServiceBase
+            subclasses_of = {}
+            for sub_id, bases in builder.class_bases.items():
+                for base_id in bases:
+                    subclasses_of.setdefault(base_id, []).append(sub_id)
+
+            def _descendants(cid, seen=None):
+                seen = seen or set()
+                for sub in subclasses_of.get(cid, []):
+                    if sub not in seen:
+                        seen.add(sub)
+                        _descendants(sub, seen)
+                return seen
+
+            for class_id, service_name, file in builder.grpc_servicer_records:
+                contract = self.canonical_contracts.get(service_name)
+                if not contract:
+                    continue
+                # Add IMPLEMENTS edge from class to service contract node
+                if class_id in self.graph and contract.get("node_id") in self.graph:
+                    e_key = f"w_impl_{class_id}_{contract['node_id']}"
+                    if not _already_bound(class_id, contract["node_id"]):
+                        self.graph.add_edge(
+                            class_id,
+                            contract["node_id"],
+                            key=e_key,
+                            relation="IMPLEMENTS",
+                            layer="Lcontract",
+                        )
+                        resolved += 1
+
+                for rpc_name, rpc_id in contract.get("rpcs", {}).items():
+                    for impl_class in [class_id, *sorted(_descendants(class_id))]:
+                        candidates_to_try = [
+                            f"{impl_class}.{rpc_name}",
+                            f"{impl_class}.{rpc_name[0].lower()}{rpc_name[1:]}",
+                            f"{impl_class}.{rpc_name.lower()}",
+                        ]
+                        for direct in candidates_to_try:
+                            if direct in self.graph and self.graph.nodes[direct].get("type") in ("function", "method"):
+                                e_key = f"w_impl_{direct}_{rpc_id}"
+                                if not _already_bound(direct, rpc_id):
+                                    self.graph.add_edge(
+                                        direct,
+                                        rpc_id,
+                                        key=e_key,
+                                        relation="IMPLEMENTS",
+                                        layer="Lcontract",
+                                    )
+                                    resolved += 1
+                                break
+
+            # 2. Go servers: pb.Register<Service>Server(srv, impl)
+            for service_name, impl_arg, file, scope_id in builder.grpc_server_registrations:
+                contract = self.canonical_contracts.get(service_name)
+                if not contract:
+                    continue
+                impl_type = (impl_arg or "").strip("&").strip()
+                impl_type = builder.go_type_vars.get(file, {}).get(impl_type, impl_type)
+                impl_id = f"{builder.repo_prefix}{file}:{impl_type}"
+                if impl_id not in builder.graph:
+                    candidates = [
+                        nid for nid in builder.symbols_by_name.get(impl_type, [])
+                        if builder.graph.nodes[nid].get("type") in ("class", "interface")
+                    ]
+                    if len(candidates) == 1:
+                        impl_id = candidates[0]
+
+                if impl_id in self.graph and contract.get("node_id") in self.graph:
+                    e_key = f"w_impl_{impl_id}_{contract['node_id']}"
+                    if not _already_bound(impl_id, contract["node_id"]):
+                        self.graph.add_edge(
+                            impl_id,
+                            contract["node_id"],
+                            key=e_key,
+                            relation="IMPLEMENTS",
+                            layer="Lcontract",
+                        )
+                        resolved += 1
+
+                for rpc_name, rpc_id in contract.get("rpcs", {}).items():
+                    method_id = builder._find_method(impl_id, rpc_name)
+                    if not method_id:
+                        for m_cand in builder.symbols_by_name.get(rpc_name, []):
+                            if m_cand.startswith(f"{impl_id}."):
+                                method_id = m_cand
+                                break
+                    if method_id and method_id in self.graph:
+                        e_key = f"w_impl_{method_id}_{rpc_id}"
+                        if not _already_bound(method_id, rpc_id):
+                            self.graph.add_edge(
+                                method_id,
+                                rpc_id,
+                                key=e_key,
+                                relation="IMPLEMENTS",
+                                layer="Lcontract",
+                            )
+                            resolved += 1
+
+            # 3. JS servers: server.addService(pkg.<Service>.service, {rpc: handler})
+            for service_name, handlers, file, scope_id in builder.js_add_service_records:
+                contract = self.canonical_contracts.get(service_name)
+                if not contract:
+                    continue
+                if scope_id in self.graph and contract.get("node_id") in self.graph:
+                    e_key = f"w_impl_{scope_id}_{contract['node_id']}"
+                    if not _already_bound(scope_id, contract["node_id"]):
+                        self.graph.add_edge(
+                            scope_id,
+                            contract["node_id"],
+                            key=e_key,
+                            relation="IMPLEMENTS",
+                            layer="Lcontract",
+                        )
+                        resolved += 1
+
+                for rpc_key, handler_expr in handlers.items():
+                    rpc_id = CKGBuilder._match_rpc_case(contract, rpc_key)
+                    if not rpc_id:
+                        continue
+                    target_ids = builder._resolve_reference(file, handler_expr)
+                    for tid in target_ids:
+                        if tid in self.graph:
+                            e_key = f"w_impl_{tid}_{rpc_id}"
+                            if not _already_bound(tid, rpc_id):
+                                self.graph.add_edge(
+                                    tid,
+                                    rpc_id,
+                                    key=e_key,
+                                    relation="IMPLEMENTS",
+                                    layer="Lcontract",
+                                )
+                                resolved += 1
+
+        if resolved:
+            print(f"[*] Cross-Repository gRPC Producer Resolution: {resolved} cross-service producer bindings created.")
 
     def _resolve_cross_repo_http_calls(self):
         """Binds frontend and client HTTP calls in Repo A to routes declared in Repo B."""

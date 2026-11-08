@@ -934,6 +934,19 @@ class CKGBuilder(ast.NodeVisitor):
                 ]
                 if candidates:
                     return candidates
+            # Check if module_name is a declared class/struct in the caller's own file
+            class_node = f"{prefix}{caller_file}:{module_name}"
+            if class_node in self.graph:
+                same_file_qualified = f"{class_node}.{symbol_name}"
+                if same_file_qualified in self.graph:
+                    return [same_file_qualified]
+                same_file_candidates = [
+                    node_id
+                    for node_id in self.symbols_by_name.get(symbol_name, [])
+                    if node_id.startswith(f"{class_node}.")
+                ]
+                if same_file_candidates:
+                    return same_file_candidates
             # An explicitly imported external module must remain external.
             if imported_base:
                 return []
