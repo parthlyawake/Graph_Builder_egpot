@@ -24,6 +24,9 @@
   <script defer src="js/compare_view.js"></script>
   <script defer src="js/explainer_logic.js"></script>
   <script defer src="js/explainer_view.js"></script>
+  <script defer src="data/online_boutique/results_test.js"></script>
+  <script defer src="js/final_test_logic.js"></script>
+  <script defer src="js/final_test_view.js"></script>
   <script defer src="js/app.js"></script>
 </head>
 <body>
@@ -38,6 +41,7 @@
     <button role="tab" aria-selected="false" data-tab="compare">Compare methods</button>
     <button role="tab" aria-selected="false" data-tab="ablations">Ablations</button>
     <button role="tab" aria-selected="false" data-tab="results">Results</button>
+    <button role="tab" aria-selected="false" data-tab="finaltest">Final test (locked)</button>
     <span class="tab-note">01 / EXPLORE</span>
   </nav>
   <main id="graph-panel" role="tabpanel" aria-label="Graph explorer" class="workspace">
@@ -68,6 +72,7 @@
   <section id="compare-panel" role="tabpanel" aria-label="Compare methods" class="compare" hidden></section>
   <section id="results-panel" role="tabpanel" aria-label="Results" class="analytics" hidden></section>
   <section id="ablations-panel" role="tabpanel" aria-label="Ablations" class="analytics" hidden></section>
+  <section id="final-test-panel" role="tabpanel" aria-label="Final test (locked)" class="analytics final-test" hidden></section>
   <section id="placeholder" role="tabpanel" hidden><span class="eyebrow">EG-POT LAB</span><h2 id="placeholder-title"></h2><p>Coming in a later step.</p><button id="back-to-graph">Back to graph</button></section>
   <footer class="page-footer"><span>GRAFT-CKG <span class="muted">/</span> Online Boutique</span><span>Local graph snapshot · no connection required</span></footer>
 </body>

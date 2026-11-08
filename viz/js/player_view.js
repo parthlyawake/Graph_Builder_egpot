@@ -70,8 +70,7 @@
     render(){
       if(!this.trace)return;this.state=L.stepState(this.trace,this.index);const s=this.state.current;
       document.getElementById("player-step-label").textContent=s.kind==="stop"?"Stopped · "+s.reason.replaceAll("_"," "):(s.kind==="egpot_round"?"Round "+s.round+" of "+this.trace.steps.filter(x=>x.kind==="egpot_round").length:"Step "+(this.index+1)+" of "+this.trace.steps.length);
-      document.getElementById("player-counter").textContent=this.state.collected.length+" / "+this.trace.node_budget+" nodes collected";
-      document.getElementById("player-counter").append(window.GlossaryUI.help("nodes_returned"));
+      document.getElementById("player-counter").replaceChildren(document.createTextNode(this.state.collected.length+" / "+this.trace.node_budget+" "),window.GlossaryUI.label("nodes_returned","nodes collected"));
       document.getElementById("player-slider").value=this.index;
       document.getElementById("player-prev").disabled=this.index===0;document.getElementById("player-next").disabled=this.index===this.trace.steps.length-1;
       this.renderGraph();this.renderInspector();this.renderAnswer();
@@ -110,7 +109,8 @@
         panel.append(el("p","tiny muted","R/H/C/E numbers are immediate values. Bars: immediate (blue), lookahead (violet), final (mint). Hover an objective to see all three values."));
         const table=el("div","candidate-table");
         (this.expanded?rows:rows.slice(0,15)).forEach(c=>{
-          const button=el("button","candidate-row"+(c.selected?" picked":""));button.setAttribute("data-candidate",c.idx);
+          const button=el("div","candidate-row"+(c.selected?" picked":""));button.tabIndex=0;button.setAttribute("role","button");button.setAttribute("data-candidate",c.idx);
+          button.onkeydown=event=>{if(event.target===button&&(event.key==="Enter"||event.key===" ")){event.preventDefault();button.click();}};
           button.append(el("span","candidate-name",D.byId.get(c.to_node)?.name||c.to_node),el("span","candidate-front","F"+c.front_index+(c.selected?" ✓":"")));
           const bars=el("div","candidate-bars");c.final_vector.forEach((v,i)=>{
             const cell=el("div","objective-cell");cell.title=objectives[i]+": immediate "+c.immediate_vector[i].toFixed(3)+", lookahead "+(c.lookahead_vector?c.lookahead_vector[i].toFixed(3):"not used")+", final "+v.toFixed(3);cell.append(el("span","objective-value","RHCE"[i]+" "+c.immediate_vector[i].toFixed(2)),window.GlossaryUI.help(["score_relevance","score_hop","score_contract","score_entropy"][i]));
@@ -147,8 +147,7 @@
       card.append(el("div","eyebrow","ANSWER · AT THIS STEP"),el("strong","",result.nodes+" nodes collected · Hit "+(result.hit?"yes":"no")));
       result.targets.forEach(t=>card.append(el("p","",(D.byId.get(t.id)?.name||t.id)+": "+(t.found?"found at round/layer "+t.event.round+", position "+t.event.position:"not collected yet"))));
       const metric=window.VIZ_RESULTS?.rows.find(r=>r.query_id===this.trace.query_id&&r.method===this.trace.method&&r.budget===this.trace.node_budget);
-      footer.textContent="Final run · hit "+((metric?.hit??this.entry.hit)?"yes":"no")+" · recall "+(100*(metric?.gold_recall??result.finalRecall)).toFixed(0)+"% · "+(metric?.nodes_returned??this.trace.final.visited_order.length)+" nodes · latency "+(metric?metric.latency_s.toFixed(3)+" s":"not recorded");
-      ["hit","gold_recall","nodes_returned","latency_s"].forEach(k=>footer.append(window.GlossaryUI.help(k)));
+      footer.append(document.createTextNode("Final run · "),window.GlossaryUI.label("hit","hit"),document.createTextNode(" "+((metric?.hit??this.entry.hit)?"yes":"no")+" · "),window.GlossaryUI.label("gold_recall","recall"),document.createTextNode(" "+(100*(metric?.gold_recall??result.finalRecall)).toFixed(0)+"% · "+(metric?.nodes_returned??this.trace.final.visited_order.length)+" "),window.GlossaryUI.label("nodes_returned","nodes"),document.createTextNode(" · "),window.GlossaryUI.label("latency_s","latency"),document.createTextNode(" "+(metric?metric.latency_s.toFixed(3)+" s":"not recorded")));
     }
   }
   // Share the existing local-script loader without changing player loading.

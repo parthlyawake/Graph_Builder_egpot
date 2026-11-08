@@ -9,7 +9,7 @@
   class ResultsView{
     constructor(){this.panel=document.getElementById("results-panel");this.rows=L.mergeRows(window.VIZ_RESULTS.rows,window.VIZ_RESULTS_EXTRA?.rows||[]);this.sort={budget:20,ascending:false};this.build();}
     build(){
-      this.panel.append(el("div","dev-banner",banner));const controls=el("div","analytics-controls");
+      this.panel.append(el("div","dev-banner",banner+". See the Final test tab for the locked held-out run."));const controls=el("div","analytics-controls");
       this.budget=el("select");[...new Set(this.rows.map(r=>r.budget))].sort((a,b)=>a-b).forEach(b=>option(this.budget,b,b));this.budget.value="20";field(controls,"Budget",this.budget);
       this.type=el("select");["all","explicit","indirect"].forEach(t=>option(this.type,t,t));field(controls,"Query type",this.type);
       this.metric=el("select");Object.entries(metrics).forEach(([key,title])=>option(this.metric,key,title));field(controls,"Metric",this.metric);
@@ -20,7 +20,7 @@
       [this.budget,this.type,this.metric,this.all,this.scale,this.chartOnly].forEach(control=>control.onchange=()=>this.render());this.render();
     }
     render(){
-      this.body.replaceChildren();const top=el("div","results-top"),tableCard=el("section","panel analytic-card"),chartCard=el("section","panel analytic-card");
+      this.body.replaceChildren();const top=el("div","results-top"),tableCard=el("section","panel analytic-card results-method-comparison"),chartCard=el("section","panel analytic-card results-retrieval-efficiency");
       const heading=el("h2");heading.append(window.GlossaryUI.label(this.metric.value,metrics[this.metric.value]));tableCard.append(el("div","eyebrow","METHOD COMPARISON"),heading);this.table(tableCard);
       chartCard.append(el("div","eyebrow","RETRIEVAL EFFICIENCY"),el("h2","","Coverage for the nodes collected"),this.chart(),el("p","tiny muted","Points span measured budgets; counts label the selected budget. Hover for budget, hit count and latency. Connecting lines guide the eye."));top.append(tableCard,chartCard);this.body.append(top);
       window.ExtraViews.results(this);const caveats=el("section","panel analytic-card results-caveats");caveats.append(el("h2","","Where EG-POT does not win"));
@@ -35,13 +35,15 @@
       const metric=this.metric.value,budgets=this.all.checked?[...new Set(this.rows.map(r=>r.budget))].sort((a,b)=>a-b):[Number(this.budget.value)];
       const methods=L.methodNames(this.rows).filter(m=>budgets.some(b=>L.summary(this.rows,m,b,this.type.value)));
       const sorted=[...methods].sort((a,b)=>{const va=L.summary(this.rows,a,this.sort.budget,this.type.value)?.[metric],vb=L.summary(this.rows,b,this.sort.budget,this.type.value)?.[metric];if(va===undefined||va===null)return vb===undefined||vb===null?a.localeCompare(b):1;if(vb===undefined||vb===null)return -1;return (this.sort.ascending?va-vb:vb-va)||a.localeCompare(b);});
-      const wrap=el("div","table-scroll"),table=el("table","metric-table"),head=el("tr");head.append(el("th","","Method"));
+      const wrap=el("div","table-scroll results-comparison-wrap"),table=el("table","metric-table results-comparison-table"),head=el("tr"),cols=el("colgroup");cols.append(el("col","comparison-method-col"));budgets.forEach(()=>cols.append(el("col")));table.append(cols);head.append(el("th","","Method"));
       const best=new Map();budgets.forEach(b=>{const th=el("th"),button=el("button","",String(b)+(this.sort.budget===b?(this.sort.ascending?" ↑":" ↓"):" ↕"));button.onclick=()=>{this.sort={budget:b,ascending:this.sort.budget===b?!this.sort.ascending:L.lower.has(metric)};this.render();};th.append(button);head.append(th);best.set(b,L.bestPerColumn(methods.map(method=>({method,value:L.summary(this.rows,method,b,this.type.value)?.[metric]??null})),metric));});
       const thead=el("thead");thead.append(head);table.append(thead);const body=el("tbody");
-      sorted.forEach(method=>{const tr=el("tr"),name=el("th");name.append(window.GlossaryUI.label(method,L.labels[method]));tr.append(name);budgets.forEach(b=>{const s=L.summary(this.rows,method,b,this.type.value),isBest=best.get(b).includes(method),td=el("td",isBest?"best":"",L.format(s,metric));if(isBest)td.title=best.get(b).length>1?"Tied best value":"Best value";tr.append(td);});body.append(tr);});table.append(body);wrap.append(table);parent.append(wrap);
+      sorted.forEach(method=>{const tr=el("tr"),name=el("th");name.append(window.GlossaryUI.label(method,L.labels[method]));tr.append(name);budgets.forEach(b=>{const s=L.summary(this.rows,method,b,this.type.value),isBest=best.get(b).includes(method),td=el("td",isBest?"best":""),formatted=L.format(s,metric),split=formatted.indexOf(" · ");
+        if(split<0)td.append(el("span","comparison-value",formatted));else{const separator=el("span","comparison-separator"," · ");separator.setAttribute("aria-hidden","true");td.append(el("span","comparison-value",formatted.slice(0,split)),separator,el("span","comparison-detail",formatted.slice(split+3)));}
+        if(isBest)td.title=best.get(b).length>1?"Tied best value":"Best value";tr.append(td);});body.append(tr);});table.append(body);wrap.append(table);parent.append(wrap,el("p","tiny muted comparison-legend","— means not run at this budget, or no hits when showing nodes-to-hit."));
     }
     chart(){
-      const methods=L.methodNames(this.rows).filter(m=>!this.chartOnly.checked||L.summary(this.rows,m,Number(this.budget.value),this.type.value)),colors=methods.map(m=>`hsl(${L.methodNames(this.rows).indexOf(m)*137.508%360} 65% 65%)`),chart=svg("svg",{viewBox:`0 0 540 ${310+Math.ceil(methods.length/2)*19}`,class:"efficiency-chart extra-efficiency",role:"img","aria-label":"Mean nodes returned versus hit rate"});
+      const methods=L.methodNames(this.rows).filter(m=>!this.chartOnly.checked||L.summary(this.rows,m,Number(this.budget.value),this.type.value)),colors=methods.map(m=>`hsl(${L.methodNames(this.rows).indexOf(m)*137.508%360} 65% 65%)`),chart=svg("svg",{viewBox:"0 0 540 280",class:"efficiency-chart extra-efficiency",role:"img","aria-label":"Mean nodes returned versus hit rate"}),layout=el("div","results-efficiency"),legend=el("div","results-chart-legend");
       const filtered=L.select(this.rows,{type:this.type.value}),maxNodes=Math.max(200,...filtered.map(r=>r.nodes_returned)),log=this.scale.value==="log",minimum=Math.min(10,...filtered.map(r=>r.nodes_returned)),x=n=>log?55+(Math.log(Math.max(minimum,n))-Math.log(minimum))/(Math.log(maxNodes)-Math.log(minimum))*450:55+n/maxNodes*450,y=h=>235-h*200;
       for(const tick of [0,.25,.5,.75,1]){chart.append(svg("line",{x1:55,x2:505,y1:y(tick),y2:y(tick),class:"chart-grid"}),svg("text",{x:46,y:y(tick)+4,"text-anchor":"end"},(100*tick)+"%"));}
       for(const tick of log?[10,20,50,100,200]:[0,maxNodes/2,maxNodes])chart.append(svg("text",{x:x(tick),y:253,"text-anchor":"middle"},tick.toFixed(0)));
@@ -58,8 +60,8 @@
           for(const offset of [-8,-22,17,31,-36,45,59,-50]){const candidate=Math.max(30,Math.min(230,py+offset));if(!occupied.some(r=>tx<r.x+r.w&&tx+width>r.x&&Math.abs(candidate-r.y)<12)){ty=candidate;break;}}
           occupied.push({x:tx,y:ty,w:width});chart.append(svg("line",{x1:px,y1:py,x2:tx,y2:ty-3,stroke:colors[i],opacity:.35}),svg("text",{x:tx,y:ty,style:"fill:"+colors[i],class:"point-label"},label));
         }
-        chart.append(svg("rect",{x:55+(i%2)*250,y:287+Math.floor(i/2)*19,width:8,height:3,fill:colors[i]}),window.GlossaryUI.svgHelp(svg("text",{x:68+(i%2)*250,y:291+Math.floor(i/2)*19},L.labels[method]),method));
-      });return chart;
+        const item=el("div","results-chart-key"),swatch=el("span","results-chart-swatch");swatch.style.background=colors[i];item.append(swatch,window.GlossaryUI.label(method,L.labels[method]));legend.append(item);
+      });layout.append(chart,legend);return layout;
     }
     grid(parent){
       const budget=Number(this.budget.value),rows=L.select(this.rows,{budget,type:this.type.value}),ids=[...new Set(rows.map(r=>r.query_id))].sort(),methods=L.methodNames(this.rows).filter(m=>rows.some(r=>r.method===m));

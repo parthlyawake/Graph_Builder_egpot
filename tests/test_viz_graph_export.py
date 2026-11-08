@@ -84,4 +84,4 @@ def test_site_is_offline_and_scripts_are_local():
         assert not reference.startswith(("/", "//"))
         assert (ROOT / "viz" / reference).is_file(), reference
     assert 'data-tab="graph"' in html
-    assert html.count('role="tab"') == 6
+    assert html.count('role="tab"') == 7

@@ -11,6 +11,12 @@ window.VIZ_GLOSSARY = {
     "long": "The same method with the choke-point rule switched off.",
     "short": "The same method with the choke-point rule switched off."
   },
+  "budget": {
+    "key": "budget",
+    "label": "node budget",
+    "long": "The maximum number of code nodes a method may return, standing in for how much the AI assistant must read; the start node counts.",
+    "short": "The maximum number of code nodes a method may return, standing in for how much the AI assistant must read; the start node counts."
+  },
   "community_graphrag": {
     "key": "community_graphrag",
     "label": "Community GraphRAG (text only)",
@@ -178,6 +184,12 @@ window.VIZ_GLOSSARY = {
     "label": "precision",
     "long": "answer nodes found divided by all nodes returned; it is low for every method because only 2 nodes are \"the answer\" while methods return 15 to 60.",
     "short": "answer nodes found divided by all nodes returned; it is low for every method because only 2 nodes are \"the answer\" while methods return 15 to 60."
+  },
+  "precision_at_hit": {
+    "key": "precision_at_hit",
+    "label": "precision at hit",
+    "long": "The number of answer nodes divided by the number of nodes discovered when the last answer node is found, averaged only over successful queries. Misses are excluded; read the hit count alongside it.",
+    "short": "The number of answer nodes divided by the number of nodes discovered when the last answer node is found, averaged only over successful queries. Misses are excluded; read the hit count alongside it."
   },
   "scalar_beam": {
     "key": "scalar_beam",

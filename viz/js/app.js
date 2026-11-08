@@ -69,11 +69,11 @@
     const light = document.documentElement.dataset.theme !== "light"; document.documentElement.dataset.theme = light ? "light" : "dark";
     event.target.textContent = light ? "Dark theme" : "Light theme"; event.target.setAttribute("aria-label", "Switch to " + (light ? "dark" : "light") + " theme"); graph.style();
   });
-  let player = null, results = null, ablations = null, compare = null, explainer = null;
+  let player = null, results = null, ablations = null, compare = null, explainer = null, finalTest = null;
   function tab(name) {
     const isGraph = name === "graph";
     document.getElementById("graph-panel").hidden = !isGraph;
-    document.getElementById("placeholder").hidden = ["graph","how","player","results","ablations","compare"].includes(name);
+    document.getElementById("placeholder").hidden = ["graph","how","player","results","ablations","compare","finaltest"].includes(name);
     document.getElementById("player-panel").hidden = name !== "player";
     if (name === "player") {if (!player) {player = new window.TraversalPlayer(); window.VizApp.player = player;} player.activate();}
     else if (player) player.pause();
@@ -86,7 +86,9 @@
     else if (compare) compare.pause();
     document.getElementById("how-panel").hidden = name !== "how";
     if (name === "how") {if (!explainer) {explainer = new window.ExplainerView(); window.VizApp.explainer = explainer;} explainer.activate();}
-    const titles={graph:["Graph Explorer","01 / EXPLORE"],how:["How EG-POT works","02 / METHOD"],player:["Traversal player","03 / PLAYBACK"],compare:["Compare methods","04 / COMPARE"],ablations:["Ablations","05 / COMPONENTS"],results:["Results","06 / EVALUATE"]};
+    document.getElementById("final-test-panel").hidden = name !== "finaltest";
+    if (name === "finaltest" && !finalTest) {finalTest = new window.FinalTestView(); window.VizApp.finalTest = finalTest;}
+    const titles={graph:["Graph Explorer","01 / EXPLORE"],how:["How EG-POT works","02 / METHOD"],player:["Traversal player","03 / PLAYBACK"],compare:["Compare methods","04 / COMPARE"],ablations:["Ablations","05 / COMPONENTS"],results:["Results","06 / EVALUATE"],finaltest:["Final test (locked)","07 / HELD OUT"]};
     document.querySelector(".subtitle").textContent=titles[name][0];
     document.querySelector(".tab-note").textContent=titles[name][1];
     document.title="Online Boutique · "+titles[name][0];
