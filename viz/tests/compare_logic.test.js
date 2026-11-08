@@ -1,0 +1,13 @@
+"use strict";
+const assert=require("node:assert/strict"),L=require("../js/compare_logic.js");
+const trace=(method,ids,length)=>({method,start_node:"S",final:{visited_order:ids,ordered_path:ids,edges:[]},steps:Array.from({length},(_,i)=>({kind:"bfs_layer",frontier:i?["A"]:["S"],added:i?["C"]:["A"]}))});
+const a=trace("a",["S","A","C"],3),b=trace("b",["S","B"],1);
+assert.deepEqual(L.unionNodes([a,b]),["A","B","C","S"]);
+assert.deepEqual(L.diffSets([a.final.visited_order,b.final.visited_order]),{union:["A","B","C","S"],only:[["A","C"],["B"]],all:["S"]});
+assert.equal(L.capStep(a,2),2);assert.equal(L.capStep(b,2),0);assert.equal(L.capStep(a,-1),0);
+const layout=L.sharedLayout([a,b],[{source:"S",target:"A"},{source:"S",target:"B"}]);
+assert.deepEqual(layout,L.sharedLayout([b,a],[{source:"S",target:"A"},{source:"S",target:"B"}]));assert.equal(layout.S.x,0);
+const answer=L.answerRows([a,b],{gold_nodes:["A","C"]});
+assert.equal(answer[0].contract,2);assert.equal(answer[0].handler,3);assert.equal(answer[0].hit,true);assert.equal(answer[1].hit,false);
+const sentence=L.summary(answer,{a:"Alpha",b:"Beta"});assert.ok(sentence.includes("Alpha found all answer nodes"));assert.ok(sentence.includes("Beta did not"));assert.ok(sentence.includes("Beta (2)"));
+console.log("Compare logic: 6 groups passed (union, diffs, capping, shared layout, answer positions, summary).");

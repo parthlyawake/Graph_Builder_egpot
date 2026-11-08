@@ -42,3 +42,7 @@ tmp/
 generate_pptx.py
 generate_results_doc.py
 
+
+viz/data/*/traces/
+viz/data/*/traces_js/
+viz/_check/
