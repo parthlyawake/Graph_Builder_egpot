@@ -67,7 +67,10 @@ class CKGBuilder(ast.NodeVisitor):
         self.file_symbols = {}      # file_rel_path -> list of node_ids
         self.calls_to_resolve = []  # (caller_id, callee_name, scope_depth, id_ctx)
         self.http_endpoints = {}    # (HTTP method, literal path) -> [handler node IDs]
-        self.http_calls_to_resolve = []  # (caller_id, literal path, method, id_ctx)
+        self.http_calls_to_resolve = []
+        self.proto_messages = {}
+        self.type_signatures = {}
+        self.lsp_provider = None  # (caller_id, literal path, method, id_ctx)
         self.dynamic_http_calls = []  # (caller_id, method, path suffix, file, line, column)
         self.imports_by_file = {}   # file_rel_path -> {alias: target_module_or_symbol}
         self.module_to_file = {}    # dotted Python module -> repository-relative path
@@ -1056,6 +1059,14 @@ class CKGBuilder(ast.NodeVisitor):
             caller_vec = matrix[0:1]
             for i in range(len(candidate_ids)):
                 sim = float(cosine_similarity(caller_vec, matrix[i + 1 : i + 2])[0, 0])
+                cid = candidate_ids[i]
+                sig = self.type_signatures.get(cid, {})
+                caller_sig = self.type_signatures.get(caller_id, {})
+                if sig and caller_sig:
+                    sig_str = str(sig).lower()
+                    caller_str = str(caller_sig).lower()
+                    if any(t in caller_str for t in sig.get("param_types", [])):
+                        sim += 0.25
                 sims.append(sim)
         except Exception:
             sims = [1.0] * len(candidate_ids)
@@ -1213,6 +1224,14 @@ class CKGBuilder(ast.NodeVisitor):
                                 resolved_count += 1
                             continue
 
+            if not target_ids and getattr(self, "lsp_provider", None):
+                lsp_target = self.lsp_provider.resolve(caller_file, callee_name)
+                if lsp_target and self.graph.has_node(lsp_target):
+                    meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=caller_file)
+                    self.add_ckg_edge(caller_id, lsp_target, relation="CALLS", layer="Ldep", metadata=meta)
+                    resolved_count += 1
+                    continue
+
             if not target_ids:
                 target_ids = self._resolve_reference(caller_file, callee_name)
 
@@ -1316,7 +1335,7 @@ class CKGBuilder(ast.NodeVisitor):
     # CONTRACT LAYER (Lcontract): protobuf/gRPC cross-language bindings
     # -------------------------------------------------------------
     def _parse_proto_file(self, rel_path, full_path):
-        """Parse a .proto file into canonical service/rpc contract nodes."""
+        """Parse a .proto file into canonical service/rpc contract nodes and message types."""
         norm = rel_path.replace("\\", "/")
         prev_file = self.current_file
         self.current_file = norm
@@ -1327,24 +1346,27 @@ class CKGBuilder(ast.NodeVisitor):
             self.proto_file_hashes[norm] = proto_hash
             self.proto_nodes_by_file.setdefault(norm, set())
 
-            text = raw_bytes.decode("utf-8", errors="replace")
-            text = re.sub(r"//[^\n]*", "", text)
-            text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
             file_id = f"file::{self.repo_prefix}{norm}"
             self.add_ckg_node(file_id, "file", "Lsyn", os.path.basename(norm), 1,
                               code=f"// Proto contract file: {norm}", repo=self.repo_id or "")
             self.proto_nodes_by_file[norm].add(file_id)
 
-            # Normalise empty rpc option blocks `{}` so service bodies can be
-            # delimited by brace balancing (the first `}` is NOT the service end).
-            text = re.sub(r"\)\s*\{\s*\}", ");", text)
-            for service_match in re.finditer(r"service\s+(\w+)\s*\{", text):
-                service_name = service_match.group(1)
-                depth, i = 1, service_match.end()
-                while i < len(text) and depth:
-                    depth += {"{": 1, "}": -1}.get(text[i], 0)
-                    i += 1
-                body = text[service_match.end():i - 1]
+            from proto_parser import ProtoParser
+            text = raw_bytes.decode("utf-8", errors="replace")
+            pf = ProtoParser.parse_text(text)
+
+            # Register messages as canonical type contracts (P8)
+            for msg_name, msg_obj in pf.messages.items():
+                msg_id = f"contract::message::{msg_name}"
+                if not self.graph.has_node(msg_id):
+                    field_names = [f.name for f in msg_obj.fields.values()]
+                    self.add_ckg_node(msg_id, "contract", "Lcontract", msg_name,
+                                      code=f"message {msg_name} {{ " + ", ".join(field_names) + " }}")
+                self.proto_nodes_by_file[norm].add(msg_id)
+                self.proto_messages[msg_name] = msg_obj
+                self.add_ckg_edge(file_id, msg_id, "CONTAINS", "Lsyn")
+
+            for service_name, s_obj in pf.services.items():
                 service_id = f"contract::{service_name}"
                 if not self.graph.has_node(service_id):
                     self.add_ckg_node(service_id, "service_contract", "Lcontract", service_name)
@@ -1363,8 +1385,9 @@ class CKGBuilder(ast.NodeVisitor):
                 self.add_ckg_edge(file_id, service_id, "CONTAINS", "Lsyn")
                 rpcs = {}
                 rpc_signatures = {}
-                for rpc_match in re.finditer(r"rpc\s+(\w+)\s*\(\s*(\w+)\s*\)\s*returns\s*\(\s*(\w+)\s*\)", body):
-                    rpc_name, req_type, resp_type = rpc_match.groups()
+                for rpc_name, rpc_obj in s_obj.rpcs.items():
+                    req_type = rpc_obj.request_type
+                    resp_type = rpc_obj.response_type
                     rpc_id = f"contract::{service_name}.{rpc_name}"
                     if not self.graph.has_node(rpc_id):
                         self.add_ckg_node(rpc_id, "rpc_contract", "Lcontract", rpc_name)
@@ -1385,6 +1408,11 @@ class CKGBuilder(ast.NodeVisitor):
                     })
                     self.graph.nodes[rpc_id]["definitions"] = rpc_defs
                     self.add_ckg_edge(service_id, rpc_id, "DEFINES_RPC", "Lcontract")
+
+                    req_msg_id = f"contract::message::{req_type}"
+                    if self.graph.has_node(req_msg_id):
+                        self.add_ckg_edge(req_msg_id, rpc_id, "USES", "Ldep")
+
                     rpcs[rpc_name] = rpc_id
                     rpc_signatures[rpc_name] = {"request": req_type, "response": resp_type}
                 self.proto_services[service_name] = {
