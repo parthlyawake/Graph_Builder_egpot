@@ -60,3 +60,14 @@ Run adapter tests:
 Follow-up engineering should move each language's visitor branches into
 independent modules once fixture coverage protects their behavior. Avoid
 a broad rewrite of the combined visitor without those tests.
+
+## Parity smoke tests
+
+Run `python -m unittest tests.test_seven_language_smoke` with all grammar
+packages installed. These tests exercise identical function/call concepts in
+seven syntaxes and detect regressions; source-grounded integration benchmarks
+remain necessary for comprehensive semantic accuracy.
+
+The report distinguishes `complete` (all recognized supported code parsed
+without errors) from `full_source_coverage` (no known unsupported application
+files also discovered). Neither field certifies semantic correctness.

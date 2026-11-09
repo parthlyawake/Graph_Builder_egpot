@@ -33,6 +33,7 @@ class AdapterContractTests(unittest.TestCase):
             report = builder.get_language_report()
             self.assertEqual(report["languages"]["python"]["parsed"], 1)
             self.assertEqual(report["unsupported_files"][".rs"], 1)
+            self.assertFalse(report["full_source_coverage"])
 
     def test_invalid_python_is_not_reported_as_parsed(self):
         with tempfile.TemporaryDirectory() as tmp:

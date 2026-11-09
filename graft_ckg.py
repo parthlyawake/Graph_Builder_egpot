@@ -523,6 +523,9 @@ class CKGBuilder(ast.NodeVisitor):
         print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
         self._print_layer_statistics()
         self.language_report["complete"] = not self.language_report["parse_errors"]
+        self.language_report["full_source_coverage"] = (
+            self.language_report["complete"] and not self.language_report["unsupported_files"]
+        )
         if self.language_report["unsupported_files"]:
             print("[!] Unsupported application files by extension: " +
                   str(self.language_report["unsupported_files"]))

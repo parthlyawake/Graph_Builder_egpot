@@ -41,6 +41,7 @@ dependencies = [
     "tree-sitter-go>=0.23,<0.24",
     "tree-sitter-java>=0.23,<0.24",
     "tree-sitter-c-sharp>=0.23,<0.24",
+    "tree-sitter-kotlin>=1.0.0",
     "rank_bm25>=0.2",
     "tiktoken>=0.5",
 ]
