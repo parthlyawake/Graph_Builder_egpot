@@ -590,28 +590,31 @@ class TreeSitterExtractor:
                 else:
                     builder.calls_to_resolve.append((scope_id, expr_text, builder.scope_depth, builder.current_file))
 
-        # Kotlin method call
+        # Kotlin method calls: both qualified (client.fetch()) and simple (helper()).
         if self.is_kotlin and node.type in {"call_expression", "navigation_expression"} and builder.current_scope:
             scope_id = builder.get_current_scope_id()
             raw_text = self._text(node, source)
-            if "." in raw_text:
-                prefix_part = raw_text.split("(", 1)[0]
-                obj_text, _, m_name = prefix_part.rpartition(".")
-                obj_text = obj_text.strip()
-                m_name = m_name.strip()
-                if obj_text in builder.grpc_client_vars.get(builder.current_file, {}):
-                    target_svc = builder.grpc_client_vars[builder.current_file][obj_text]
-                    builder.grpc_calls_to_resolve.append((scope_id, target_svc, m_name, builder.current_file))
-                if m_name == "send" and ("kafka" in obj_text.lower() or "producer" in obj_text.lower()):
-                    first_arg_match = re.search(r"['\"]([^'\"]+)['\"]", raw_text)
-                    if first_arg_match:
-                        topic_name = first_arg_match.group(1)
-                        topic_id = f"topic::{topic_name}"
-                        if not builder.graph.has_node(topic_id):
-                            builder.add_ckg_node(topic_id, "topic_contract", "Lcontract", topic_name)
-                        builder.add_ckg_edge(scope_id, topic_id, "PRODUCES_EVENT", "Lcontract")
-                callee = f"{obj_text}.{m_name}" if obj_text else m_name
-                builder.calls_to_resolve.append((scope_id, callee, builder.scope_depth, builder.current_file))
+            if "(" in raw_text:
+                prefix_part = raw_text.split("(", 1)[0].strip()
+                if "." in prefix_part:
+                    obj_text, _, m_name = prefix_part.rpartition(".")
+                    obj_text, m_name = obj_text.strip(), m_name.strip()
+                    if obj_text in builder.grpc_client_vars.get(builder.current_file, {}):
+                        target_svc = builder.grpc_client_vars[builder.current_file][obj_text]
+                        builder.grpc_calls_to_resolve.append((scope_id, target_svc, m_name, builder.current_file))
+                    if m_name == "send" and ("kafka" in obj_text.lower() or "producer" in obj_text.lower()):
+                        first_arg_match = re.search(r"['\"]([^'\"]+)['\"]", raw_text)
+                        if first_arg_match:
+                            topic_name = first_arg_match.group(1)
+                            topic_id = f"topic::{topic_name}"
+                            if not builder.graph.has_node(topic_id):
+                                builder.add_ckg_node(topic_id, "topic_contract", "Lcontract", topic_name)
+                            builder.add_ckg_edge(scope_id, topic_id, "PRODUCES_EVENT", "Lcontract")
+                    callee = f"{obj_text}.{m_name}" if obj_text else m_name
+                else:
+                    callee = prefix_part
+                if callee:
+                    builder.calls_to_resolve.append((scope_id, callee, builder.scope_depth, builder.current_file))
 
         # Java constructor call: new OrderResponse(...)
         if node.type == "object_creation_expression" and builder.current_scope:
