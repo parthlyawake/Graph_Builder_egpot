@@ -17,7 +17,7 @@ FIXTURES = {
     "go": (".go", "package main\nfunc helper() int { return 1 }\nfunc run() int { return helper() }\n", {"helper", "run"}),
     "java": (".java", "class Service { int helper() { return 1; } int run() { return helper(); } }\n", {"helper", "run"}),
     "csharp": (".cs", "class Service { int helper() { return 1; } int run() { return helper(); } }\n", {"helper", "run"}),
-    "kotlin": (".kt", "class Service { fun helper(): Int = 1\n fun run(): Int = helper() }\n", {"helper", "run"}),
+    "kotlin": (".kt", "class Service {\n fun helper(): Int { return 1 }\n fun run(): Int { return helper() }\n}\n", {"helper", "run"}),
 }
 
 
@@ -36,7 +36,7 @@ class SevenLanguageSmokeTests(unittest.TestCase):
                     builder = CKGBuilder(folder)
                     graph = builder.build()
                     report = builder.get_language_report()
-                    self.assertEqual(report["languages"][spec.name]["parsed"], 1)
+                    self.assertEqual(report["languages"][spec.name]["parsed"], 1, report["parse_errors"])
                     self.assertEqual(report["languages"][spec.name]["partial"], 0)
                     self.assertEqual(report["languages"][spec.name]["failed"], 0)
                     actual = {d.get("name") for _, d in graph.nodes(data=True)
