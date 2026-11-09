@@ -407,6 +407,7 @@ class CKGBuilder(ast.NodeVisitor):
         # 1. Scan files (deterministic sorted walk)
         source_files = []
         proto_files = []
+        missing_grammars = set()
         for root, dirs, files in os.walk(self.repo_path):
             dirs[:] = sorted([
                 d for d in dirs
@@ -418,10 +419,22 @@ class CKGBuilder(ast.NodeVisitor):
                 if self._is_ignored(rel_path):
                     continue
                 ext = os.path.splitext(file)[1]
+                if ext in {".java", ".cs"} and ext not in TreeSitterExtractor.EXTENSIONS:
+                    # Never silently omit handlers when a required grammar is unavailable.
+                    missing_grammars.add(ext)
+                    continue
                 if ext in {".py", *TreeSitterExtractor.EXTENSIONS}:
                     source_files.append((rel_path, full_path))
                 elif ext == ".proto":
                     proto_files.append((rel_path, full_path))
+
+        if missing_grammars:
+            packages = {".java": "tree-sitter-java", ".cs": "tree-sitter-c-sharp"}
+            required = ", ".join(packages[ext] for ext in sorted(missing_grammars))
+            raise RuntimeError(
+                f"Repository contains source files whose parsers are missing: {required}. "
+                "Install with `pip install -e .` or `pip install -r requirements.txt`."
+            )
 
         print(f"[*] Found {len(source_files)} supported source files, {len(proto_files)} proto files.")
         self.module_to_file = {}
