@@ -638,40 +638,9 @@ class WorkspaceCKGBuilder:
             print(f"[*] Cross-Repository gRPC Producer Resolution: {resolved} cross-service producer bindings created.")
 
     def _resolve_cross_repo_http_calls(self):
-        """Binds frontend and client HTTP calls in Repo A to routes declared in Repo B."""
-        resolved = 0
-        for caller_repo_id, builder in self.repo_builders.items():
-            for caller_id, clean_path, method, id_ctx in builder.http_calls_to_resolve:
-                targets = list(dict.fromkeys([
-                    *self.http_endpoints.get((method.upper(), clean_path), []),
-                    *self.http_endpoints.get(("*", clean_path), []),
-                ]))
-                for target_id in targets:
-                    if target_id == caller_id:
-                        continue
-                    already_bound = any(
-                        target == target_id and d.get("relation") == "HTTP_CALLS"
-                        for _, target, d in self.graph.out_edges(caller_id, data=True)
-                    )
-                    if already_bound:
-                        continue
-                    meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx=id_ctx)
-                    e_id = f"w_http_{caller_id}_{target_id}"
-                    self.graph.add_edge(
-                        caller_id,
-                        target_id,
-                        key=e_id,
-                        relation="HTTP_CALLS",
-                        layer="Ldep",
-                        metadata=meta.to_dict(),
-                        d_scope=meta.d_scope,
-                        f_call=meta.f_call,
-                        c_type=meta.c_type,
-                        id_ctx=meta.id_ctx,
-                    )
-                    resolved += 1
-        if resolved:
-            print(f"[*] Cross-Repository HTTP Resolution: {resolved} cross-service HTTP bindings created.")
+        """Resolve source-evidenced and unique cross-repository HTTP calls."""
+        from graph_builder_http import resolve_workspace_http
+        return resolve_workspace_http(self)
 
     def _resolve_cross_repo_grpc_calls(self):
         """Binds stub calls in Repo A to contracts declared in Repo B or shared contracts."""
