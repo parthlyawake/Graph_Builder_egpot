@@ -246,11 +246,11 @@ def _python_requests(builder, file, text, environment):
 
 
 def _java_requests(builder, file, text):
-    """Use the existing Java grammar for method-scoped HTTP expressions."""
+    """Java source evaluator: literal/concatenated URLs, helpers and control-flow joins."""
     from polyglot import TreeSitterExtractor
-    parser = TreeSitterExtractor(".java").parser
+
     source = text.encode("utf-8")
-    root = parser.parse(source).root_node
+    root = TreeSitterExtractor(".java").parser.parse(source).root_node
 
     def raw(node):
         return source[node.start_byte:node.end_byte].decode("utf-8") if node else ""
@@ -260,56 +260,147 @@ def _java_requests(builder, file, text):
         for child in node.named_children:
             yield from walk(child)
 
-    receivers = set(re.findall(r"\b(?:RestTemplate|WebClient|HttpClient)\s+(\w+)", text))
-    methods = [n for n in walk(root) if n.type == "method_declaration"]
+    methods = [node for node in walk(root) if node.type == "method_declaration"]
+    helpers = {}
+    for method in methods:
+        returns = [node for node in walk(method) if node.type == "return_statement"]
+        if len(returns) == 1 and returns[0].named_children:
+            params = method.child_by_field_name("parameters")
+            names = [raw(p.child_by_field_name("name")) for p in params.named_children] if params else []
+            helper_name = raw(method.child_by_field_name("name"))
+            helpers.setdefault(helper_name, []).append(
+                (names, returns[0].named_children[0])
+            )
+
+    def evaluate(node, values, depth=0):
+        if node is None:
+            return None
+        if node.type == "string_literal":
+            try:
+                return json.loads(raw(node))
+            except ValueError:
+                return None
+        if node.type in {"identifier", "field_access"}:
+            return values.get(raw(node), "{*}")
+        if node.type == "parenthesized_expression" and node.named_children:
+            return evaluate(node.named_children[0], values, depth)
+        if node.type == "binary_expression":
+            operator = node.child_by_field_name("operator")
+            if operator is not None and raw(operator) == "+":
+                left = evaluate(node.child_by_field_name("left"), values, depth)
+                right = evaluate(node.child_by_field_name("right"), values, depth)
+                if isinstance(left, str) and isinstance(right, str):
+                    return left + right
+        if node.type == "method_invocation":
+            name = raw(node.child_by_field_name("name"))
+            args = node.child_by_field_name("arguments")
+            args = list(args.named_children) if args else []
+            if name in {"create", "of"} and args and raw(
+                node.child_by_field_name("object")) in {"URI", "java.net.URI"}:
+                return evaluate(args[0], values, depth)
+            options = helpers.get(name, [])
+            if depth == 0 and len(options) == 1:
+                params, expression = options[0]
+                if len(params) == len(args):
+                    bound = {p: evaluate(a, values, depth + 1)
+                             for p, a in zip(params, args)}
+                    return evaluate(expression, bound, depth + 1)
+        return "{*}"
+
+    receivers = set(re.findall(
+        r"\b(?:RestTemplate|WebClient|HttpClient)\s+(\w+)", text))
     result = []
     for method in methods:
         caller = _caller(builder, file, method.start_point.row + 1)
-        if not caller:
+        if caller is None:
             continue
         values = {}
-        for node in walk(method):
+
+        def flow(node):
+            if node.type == "if_statement":
+                before = dict(values)
+                consequence = node.child_by_field_name("consequence")
+                alternative = node.child_by_field_name("alternative")
+                if consequence:
+                    yield from flow(consequence)
+                left = dict(values)
+                values.clear()
+                values.update(before)
+                if alternative:
+                    yield from flow(alternative)
+                right = dict(values)
+                values.clear()
+                values.update({
+                    key: left.get(key) if left.get(key) == right.get(key) else None
+                    for key in left.keys() | right.keys()
+                })
+                return
+            yield node
+            for child in node.named_children:
+                yield from flow(child)
+
+        for node in flow(method):
             if node.type == "variable_declarator":
-                name = raw(node.child_by_field_name("name"))
-                val = node.child_by_field_name("value")
-                if val and val.type == "string_literal":
-                    try:
-                        values[name] = json.loads(raw(val))
-                    except ValueError:
-                        pass
+                values[raw(node.child_by_field_name("name"))] = evaluate(
+                    node.child_by_field_name("value"), values)
+            elif node.type == "assignment_expression":
+                values[raw(node.child_by_field_name("left"))] = evaluate(
+                    node.child_by_field_name("right"), values)
             if node.type != "method_invocation":
                 continue
             name = raw(node.child_by_field_name("name"))
             obj = raw(node.child_by_field_name("object"))
             args = node.child_by_field_name("arguments")
             args = list(args.named_children) if args else []
-            if obj not in receivers or not args:
-                continue
-            verb = None
-            if name == "exchange" and len(args) >= 2:
-                match = re.fullmatch(
-                    r"(?:\w+\.)*HttpMethod\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)",
-                    raw(args[1])
-                )
-                verb = match.group(1) if match else None
-            else:
-                match = re.fullmatch(
-                    r"(get|post|put|delete|patch|head|options)(?:ForObject|ForEntity)?",
-                    name
-                )
+            verb = url = None
+            if obj in receivers and args:
+                if name == "exchange" and len(args) > 1:
+                    match = re.fullmatch(
+                        r"(?:\w+\.)*HttpMethod\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)",
+                        raw(args[1]))
+                    verb = match.group(1) if match else None
+                else:
+                    match = re.fullmatch(
+                        r"(get|post|put|delete|patch|head|options)(?:ForObject|ForEntity)?",
+                        name)
+                    verb = match.group(1).upper() if match else None
+                url = evaluate(args[0], values)
+            if name == "uri" and args and any(
+                re.match(r"\b" + re.escape(r) + r"\.", obj) for r in receivers
+            ):
+                match = re.search(
+                    r"\.(get|post|put|delete|patch|head|options)\(\)", obj)
                 verb = match.group(1).upper() if match else None
-            if not verb:
-                continue
-            url = None
-            if args[0].type == "string_literal":
-                try:
-                    url = json.loads(raw(args[0]))
-                except ValueError:
-                    pass
-            elif args[0].type == "identifier":
-                url = values.get(raw(args[0]))
-            if isinstance(url, str) and url.startswith(("http://", "https://")):
-                result.append((caller, url, verb, file, node.start_point.row + 1, "literal_host"))
+                url = evaluate(args[0], values)
+            if name == "uri" and args and "HttpRequest.newBuilder(" in obj:
+                parent = node
+                while parent.parent and parent.parent.type == "method_invocation":
+                    parent = parent.parent
+                chain = raw(parent)
+                match = re.search(r"\.(GET|POST|PUT|DELETE|HEAD)\(", chain)
+                declaration = parent.parent
+                request_name = (
+                    raw(declaration.child_by_field_name("name"))
+                    if declaration is not None
+                    and declaration.type == "variable_declarator" else None
+                )
+                if (match and request_name and re.search(
+                    r"\b(?:" + "|".join(map(re.escape, receivers))
+                    + r")\.send(?:Async)?\(\s*" + re.escape(request_name) + r"\b",
+                    raw(method),
+                )):
+                    verb, url = match.group(1), evaluate(args[0], values)
+            if (verb and isinstance(url, str)
+                    and url.startswith(("http://", "https://"))):
+                helper_used = any(
+                    re.search(r"\b" + re.escape(h) + r"\(", raw(method))
+                    for h in helpers
+                    if h != raw(method.child_by_field_name("name"))
+                )
+                result.append((
+                    caller, url, verb, file, node.start_point.row + 1,
+                    "helper" if helper_used else "literal_host",
+                ))
     return result
 
 

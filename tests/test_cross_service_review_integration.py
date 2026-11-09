@@ -136,3 +136,69 @@ def test_repeat_build_and_update_do_not_accumulate_contract_edges(tmp_path):
     assert snapshot() == baseline
     with pytest.raises(KeyError):
         builder.update_files("unknown", [])
+
+
+@pytest.mark.parametrize("expression", [
+    '"http://orders/api/items/42"',
+    '"http://orders/api/items/" + id',
+    'getServiceUrl("orders") + "/api/items/" + id',
+    'url',
+])
+def test_java_http_exchange_resolves_source_url_and_verb(tmp_path, expression):
+    if not _JAVA_AVAILABLE:
+        pytest.skip("Java grammar unavailable")
+    _write(tmp_path, "client/Client.java", '''
+class Client {
+  RestTemplate restTemplate;
+  String getServiceUrl(String service) { return "http://" + service; }
+  void send(String id) {
+    String url = getServiceUrl("orders") + "/api/items/" + id;
+    restTemplate.exchange(''' + expression + ''', HttpMethod.PUT, null, String.class);
+  }
+}''')
+    _write(tmp_path, "orders/Controller.java", '''
+@RestController
+@RequestMapping("/api")
+class Controller {
+    @PutMapping("/items/{id}")
+    public String update() { return "ok"; }
+}''')
+    b = WorkspaceCKGBuilder(WorkspaceConfig(
+        base_dir=str(tmp_path),
+        repositories=[RepoConfig(id="client", path="client"),
+                      RepoConfig(id="orders", path="orders")],
+    ))
+    b.build()
+    matched = [(u, v, data) for u, v, data in b.graph.edges(data=True)
+               if data.get("relation") == "HTTP_CALLS"
+               and u.endswith("Client.send") and v.endswith("Controller.update")]
+    assert len(matched) == 1
+    assert matched[0][2]["http_method"] == "PUT"
+
+
+def test_java_branch_ambiguous_url_is_not_bound(tmp_path):
+    if not _JAVA_AVAILABLE:
+        pytest.skip("Java grammar unavailable")
+    _write(tmp_path, "client/Client.java", '''
+class Client {
+  RestTemplate restTemplate;
+  void send(boolean flag) {
+    String url;
+    if(flag) {url = "http://orders/api/items/42";}
+    else {url = "http://orders/wrong/42";}
+    restTemplate.getForObject(url, String.class);
+  }
+}''')
+    _write(tmp_path, "orders/Controller.java", '''
+@RestController class Controller {
+    @GetMapping("/api/items/{id}")
+    public String read() { return "ok"; }
+}''')
+    b = WorkspaceCKGBuilder(WorkspaceConfig(
+        base_dir=str(tmp_path),
+        repositories=[RepoConfig(id="client", path="client"),
+                      RepoConfig(id="orders", path="orders")],
+    ))
+    b.build()
+    assert not any(data.get("relation") == "HTTP_CALLS"
+                   for _, _, data in b.graph.edges(data=True))
