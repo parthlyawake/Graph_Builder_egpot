@@ -1,0 +1,22 @@
+{
+  "query_file": "bench/labels/train_ticket_egpot_queries.json",
+  "query_file_sha256": "21a2ed8b5658d665f00c6dc0078eaba14811ffed7402f99934513701aab5686e",
+  "graph_file": "bench/results/train_ticket_graph.graphml",
+  "graphml_sha256": "8904e43268d34bd7b8734ec8f93326eb60051a6d2ac71484816ff595cc2a4c55",
+  "query_sheet_file": "C:\\dev\\triage_out\\step25\\query_sheet.md",
+  "query_sheet_sha256": "1f793a03b0c33fd06f7e08ad86d2f5b8ea6bdec46c9f82118ea5e1a990ded039",
+  "graph_builder_head": "8258e975503caae105edb922bb2ac54c5bf5a50c",
+  "utc_timestamp": "2026-11-09T08:52:08.350933Z",
+  "query_count": 30,
+  "link_count": 15,
+  "endpoint_count": 15,
+  "counts_by_type": {
+    "explicit": 15,
+    "indirect": 15
+  },
+  "lookalike_links": [
+    4,
+    5,
+    6
+  ]
+}
