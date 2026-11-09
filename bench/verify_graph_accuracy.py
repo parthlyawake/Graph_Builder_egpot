@@ -85,9 +85,22 @@ def evaluate(graph, labels, source_root=None):
         "negative_violations": sorted(map(list, negatives & actual)),
         "source_evidence": evidence,
         "closed_scopes": [],
+        "closed_node_scopes": [],
         "by_relation_language": {},
         "status": labels.get("status", "unspecified"),
     }
+    for scope in labels.get("closed_node_scopes", []):
+        node_type, files = scope["type"], set(scope["files"])
+        if not files:
+            raise ValueError("Empty closed node scope")
+        expected_nodes = {(str(item["id"]),) for item in node_labels
+                          if item.get("type") == node_type and item.get("file") in files}
+        graph_nodes = {(str(node),) for node, data in graph.nodes(data=True)
+                       if data.get("type") == node_type and data.get("file") in files}
+        result["closed_node_scopes"].append({
+            "type": node_type, "files": sorted(files),
+            "language": scope.get("language", "unspecified"),
+            **metrics(expected_nodes, graph_nodes)})
     grouped = defaultdict(set)
     for item in edge_labels:
         grouped[(item["relation"], item.get("language", "unspecified"))].add(edge(item))
@@ -104,8 +117,8 @@ def evaluate(graph, labels, source_root=None):
         result["closed_scopes"].append({
             "relation": relation, "language": scope.get("language", "unspecified"),
             "source_count": len(sources), **metrics(expected, predicted)})
-    result["passed"] = not absent_nodes and not result["sampled_edges"]["missing"] and not result["negative_violations"] and evidence["missing"] == 0 and all(s["fp"] == 0 for s in result["closed_scopes"])
-    result["publication_ready"] = (result["passed"] and bool(result["closed_scopes"])
+    result["passed"] = not absent_nodes and not result["sampled_edges"]["missing"] and not result["negative_violations"] and evidence["missing"] == 0 and all(s["fp"] == 0 for s in result["closed_scopes"]) and all(s["fp"] == 0 for s in result["closed_node_scopes"])
+    result["publication_ready"] = (result["passed"] and bool(result["closed_scopes"]) and bool(result["closed_node_scopes"])
                                    and evidence["unavailable"] == 0 and evidence["missing"] == 0
                                    and labels.get("status") == "independently_reviewed")
     return result

@@ -97,3 +97,8 @@ Use python -m unittest discover -s tests -p test_verify_graph_accuracy.py
 - Never invent source-level producer IDs to make producer precision 100%.
 - Pin upstream repository revisions, dependencies, seed, labels, and hardware
   when publishing benchmark results.
+
+For node precision/F1, add closed_node_scopes entries with a node type and
+an exhaustive list of file paths, e.g. {"type":"function","files":["src/service.py"],
+"language":"python"}. Each matching node label must include its type and file.
+This is a promise that every in-scope declaration has been annotated.

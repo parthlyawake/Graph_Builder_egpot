@@ -68,6 +68,17 @@ class GraphAccuracyTests(unittest.TestCase):
         self.labels["nodes"].append({"id": "src/backend.py:missing"})
         self.assertFalse(audit.evaluate(self.graph, self.labels)["passed"])
 
+    def test_closed_node_scope_precision(self):
+        self.graph.nodes["src/backend.py:serve"]["file"] = "src/backend.py"
+        self.graph.add_node("src/backend.py:extra", type="function", file="src/backend.py")
+        self.labels["nodes"][0]["file"] = "src/backend.py"
+        self.labels["nodes"][0]["type"] = "function"
+        self.labels["closed_node_scopes"] = [{
+            "type": "function", "files": ["src/backend.py"], "language": "python"}]
+        result = audit.evaluate(self.graph, self.labels)
+        self.assertEqual(result["closed_node_scopes"][0]["precision"], .5)
+        self.assertFalse(result["passed"])
+
     def test_contradictory_labels(self):
         self.labels["negatives"] = list(self.labels["edges"])
         with self.assertRaisesRegex(ValueError, "Contradictory"):
