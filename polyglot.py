@@ -338,6 +338,37 @@ class TreeSitterExtractor:
                 class_id = builder.get_node_id(name)
                 builder.add_ckg_node(class_id, "class", "Lsyn", name, self._line(node))
                 builder.register_symbol(class_id, name)
+                # Managed gRPC requires an explicit registration, not inheritance
+                # alone. Keep the base and qualified class as evidence.
+                if self.is_java or self.is_csharp:
+                    heritage_node = next((c for c in node.named_children
+                                          if c.type in ("superclass", "base_list", "class_heritage")), None)
+                    if heritage_node:
+                        heritage_text = self._text(heritage_node, source)
+                        pattern = (r"(?:^|\.)\b(\w+)Grpc\.\1ImplBase\s*$"
+                                   if self.is_java else r"(?:^|\.)\b(\w+)\.\1Base\s*$")
+                        for base in re.sub(r"^(?:extends\s+|:\s*)", "", heritage_text).split(","):
+                            match = re.search(pattern, base.strip())
+                            if match:
+                                namespace = []
+                                ancestor = node.parent
+                                while ancestor is not None:
+                                    if ancestor.type in ("namespace_declaration", "file_scoped_namespace_declaration"):
+                                        nn = ancestor.child_by_field_name("name")
+                                        if nn is not None:
+                                            namespace.insert(0, self._text(nn, source))
+                                    ancestor = ancestor.parent
+                                if self.is_java:
+                                    root = node
+                                    while root.parent is not None:
+                                        root = root.parent
+                                    package = next((x for x in root.named_children if x.type == "package_declaration"), None)
+                                    if package is not None:
+                                        namespace = [re.sub(r"^package\s+|;\s*$", "", self._text(package, source)).strip()]
+                                builder.graph.nodes[class_id].update(
+                                    grpc_service=match.group(1),
+                                    grpc_language="java" if self.is_java else "csharp",
+                                    grpc_qualified_name=".".join([*namespace, *builder.current_scope, name]))
                 docstring = self._extract_doc_comment(node, source)
                 if docstring:
                     builder.docstrings[class_id] = docstring
@@ -373,13 +404,13 @@ class TreeSitterExtractor:
                         builder.class_base_records.append((class_id, base, builder.current_file, builder.scope_depth))
                         # Java gRPC servicer: class X extends <Service>Grpc.<Service>ImplBase
                         java_match = re.search(r"(\w+?)(?:Grpc)?\.\w*ImplBase$", base) or re.search(r"(\w+?)ImplBase$", base)
-                        if java_match:
+                        if java_match and not self.is_java:
                             builder.grpc_servicer_records.append((class_id, java_match.group(1), builder.current_file))
                         # C# gRPC servicer: class X : <Service>.<Service>Base
                         csharp_match = re.search(r"(\w+?)\.\w*ServiceBase$", base) or re.search(r"(\w+?)Base$", base)
                         if csharp_match:
                             svc_cand = csharp_match.group(1)
-                            if svc_cand.endswith("Service"):
+                            if svc_cand.endswith("Service") and not self.is_csharp:
                                 builder.grpc_servicer_records.append((class_id, svc_cand, builder.current_file))
                         # Kotlin gRPC servicer: class X : <Service>CoroutineImplBase() / <Service>ImplBase()
                         if self.is_kotlin:
@@ -503,6 +534,34 @@ class TreeSitterExtractor:
                                 svc = m.group(1)
                                 builder.grpc_client_vars.setdefault(builder.current_file, {})[p_name] = svc
                                 builder.grpc_client_vars.setdefault(builder.current_file, {})[f"_{p_name}"] = svc
+
+        # gRPC server registration: C# MapGrpcService<T>() and Java addService(new T()).
+        if self.is_csharp and node.type == "invocation_expression":
+            function = node.child_by_field_name("function")
+            generic = function
+            if function is not None and function.type == "member_access_expression":
+                generic = function.child_by_field_name("name")
+            if generic is not None and generic.type == "generic_name":
+                identifier = next((c for c in generic.named_children if c.type == "identifier"), None)
+                type_args = next((c for c in generic.named_children if c.type == "type_argument_list"), None)
+                if (identifier is not None and self._text(identifier, source) == "MapGrpcService"
+                        and type_args is not None and len(type_args.named_children) == 1):
+                    builder.managed_grpc_registrations.append((
+                        "csharp", self._text(type_args.named_children[0], source),
+                        builder.current_file, builder.get_current_scope_id()))
+
+        if self.is_java and node.type == "method_invocation":
+            name_node = node.child_by_field_name("name")
+            args_node = node.child_by_field_name("arguments")
+            if (name_node is not None and self._text(name_node, source) == "addService"
+                    and args_node is not None and len(args_node.named_children) == 1):
+                created = args_node.named_children[0]
+                if created.type == "object_creation_expression":
+                    typ = created.child_by_field_name("type")
+                    if typ is not None:
+                        builder.managed_grpc_registrations.append((
+                            "java", self._text(typ, source),
+                            builder.current_file, builder.get_current_scope_id()))
 
         # C# method invocation / call
         if self.is_csharp and node.type == "invocation_expression" and builder.current_scope:
@@ -981,7 +1040,14 @@ class TreeSitterExtractor:
             builder.current_scope.append(receiver)
             builder.scope_depth += 1
         function_id = builder.get_node_id(name)
+        ambiguous_definition = (self.is_java and function_id in builder.graph
+                                and builder.graph.nodes[function_id].get("type") == "function")
         builder.add_ckg_node(function_id, "function", "Lsyn", name, self._line(node))
+        if ambiguous_definition:
+            builder.graph.nodes[function_id]["http_ambiguous_definition"] = True
+        if self.is_csharp and any(c.type == "modifier" and self._text(c, source) == "override"
+                                  for c in node.named_children):
+            builder.graph.nodes[function_id]["is_override"] = True
         builder.register_symbol(function_id, name)
         docstring = self._extract_doc_comment(node, source)
         if docstring:

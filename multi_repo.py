@@ -302,6 +302,9 @@ class WorkspaceCKGBuilder:
 
         # Step 5: Resolve cross-repository gRPC server implementation bindings (producers)
         self._resolve_cross_repo_grpc_producers()
+        from graph_builder_bindings import bind_managed_grpc
+        for builder in self.repo_builders.values():
+            bind_managed_grpc(builder, self.graph, self.canonical_contracts)
 
         # Step 6: Resolve cross-repository HTTP dependency calls
         self._resolve_cross_repo_http_calls()

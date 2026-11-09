@@ -105,6 +105,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.grpc_server_registrations = []  # (service, impl_arg, file, scope_id)
         self.grpc_servicer_records = [] # (class_id, service_name, file)
         self.js_add_service_records = []# (service, handler_map, file, scope_id)
+        self.managed_grpc_registrations = []  # (language, type spelling, file, lexical scope)
 
         # RAG index structures
         self.vectorizer = None
@@ -595,6 +596,18 @@ class CKGBuilder(ast.NodeVisitor):
         self.http_calls_to_resolve = []
         self.dynamic_http_calls = []
         self.grpc_calls_to_resolve = []
+        self.managed_grpc_registrations = [
+            record for record in self.managed_grpc_registrations if record[2] not in all_affected
+        ]
+        self.grpc_servicer_records = [
+            record for record in self.grpc_servicer_records if record[2] not in all_affected
+        ]
+        self.grpc_server_registrations = [
+            record for record in self.grpc_server_registrations if record[2] not in all_affected
+        ]
+        self.js_add_service_records = [
+            record for record in self.js_add_service_records if record[2] not in all_affected
+        ]
         self.class_base_records = []
         self.interface_implementation_records = []
         self.interface_extension_records = []
@@ -1589,6 +1602,8 @@ class CKGBuilder(ast.NodeVisitor):
             else:
                 self.unresolved_contract_calls.append((caller_id, service_name, method, id_ctx))
 
+        from graph_builder_bindings import bind_managed_grpc
+        produced += bind_managed_grpc(self, self.graph, self.proto_services)
         print(f"[*] Contract Layer resolved: {produced} producer bindings, {consumed} consumer bindings.")
 
     @staticmethod
