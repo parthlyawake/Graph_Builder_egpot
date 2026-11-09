@@ -67,7 +67,8 @@ def parser_available(spec: LanguageSpec) -> bool:
         "kotlin": "_KOTLIN_AVAILABLE",
     }
     if spec.name in flags:
-        return bool(getattr(polyglot, flags[spec.name], False))
+        return (bool(getattr(polyglot, flags[spec.name], False))
+                and all(ext in TreeSitterExtractor.EXTENSIONS for ext in spec.extensions))
     return all(ext in TreeSitterExtractor.EXTENSIONS for ext in spec.extensions)
 
 
