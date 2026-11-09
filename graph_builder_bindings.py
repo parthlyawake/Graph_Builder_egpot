@@ -48,9 +48,13 @@ def bind_managed_grpc(builder, graph, contracts):
             if any(data.get("relation") == "IMPLEMENTS"
                    for data in graph.get_edge_data(source, target, default={}).values()):
                 return
+            evidence_context = f"{builder.repo_prefix}{file}"
+            metadata = {"d_scope": 0, "f_call": 1.0, "c_type": 1.0,
+                        "id_ctx": evidence_context}
             graph.add_edge(
                 source, target, key=f"w_managed_impl_{source}_{target}",
                 relation="IMPLEMENTS", layer="Lcontract",
+                metadata=metadata, **metadata,
                 binding_evidence="explicit_server_registration",
                 registration_file=file, registration_language=language,
             )

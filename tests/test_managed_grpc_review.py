@@ -26,6 +26,12 @@ class ManagedProducerBindingTests(unittest.TestCase):
         self.assertEqual(bind_managed_grpc(builder, graph, contracts), 2)
         self.assertEqual(bind_managed_grpc(builder, graph, contracts), 0)
         self.assertTrue(graph.has_edge(method, "contract::CartService.GetCart"))
+        attrs = next(d for d in graph.get_edge_data(
+            method, "contract::CartService.GetCart").values()
+            if d.get("relation") == "IMPLEMENTS")
+        self.assertEqual(attrs["layer"], "Lcontract")
+        self.assertEqual(attrs["metadata"]["id_ctx"], "svc/Startup.cs")
+        self.assertEqual(attrs["c_type"], 1.0)
 
     def test_wrong_qualified_type_is_not_selected(self):
         graph = nx.MultiDiGraph()

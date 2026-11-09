@@ -117,3 +117,22 @@ class Controller {
     if should_bind:
         assert edges[0][2]["source_evidence"].startswith("client.py:")
         assert edges[0][2]["http_method"] == "GET"
+
+def test_repeat_build_and_update_do_not_accumulate_contract_edges(tmp_path):
+    _write(tmp_path, "shared.proto", PROTO)
+    _write(tmp_path, "svc/server.py", "def hello():\n    return 1\n")
+    builder = _workspace(tmp_path)
+    builder.build()
+    def snapshot():
+        return (
+            set(builder.graph.nodes),
+            sorted((u, v, d.get("relation"), d.get("layer"))
+                   for u, v, d in builder.graph.edges(data=True)),
+        )
+    baseline = snapshot()
+    builder.build()
+    assert snapshot() == baseline
+    builder.update_files("svc", ["server.py"])
+    assert snapshot() == baseline
+    with pytest.raises(KeyError):
+        builder.update_files("unknown", [])

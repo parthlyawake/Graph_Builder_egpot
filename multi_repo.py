@@ -250,6 +250,20 @@ class WorkspaceCKGBuilder:
         print(f"[*] Initializing GRAFT-CKG Workspace: '{self.config.name}' (v{self.config.version})")
         print(f"[*] Repositories to index: {len(self.config.repositories)}")
 
+        # A second build must not accumulate stale contracts or duplicate edges.
+        self.graph.clear()
+        self.repo_builders.clear()
+        self.canonical_contracts.clear()
+        self.contract_skews.clear()
+        self.http_endpoints.clear()
+        self.symbols_by_name.clear()
+        self.docstrings.clear()
+        self.raw_file_lines.clear()
+        self.total_loc = 0
+        self.edge_counter = 0
+        self.vectorizer = self.tfidf_matrix = self.bm25_index = None
+        self.indexed_node_ids = []
+
         t0 = time.perf_counter()
 
         # Step 1: Parse and build each repository graph with strict repo_id namespacing
@@ -338,6 +352,18 @@ class WorkspaceCKGBuilder:
         self._print_layer_statistics()
 
         return self.graph
+
+    def update_files(self, repo_id, changed_rel_paths, deleted_rel_paths=()):
+        """Rebuild after workspace source changes, guaranteeing fresh bindings.
+
+        This is deliberately a full-composition correctness fallback, not an
+        incremental speed-up. It avoids retaining stale shared registrations,
+        HTTP links, or canonical contracts when a service or proto changes.
+        Source edits/deletions must already be reflected on disk.
+        """
+        if repo_id not in {cfg.id for cfg in self.config.repositories}:
+            raise KeyError(f"Unknown workspace repository: {repo_id}")
+        return self.build()
 
     def _index_shared_contracts(self):
         """Parse standalone protobuf files declared in shared_contracts."""
