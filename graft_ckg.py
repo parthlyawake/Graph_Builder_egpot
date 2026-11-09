@@ -28,6 +28,7 @@ import networkx as nx
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from polyglot import TreeSitterExtractor
+from language_adapters import BY_EXTENSION, KNOWN_UNSUPPORTED, adapter_for, advertised_capabilities, parser_available, spec_for
 
 
 class HyperEdgeMetadata:
@@ -85,6 +86,8 @@ class CKGBuilder(ast.NodeVisitor):
         self.var_types = {}         # scope_id -> {var_name: class_or_type_name}
         self.raw_file_lines = {}    # file_rel_path -> list of lines
         self.total_loc = 0
+        self.language_report = {}
+        self.language_diagnostics = []
         self.ignore_patterns = []   # patterns from .ckgignore and default policies
 
         # Contract Layer (Lcontract): protobuf/gRPC service contracts and
@@ -408,6 +411,14 @@ class CKGBuilder(ast.NodeVisitor):
         source_files = []
         proto_files = []
         missing_grammars = set()
+        self.language_diagnostics = []
+        self.language_report = {
+            "capabilities": advertised_capabilities(),
+            "languages": {},
+            "unsupported_files": {},
+            "parse_errors": [],
+            "coverage_note": "Features describe implemented extraction paths, not verified completeness.",
+        }
         for root, dirs, files in os.walk(self.repo_path):
             dirs[:] = sorted([
                 d for d in dirs
@@ -418,22 +429,34 @@ class CKGBuilder(ast.NodeVisitor):
                 rel_path = os.path.relpath(full_path, self.repo_path).replace("\\", "/")
                 if self._is_ignored(rel_path):
                     continue
-                ext = os.path.splitext(file)[1]
-                if ext in {".java", ".cs"} and ext not in TreeSitterExtractor.EXTENSIONS:
-                    # Never silently omit handlers when a required grammar is unavailable.
-                    missing_grammars.add(ext)
-                    continue
-                if ext in {".py", *TreeSitterExtractor.EXTENSIONS}:
+                ext = os.path.splitext(file)[1].lower()
+                spec = spec_for(rel_path)
+                if spec:
+                    counts = self.language_report["languages"].setdefault(
+                        spec.name, {"discovered": 0, "parsed": 0, "partial": 0, "failed": 0}
+                    )
+                    counts["discovered"] += 1
+                    if not parser_available(spec):
+                        missing_grammars.add(spec.name)
+                        counts["failed"] += 1
+                        continue
                     source_files.append((rel_path, full_path))
                 elif ext == ".proto":
                     proto_files.append((rel_path, full_path))
+                elif ext in KNOWN_UNSUPPORTED:
+                    counts = self.language_report["unsupported_files"]
+                    counts[ext] = counts.get(ext, 0) + 1
 
         if missing_grammars:
-            packages = {".java": "tree-sitter-java", ".cs": "tree-sitter-c-sharp"}
-            required = ", ".join(packages[ext] for ext in sorted(missing_grammars))
+            missing = sorted(missing_grammars)
+            self.language_report["parse_errors"].append(
+                {"error": "missing_grammars", "languages": missing}
+            )
+            packages = sorted({spec.package for spec in BY_EXTENSION.values()
+                               if spec.name in missing and spec.package})
             raise RuntimeError(
-                f"Repository contains source files whose parsers are missing: {required}. "
-                "Install with `pip install -e .` or `pip install -r requirements.txt`."
+                "Required language grammars are missing: " + ", ".join(packages) +
+                ". Install with `pip install -r requirements.txt` and rebuild."
             )
 
         print(f"[*] Found {len(source_files)} supported source files, {len(proto_files)} proto files.")
@@ -454,16 +477,33 @@ class CKGBuilder(ast.NodeVisitor):
             except Exception as e:
                 print(f"[!] Warning: Error parsing proto {rel_path}: {e}")
 
-        # Pass 1: Extract language-specific syntax into the common graph schema.
+        # Pass 1: All seven languages use one adapter boundary and one audit.
         for rel_path, full_path in source_files:
-            extension = os.path.splitext(full_path)[1]
-            if extension != ".py":
-                try:
-                    TreeSitterExtractor(extension).extract(self, rel_path, full_path)
-                except Exception as e:
-                    print(f"[!] Warning: Error parsing {rel_path}: {e}")
-                continue
-            self._parse_python_file(rel_path, full_path)
+            spec = spec_for(rel_path)
+            counters = self.language_report["languages"][spec.name]
+            before = set(self.graph.nodes)
+            try:
+                outcome = adapter_for(rel_path).extract(self, rel_path, full_path)
+                if outcome.get("syntax_errors"):
+                    counters["partial"] += 1
+                    self.language_report["parse_errors"].append(
+                        {"file": rel_path, "language": spec.name,
+                         "error": "tree-sitter syntax error; graph may be partial"}
+                    )
+                elif not (set(self.graph.nodes) - before):
+                    counters["partial"] += 1
+                    self.language_report["parse_errors"].append(
+                        {"file": rel_path, "language": spec.name,
+                         "error": "no graph nodes emitted"}
+                    )
+                else:
+                    counters["parsed"] += 1
+            except Exception as exc:
+                counters["failed"] += 1
+                self.language_report["parse_errors"].append(
+                    {"file": rel_path, "language": spec.name, "error": str(exc)}
+                )
+                print(f"[!] Warning: Error parsing {rel_path}: {exc}")
 
         # Pass 2: Resolve inheritance before method calls, then dependencies.
         self._resolve_inheritance()
@@ -482,7 +522,17 @@ class CKGBuilder(ast.NodeVisitor):
         print(f"    - Graph Nodes:     {self.graph.number_of_nodes()}")
         print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
         self._print_layer_statistics()
+        self.language_report["complete"] = not self.language_report["parse_errors"]
+        if self.language_report["unsupported_files"]:
+            print("[!] Unsupported application files by extension: " +
+                  str(self.language_report["unsupported_files"]))
+        print("[*] Language extraction coverage: " +
+              str(self.language_report["languages"]))
         return self.graph
+
+    def get_language_report(self):
+        """Structured build diagnostics for all seven adapters and unsupported files."""
+        return self.language_report
 
     def update_files(self, changed_rel_paths, deleted_rel_paths=()):
         """
@@ -559,10 +609,8 @@ class CKGBuilder(ast.NodeVisitor):
             ext = os.path.splitext(norm)[1]
             if ext == ".proto":
                 self._parse_proto_file(norm, full_path)
-            elif ext in TreeSitterExtractor.EXTENSIONS:
-                TreeSitterExtractor(ext).extract(self, norm, full_path)
-            elif ext == ".py":
-                self._parse_python_file(norm, full_path)
+            elif spec_for(norm):
+                adapter_for(norm).extract(self, norm, full_path)
 
         self._resolve_inheritance()
         self._resolve_interface_contracts()

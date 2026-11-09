@@ -222,7 +222,8 @@ class TreeSitterExtractor:
             code=f"// File: {rel_path}\n// Lines: {len(builder.raw_file_lines[rel_path])}",
         )
         self._register_imports(builder, rel_path, text, file_id)
-        self._visit(builder, self.parser.parse(source).root_node, source)
+        parsed = self.parser.parse(source)
+        self._visit(builder, parsed.root_node, source)
         # Next-style file routes have no explicit router-registration call.
         parts = rel_path.replace("\\", "/").split("/")
         if len(parts) >= 3 and parts[-1] in {"route.ts", "route.tsx", "route.js", "route.jsx"}:
@@ -234,6 +235,7 @@ class TreeSitterExtractor:
                     handler_id = f"{builder.current_file_ctx}:{method}"
                     if handler_id in builder.graph and builder.graph.nodes[handler_id].get("type") == "function":
                         builder.http_endpoints.setdefault((method, route_path), []).append(handler_id)
+        return {"syntax_errors": bool(parsed.root_node.has_error)}
 
     # ------------------------------------------------------------------
     # IMPORTS
