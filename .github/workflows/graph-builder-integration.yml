@@ -23,4 +23,4 @@ jobs:
           python -m compileall -q graft_ckg.py polyglot.py multi_repo.py graph_builder_bindings.py graph_builder_http.py language_adapters.py tests
       - name: Run graph-builder integration tests
         run: |
-          python -m pytest -q tests/test_cross_service_review_integration.py tests/test_managed_grpc_review.py tests/test_http_review_resolution.py tests/test_contract_layer.py tests/test_dependency_resolution.py tests/test_multi_repo.py tests/test_polyglot_architecture.py tests/test_polyglot_integration.py tests/test_polyglot_spring_events.py tests/test_seven_language_smoke.py tests/test_language_adapters.py tests/test_verify_graph_accuracy.py
+          python -m pytest -q tests
