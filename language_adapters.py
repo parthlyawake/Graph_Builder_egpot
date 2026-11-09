@@ -57,7 +57,18 @@ def spec_for(path: str) -> LanguageSpec | None:
 def parser_available(spec: LanguageSpec) -> bool:
     if spec.parser == "ast":
         return True
-    return any(ext in TreeSitterExtractor.EXTENSIONS for ext in spec.extensions)
+    # The Go extension is always declared by the legacy visitor, even when
+    # its optional grammar import failed. Use actual import availability.
+    import polyglot
+    flags = {
+        "go": "_GO_AVAILABLE",
+        "java": "_JAVA_AVAILABLE",
+        "csharp": "_CSHARP_AVAILABLE",
+        "kotlin": "_KOTLIN_AVAILABLE",
+    }
+    if spec.name in flags:
+        return bool(getattr(polyglot, flags[spec.name], False))
+    return all(ext in TreeSitterExtractor.EXTENSIONS for ext in spec.extensions)
 
 
 class LanguageAdapter:
