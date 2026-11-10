@@ -1,0 +1,72 @@
+{
+  "graph_builder_commit": "c76ebc83d6cf7374216720658bb57521a94ee029",
+  "tag": "builder-on-krishna-port",
+  "senior_base_commit": "c3c7896ca92f70ff2ebc612352b8aca1cd8231fa",
+  "senior_base_is_ancestor": true,
+  "tracked_tree_clean": true,
+  "train_ticket_commit": "313886e99befb94be6cd45f085c98e0019f59829",
+  "commits_file": "C:\\dev\\polyglot_repos\\_commits.txt",
+  "graphml_sha256": "2d517ff9758aaa310eadf80aec12d5c491a01936581292c1a42fa1f847da97de",
+  "v1_graphml_sha256": "8904e43268d34bd7b8734ec8f93326eb60051a6d2ac71484816ff595cc2a4c55",
+  "python": "3.13.6",
+  "versions": {
+    "networkx": "3.5",
+    "numpy": "2.3.2",
+    "scipy": "1.16.1",
+    "scikit-learn": "1.7.1",
+    "PyYAML": "6.0.2",
+    "rank-bm25": "0.2.2",
+    "tree-sitter": "0.25.2",
+    "tree-sitter-java": "0.23.5",
+    "tree-sitter-c-sharp": "0.23.5",
+    "tree-sitter-go": "0.23.4",
+    "tree-sitter-javascript": "0.25.0",
+    "tree-sitter-typescript": "0.23.2",
+    "tree-sitter-kotlin": "1.1.0"
+  },
+  "nodes": 24990,
+  "edges": 124148,
+  "build_seconds": 10.23,
+  "build_seconds_source": "builder build.log rounded to milliseconds",
+  "size_bytes": 82148029,
+  "size_MB": 82.148029,
+  "v1_containment": {
+    "missing_nodes": [],
+    "added_nodes": 0,
+    "missing_triple_instances": 0,
+    "added_triple_instances": 410,
+    "missing_keys": 0,
+    "added_keys": 410,
+    "added_match_kinds": {
+      "single_impl": 283,
+      "direct": 127
+    },
+    "all_added_are_verified_calls": true
+  },
+  "comparisons": {
+    "step32a": {
+      "path": "C:\\dev\\triage_out\\step32a\\train_v2.graphml",
+      "sha256": "04870a5d4b7dc495e8e6d35e6347f3a6e7ffda57f8175c6fac5b2297d4e6eebd",
+      "byte_identical": false,
+      "same_nodes_and_attributes": false,
+      "same_keyed_edges_and_attributes": true,
+      "ordering_only": false,
+      "nodes": 24990,
+      "edges": 124148,
+      "added_triples_in_v2": 0,
+      "missing_triples_in_v2": 0
+    },
+    "port_dispatch_off": {
+      "path": "C:\\dev\\triage_out\\port_check\\train_ticket_default.graphml",
+      "sha256": "646b9b662264c3fc59febb5e8fba560b31682902110bd9d31dff7b38a8e14148",
+      "byte_identical": false,
+      "same_nodes_and_attributes": true,
+      "same_keyed_edges_and_attributes": false,
+      "ordering_only": false,
+      "nodes": 24990,
+      "edges": 123738,
+      "added_triples_in_v2": 410,
+      "missing_triples_in_v2": 0
+    }
+  }
+}
