@@ -1,0 +1,295 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "GRAFT-CKG Live Graph Bridge API",
+    "description": "Interactive query bridge enabling ChatGPT to inspect, traverse, and audit polyglot multi-repo Code Knowledge Graphs in real time.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local GRAFT-CKG Server (or ngrok public tunnel)"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check & Graph status",
+        "description": "Returns current server health, total indexed nodes, hyper-edges, and active workspace name.",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "System status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "workspace": {
+                      "type": "string"
+                    },
+                    "total_nodes": {
+                      "type": "integer"
+                    },
+                    "total_edges": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "get": {
+        "summary": "Search nodes in graph",
+        "description": "Fuzzy searches code entities (classes, functions, RPC contracts, endpoints) by name or path.",
+        "operationId": "searchNodes",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search term (e.g. 'GetQuote', 'CartService', 'Charge')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of results to return (default 10)",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching nodes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    },
+                    "total_matches": {
+                      "type": "integer"
+                    },
+                    "matches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/node": {
+      "get": {
+        "summary": "Get node details",
+        "description": "Retrieves comprehensive metadata, source code snippet, line numbers, docstring, and repo for a node ID.",
+        "operationId": "getNodeDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Canonical node identifier (e.g. 'paymentservice/server.js:charge')",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nhop": {
+      "get": {
+        "summary": "Retrieve N-hop neighborhood",
+        "description": "Walks inward, outward, or bidirectional hyper-edges up to N hops around a root symbol.",
+        "operationId": "getNHopNeighborhood",
+        "parameters": [
+          {
+            "name": "node",
+            "in": "query",
+            "required": true,
+            "description": "Root node ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hops",
+            "in": "query",
+            "required": false,
+            "description": "Max traversal depth (default 1)",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "description": "Traversal direction: 'in', 'out', or 'both'",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "in",
+                "out",
+                "both"
+              ],
+              "default": "both"
+            }
+          },
+          {
+            "name": "layers",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated layer filter (e.g. 'Ldep,Lcontract,Lflow')",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "N-hop subgraph with nodes and edges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blast_radius": {
+      "get": {
+        "summary": "Compute blast radius",
+        "description": "Computes all downstream consumers, dependent services, and affected contracts if a given symbol changes.",
+        "operationId": "computeBlastRadius",
+        "parameters": [
+          {
+            "name": "node",
+            "in": "query",
+            "required": true,
+            "description": "Target symbol to calculate impact for",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_depth",
+            "in": "query",
+            "required": false,
+            "description": "Max downstream depth (default 3)",
+            "schema": {
+              "type": "integer",
+              "default": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Affected downstream nodes and services",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contracts": {
+      "get": {
+        "summary": "List all canonical contracts",
+        "description": "Returns all gRPC RPCs, HTTP endpoints, and Kafka event topics with their bound producer handlers and consumer call sites.",
+        "operationId": "listContracts",
+        "responses": {
+          "200": {
+            "description": "List of contracts and bindings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/explain_path": {
+      "get": {
+        "summary": "Explain causal path",
+        "description": "Generates a human-readable causal explanation chain connecting source entity A to target entity B.",
+        "operationId": "explainPath",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "required": true,
+            "description": "Source node ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "required": true,
+            "description": "Target node ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Causal trace path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

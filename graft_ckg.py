@@ -28,6 +28,7 @@ import networkx as nx
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from polyglot import TreeSitterExtractor
+from language_adapters import BY_EXTENSION, KNOWN_UNSUPPORTED, adapter_for, advertised_capabilities, parser_available, spec_for
 
 
 class HyperEdgeMetadata:
@@ -67,7 +68,10 @@ class CKGBuilder(ast.NodeVisitor):
         self.file_symbols = {}      # file_rel_path -> list of node_ids
         self.calls_to_resolve = []  # (caller_id, callee_name, scope_depth, id_ctx)
         self.http_endpoints = {}    # (HTTP method, literal path) -> [handler node IDs]
-        self.http_calls_to_resolve = []  # (caller_id, literal path, method, id_ctx)
+        self.http_calls_to_resolve = []
+        self.proto_messages = {}
+        self.type_signatures = {}
+        self.lsp_provider = None  # (caller_id, literal path, method, id_ctx)
         self.dynamic_http_calls = []  # (caller_id, method, path suffix, file, line, column)
         self.imports_by_file = {}   # file_rel_path -> {alias: target_module_or_symbol}
         self.module_to_file = {}    # dotted Python module -> repository-relative path
@@ -82,6 +86,8 @@ class CKGBuilder(ast.NodeVisitor):
         self.var_types = {}         # scope_id -> {var_name: class_or_type_name}
         self.raw_file_lines = {}    # file_rel_path -> list of lines
         self.total_loc = 0
+        self.language_report = {}
+        self.language_diagnostics = []
         self.ignore_patterns = []   # patterns from .ckgignore and default policies
 
         # Contract Layer (Lcontract): protobuf/gRPC service contracts and
@@ -99,6 +105,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.grpc_server_registrations = []  # (service, impl_arg, file, scope_id)
         self.grpc_servicer_records = [] # (class_id, service_name, file)
         self.js_add_service_records = []# (service, handler_map, file, scope_id)
+        self.managed_grpc_registrations = []  # (language, type spelling, file, lexical scope)
 
         # RAG index structures
         self.vectorizer = None
@@ -404,6 +411,15 @@ class CKGBuilder(ast.NodeVisitor):
         # 1. Scan files (deterministic sorted walk)
         source_files = []
         proto_files = []
+        missing_grammars = set()
+        self.language_diagnostics = []
+        self.language_report = {
+            "capabilities": advertised_capabilities(),
+            "languages": {},
+            "unsupported_files": {},
+            "parse_errors": [],
+            "coverage_note": "Features describe implemented extraction paths, not verified completeness.",
+        }
         for root, dirs, files in os.walk(self.repo_path):
             dirs[:] = sorted([
                 d for d in dirs
@@ -414,11 +430,35 @@ class CKGBuilder(ast.NodeVisitor):
                 rel_path = os.path.relpath(full_path, self.repo_path).replace("\\", "/")
                 if self._is_ignored(rel_path):
                     continue
-                ext = os.path.splitext(file)[1]
-                if ext in {".py", *TreeSitterExtractor.EXTENSIONS}:
+                ext = os.path.splitext(file)[1].lower()
+                spec = spec_for(rel_path)
+                if spec:
+                    counts = self.language_report["languages"].setdefault(
+                        spec.name, {"discovered": 0, "parsed": 0, "partial": 0, "failed": 0}
+                    )
+                    counts["discovered"] += 1
+                    if not parser_available(spec):
+                        missing_grammars.add(spec.name)
+                        counts["failed"] += 1
+                        continue
                     source_files.append((rel_path, full_path))
                 elif ext == ".proto":
                     proto_files.append((rel_path, full_path))
+                elif ext in KNOWN_UNSUPPORTED:
+                    counts = self.language_report["unsupported_files"]
+                    counts[ext] = counts.get(ext, 0) + 1
+
+        if missing_grammars:
+            missing = sorted(missing_grammars)
+            self.language_report["parse_errors"].append(
+                {"error": "missing_grammars", "languages": missing}
+            )
+            packages = sorted({spec.package for spec in BY_EXTENSION.values()
+                               if spec.name in missing and spec.package})
+            raise RuntimeError(
+                "Required language grammars are missing: " + ", ".join(packages) +
+                ". Install with `pip install -r requirements.txt` and rebuild."
+            )
 
         print(f"[*] Found {len(source_files)} supported source files, {len(proto_files)} proto files.")
         self.module_to_file = {}
@@ -438,16 +478,33 @@ class CKGBuilder(ast.NodeVisitor):
             except Exception as e:
                 print(f"[!] Warning: Error parsing proto {rel_path}: {e}")
 
-        # Pass 1: Extract language-specific syntax into the common graph schema.
+        # Pass 1: All seven languages use one adapter boundary and one audit.
         for rel_path, full_path in source_files:
-            extension = os.path.splitext(full_path)[1]
-            if extension != ".py":
-                try:
-                    TreeSitterExtractor(extension).extract(self, rel_path, full_path)
-                except Exception as e:
-                    print(f"[!] Warning: Error parsing {rel_path}: {e}")
-                continue
-            self._parse_python_file(rel_path, full_path)
+            spec = spec_for(rel_path)
+            counters = self.language_report["languages"][spec.name]
+            before = set(self.graph.nodes)
+            try:
+                outcome = adapter_for(rel_path).extract(self, rel_path, full_path)
+                if outcome.get("syntax_errors"):
+                    counters["partial"] += 1
+                    self.language_report["parse_errors"].append(
+                        {"file": rel_path, "language": spec.name,
+                         "error": "tree-sitter syntax error; graph may be partial"}
+                    )
+                elif not (set(self.graph.nodes) - before):
+                    counters["partial"] += 1
+                    self.language_report["parse_errors"].append(
+                        {"file": rel_path, "language": spec.name,
+                         "error": "no graph nodes emitted"}
+                    )
+                else:
+                    counters["parsed"] += 1
+            except Exception as exc:
+                counters["failed"] += 1
+                self.language_report["parse_errors"].append(
+                    {"file": rel_path, "language": spec.name, "error": str(exc)}
+                )
+                print(f"[!] Warning: Error parsing {rel_path}: {exc}")
 
         # Pass 2: Resolve inheritance before method calls, then dependencies.
         self._resolve_inheritance()
@@ -466,7 +523,20 @@ class CKGBuilder(ast.NodeVisitor):
         print(f"    - Graph Nodes:     {self.graph.number_of_nodes()}")
         print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
         self._print_layer_statistics()
+        self.language_report["complete"] = not self.language_report["parse_errors"]
+        self.language_report["full_source_coverage"] = (
+            self.language_report["complete"] and not self.language_report["unsupported_files"]
+        )
+        if self.language_report["unsupported_files"]:
+            print("[!] Unsupported application files by extension: " +
+                  str(self.language_report["unsupported_files"]))
+        print("[*] Language extraction coverage: " +
+              str(self.language_report["languages"]))
         return self.graph
+
+    def get_language_report(self):
+        """Structured build diagnostics for all seven adapters and unsupported files."""
+        return self.language_report
 
     def update_files(self, changed_rel_paths, deleted_rel_paths=()):
         """
@@ -526,6 +596,18 @@ class CKGBuilder(ast.NodeVisitor):
         self.http_calls_to_resolve = []
         self.dynamic_http_calls = []
         self.grpc_calls_to_resolve = []
+        self.managed_grpc_registrations = [
+            record for record in self.managed_grpc_registrations if record[2] not in all_affected
+        ]
+        self.grpc_servicer_records = [
+            record for record in self.grpc_servicer_records if record[2] not in all_affected
+        ]
+        self.grpc_server_registrations = [
+            record for record in self.grpc_server_registrations if record[2] not in all_affected
+        ]
+        self.js_add_service_records = [
+            record for record in self.js_add_service_records if record[2] not in all_affected
+        ]
         self.class_base_records = []
         self.interface_implementation_records = []
         self.interface_extension_records = []
@@ -543,10 +625,8 @@ class CKGBuilder(ast.NodeVisitor):
             ext = os.path.splitext(norm)[1]
             if ext == ".proto":
                 self._parse_proto_file(norm, full_path)
-            elif ext in TreeSitterExtractor.EXTENSIONS:
-                TreeSitterExtractor(ext).extract(self, norm, full_path)
-            elif ext == ".py":
-                self._parse_python_file(norm, full_path)
+            elif spec_for(norm):
+                adapter_for(norm).extract(self, norm, full_path)
 
         self._resolve_inheritance()
         self._resolve_interface_contracts()
@@ -1056,6 +1136,14 @@ class CKGBuilder(ast.NodeVisitor):
             caller_vec = matrix[0:1]
             for i in range(len(candidate_ids)):
                 sim = float(cosine_similarity(caller_vec, matrix[i + 1 : i + 2])[0, 0])
+                cid = candidate_ids[i]
+                sig = self.type_signatures.get(cid, {})
+                caller_sig = self.type_signatures.get(caller_id, {})
+                if sig and caller_sig:
+                    sig_str = str(sig).lower()
+                    caller_str = str(caller_sig).lower()
+                    if any(t in caller_str for t in sig.get("param_types", [])):
+                        sim += 0.25
                 sims.append(sim)
         except Exception:
             sims = [1.0] * len(candidate_ids)
@@ -1213,6 +1301,14 @@ class CKGBuilder(ast.NodeVisitor):
                                 resolved_count += 1
                             continue
 
+            if not target_ids and getattr(self, "lsp_provider", None):
+                lsp_target = self.lsp_provider.resolve(caller_file, callee_name)
+                if lsp_target and self.graph.has_node(lsp_target):
+                    meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=caller_file)
+                    self.add_ckg_edge(caller_id, lsp_target, relation="CALLS", layer="Ldep", metadata=meta)
+                    resolved_count += 1
+                    continue
+
             if not target_ids:
                 target_ids = self._resolve_reference(caller_file, callee_name)
 
@@ -1316,7 +1412,7 @@ class CKGBuilder(ast.NodeVisitor):
     # CONTRACT LAYER (Lcontract): protobuf/gRPC cross-language bindings
     # -------------------------------------------------------------
     def _parse_proto_file(self, rel_path, full_path):
-        """Parse a .proto file into canonical service/rpc contract nodes."""
+        """Parse a .proto file into canonical service/rpc contract nodes and message types."""
         norm = rel_path.replace("\\", "/")
         prev_file = self.current_file
         self.current_file = norm
@@ -1327,24 +1423,27 @@ class CKGBuilder(ast.NodeVisitor):
             self.proto_file_hashes[norm] = proto_hash
             self.proto_nodes_by_file.setdefault(norm, set())
 
-            text = raw_bytes.decode("utf-8", errors="replace")
-            text = re.sub(r"//[^\n]*", "", text)
-            text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
             file_id = f"file::{self.repo_prefix}{norm}"
             self.add_ckg_node(file_id, "file", "Lsyn", os.path.basename(norm), 1,
                               code=f"// Proto contract file: {norm}", repo=self.repo_id or "")
             self.proto_nodes_by_file[norm].add(file_id)
 
-            # Normalise empty rpc option blocks `{}` so service bodies can be
-            # delimited by brace balancing (the first `}` is NOT the service end).
-            text = re.sub(r"\)\s*\{\s*\}", ");", text)
-            for service_match in re.finditer(r"service\s+(\w+)\s*\{", text):
-                service_name = service_match.group(1)
-                depth, i = 1, service_match.end()
-                while i < len(text) and depth:
-                    depth += {"{": 1, "}": -1}.get(text[i], 0)
-                    i += 1
-                body = text[service_match.end():i - 1]
+            from proto_parser import ProtoParser
+            text = raw_bytes.decode("utf-8", errors="replace")
+            pf = ProtoParser.parse_text(text)
+
+            # Register messages as canonical type contracts (P8)
+            for msg_name, msg_obj in pf.messages.items():
+                msg_id = f"contract::message::{msg_name}"
+                if not self.graph.has_node(msg_id):
+                    field_names = [f.name for f in msg_obj.fields.values()]
+                    self.add_ckg_node(msg_id, "contract", "Lcontract", msg_name,
+                                      code=f"message {msg_name} {{ " + ", ".join(field_names) + " }}")
+                self.proto_nodes_by_file[norm].add(msg_id)
+                self.proto_messages[msg_name] = msg_obj
+                self.add_ckg_edge(file_id, msg_id, "CONTAINS", "Lsyn")
+
+            for service_name, s_obj in pf.services.items():
                 service_id = f"contract::{service_name}"
                 if not self.graph.has_node(service_id):
                     self.add_ckg_node(service_id, "service_contract", "Lcontract", service_name)
@@ -1363,8 +1462,9 @@ class CKGBuilder(ast.NodeVisitor):
                 self.add_ckg_edge(file_id, service_id, "CONTAINS", "Lsyn")
                 rpcs = {}
                 rpc_signatures = {}
-                for rpc_match in re.finditer(r"rpc\s+(\w+)\s*\(\s*(\w+)\s*\)\s*returns\s*\(\s*(\w+)\s*\)", body):
-                    rpc_name, req_type, resp_type = rpc_match.groups()
+                for rpc_name, rpc_obj in s_obj.rpcs.items():
+                    req_type = rpc_obj.request_type
+                    resp_type = rpc_obj.response_type
                     rpc_id = f"contract::{service_name}.{rpc_name}"
                     if not self.graph.has_node(rpc_id):
                         self.add_ckg_node(rpc_id, "rpc_contract", "Lcontract", rpc_name)
@@ -1385,6 +1485,11 @@ class CKGBuilder(ast.NodeVisitor):
                     })
                     self.graph.nodes[rpc_id]["definitions"] = rpc_defs
                     self.add_ckg_edge(service_id, rpc_id, "DEFINES_RPC", "Lcontract")
+
+                    req_msg_id = f"contract::message::{req_type}"
+                    if self.graph.has_node(req_msg_id):
+                        self.add_ckg_edge(req_msg_id, rpc_id, "USES", "Ldep")
+
                     rpcs[rpc_name] = rpc_id
                     rpc_signatures[rpc_name] = {"request": req_type, "response": resp_type}
                 self.proto_services[service_name] = {
@@ -1497,6 +1602,8 @@ class CKGBuilder(ast.NodeVisitor):
             else:
                 self.unresolved_contract_calls.append((caller_id, service_name, method, id_ctx))
 
+        from graph_builder_bindings import bind_managed_grpc
+        produced += bind_managed_grpc(self, self.graph, self.proto_services)
         print(f"[*] Contract Layer resolved: {produced} producer bindings, {consumed} consumer bindings.")
 
     @staticmethod

@@ -163,6 +163,10 @@ class SCKGGraphProvider(GraphProvider):
                 return Language.TYPESCRIPT
             if "javascript" in l or l == "js":
                 return Language.JAVASCRIPT
+            if "csharp" in l or l == "cs":
+                return Language.CSHARP
+            if "kotlin" in l or l == "kt":
+                return Language.KOTLIN
             if "proto" in l:
                 return Language.PROTOBUF
 
@@ -170,12 +174,17 @@ class SCKGGraphProvider(GraphProvider):
             ext = os.path.splitext(file_path)[1].lower()
             mapping = {
                 ".py": Language.PYTHON,
+                ".pyi": Language.PYTHON,
                 ".go": Language.GO,
                 ".java": Language.JAVA,
                 ".ts": Language.TYPESCRIPT,
                 ".tsx": Language.TYPESCRIPT,
+                ".d.ts": Language.TYPESCRIPT,
                 ".js": Language.JAVASCRIPT,
                 ".jsx": Language.JAVASCRIPT,
+                ".cs": Language.CSHARP,
+                ".kt": Language.KOTLIN,
+                ".kts": Language.KOTLIN,
                 ".proto": Language.PROTOBUF,
             }
             if ext in mapping:
@@ -191,6 +200,14 @@ class SCKGGraphProvider(GraphProvider):
             return EdgeType.IMPLEMENTS
         if r == "CONSUMES":
             return EdgeType.CONSUMES
+        if r == "PASSES_ARG":
+            return EdgeType.PASSES_ARG
+        if r == "FLOWS_TO":
+            return EdgeType.FLOWS_TO
+        if r == "RETURNS":
+            return EdgeType.RETURNS
+        if r == "MUTATES":
+            return EdgeType.MUTATES
         if r == "PRODUCES":
             return EdgeType.PRODUCES
         if r == "PRODUCES_EVENT":
@@ -211,7 +228,7 @@ class SCKGGraphProvider(GraphProvider):
             return EdgeType.MODIFIED_BY
         if r in ("BREAKS_CONTRACT", "SKEW"):
             return EdgeType.BREAKS_CONTRACT
-        # EXTENDS, CONTAINS, PASSES_ARG, FLOWS_TO, MUTATES, RETURNS, USES, DEPENDS_ON
+        # EXTENDS, CONTAINS, USES, DEPENDS_ON, and unrecognized relations
         return EdgeType.DEPENDS_ON
 
     def _to_code_node(self, node_id: str, data: Optional[Dict[str, Any]] = None) -> CodeNode:
@@ -265,12 +282,9 @@ class SCKGGraphProvider(GraphProvider):
     def _to_typed_edge(self, src: str, tgt: str, data: Dict[str, Any]) -> TypedEdge:
         rel = data.get("relation", "DEPENDS_ON")
         edge_type = self._map_edge_type(rel)
-        meta = {
-            "layer": data.get("layer"),
-            "raw_relation": rel,
-        }
-        if "metadata" in data and isinstance(data["metadata"], dict):
-            meta.update(data["metadata"])
+        meta = dict(data["metadata"]) if isinstance(data.get("metadata"), dict) else {}
+        # Structural identity must come from the edge, not optional embedded metadata.
+        meta.update({"layer": data.get("layer"), "raw_relation": rel})
         return TypedEdge(
             source_id=str(src),
             target_id=str(tgt),
@@ -613,7 +627,11 @@ class SCKGGraphProvider(GraphProvider):
         filtered_edges: List[TypedEdge] = []
         for e in collected_edges:
             if e.source_id in node_id_set and e.target_id in node_id_set:
-                edge_key = (e.source_id, e.target_id, e.edge_type)
+                # Collapse exact relationship repeats, not distinct multigraph predicates.
+                edge_key = (
+                    e.source_id, e.target_id, e.edge_type,
+                    e.metadata.get("raw_relation"), e.metadata.get("layer"),
+                )
                 if edge_key not in seen_edges:
                     seen_edges.add(edge_key)
                     filtered_edges.append(e)
