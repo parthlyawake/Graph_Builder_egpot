@@ -24,7 +24,7 @@ import re
 import sys
 import time
 from urllib.parse import urlsplit
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -60,6 +60,11 @@ class WorkspaceConfig:
     shared_contracts: List[str] = field(default_factory=list)
     ignore_patterns: List[str] = field(default_factory=list)
     exclude_nonproduction: bool = False
+    resolve_java_dispatch: bool = False
+
+    def __post_init__(self):
+        if type(self.resolve_java_dispatch) is not bool:
+            raise ValueError("resolve_java_dispatch must be a boolean")
 
     @classmethod
     def from_file(cls, config_path: str) -> "WorkspaceConfig":
@@ -102,6 +107,7 @@ class WorkspaceConfig:
             shared_contracts=data.get("shared_contracts", []),
             ignore_patterns=data.get("ignore_patterns", []),
             exclude_nonproduction=data.get("exclude_nonproduction", False),
+            resolve_java_dispatch=data.get("resolve_java_dispatch", False),
         )
 
     @staticmethod
@@ -121,6 +127,11 @@ class WorkspaceConfig:
                 result["name"] = stripped.split(":", 1)[1].strip().strip('"\'')
             elif stripped.startswith("version:"):
                 result["version"] = stripped.split(":", 1)[1].strip().strip('"\'')
+            elif stripped.startswith("resolve_java_dispatch:"):
+                value = stripped.split(":", 1)[1].strip().lower()
+                if value not in {"true", "false"}:
+                    raise ValueError("resolve_java_dispatch must be a boolean")
+                result["resolve_java_dispatch"] = value == "true"
             elif stripped == "repositories:":
                 current_section = "repositories"
             elif stripped == "shared_contracts:":
@@ -346,7 +357,34 @@ class WorkspaceCKGBuilder:
         # Step 7: Build workspace-level Semantic Layer (Lsem)
         self._build_semantic_layer()
 
+        # Additive, opt-in pass after all legacy construction. Existing nodes,
+        # edges, keys and semantic indexing are unchanged, including externals.
+        if self.config.resolve_java_dispatch:
+            self._resolve_java_dispatch()
+
         return self.graph
+
+    def _resolve_java_dispatch(self):
+        from polyglot import JavaDispatchResolver
+
+        resolvers = {repo_id: JavaDispatchResolver(builder)
+                     for repo_id, builder in sorted(self.repo_builders.items())}
+        workspace_types = {}
+        for resolver in resolvers.values():
+            for name, records in resolver.types.items():
+                workspace_types.setdefault(name, []).extend(records)
+        for repo_id, resolver in resolvers.items():
+            resolver.workspace_types = workspace_types
+            resolver.service_types = {rid: r.types for rid, r in resolvers.items()}
+            for match in resolver.resolve():
+                caller, target = match.pop("caller"), match.pop("target")
+                identity = json.dumps([repo_id, caller, target, match["source_evidence"],
+                                       match["source_column"]], separators=(",", ":"))
+                key = "java_dispatch_" + hashlib.sha256(identity.encode()).hexdigest()
+                meta = HyperEdgeMetadata(d_scope=match.pop("scope_depth"),
+                                         id_ctx=match["source_evidence"].rsplit(":", 1)[0])
+                self.graph.add_edge(caller, target, key=key, relation="CALLS", layer="Ldep",
+                                    metadata=meta.to_dict(), **meta.to_dict(), **match)
 
     def _resolve_cross_repo_producers(self):
         """Revisit registrations skipped before shared contracts were available."""
@@ -1198,3 +1236,7 @@ class WorkspaceCKGBuilder:
                 clean_g.add_edge(u, v, key=k, **clean_d)
             nx.write_gexf(clean_g, output_path)
         print(f"[*] Workspace CKG exported to: {output_path} ({format})")
+        if self.config.resolve_java_dispatch:
+            # Only opt-in exports gain a sidecar; legacy exports stay unchanged.
+            config_path = Path(output_path).with_suffix(".build_config.json")
+            config_path.write_text(json.dumps(asdict(self.config), indent=2), encoding="utf-8")
