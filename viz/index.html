@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Online Boutique · Graph Explorer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="lib/vis-network.min.js"></script>
+  <script defer src="data/online_boutique/graph.js"></script>
+  <script defer src="data/online_boutique/queries.js"></script>
+  <script defer src="js/data.js"></script>
+  <script defer src="js/glossary.js"></script>
+  <script defer src="js/glossary_view.js"></script>
+  <script defer src="js/graph_view.js"></script>
+  <script defer src="js/player_logic.js"></script>
+  <script defer src="js/player_view.js"></script>
+  <script defer src="data/online_boutique/results.js"></script>
+  <script defer src="data/online_boutique/results_extra.js"></script>
+  <script defer src="js/results_logic.js"></script>
+  <script defer src="js/results_view.js"></script>
+  <script defer src="js/ablation_view.js"></script>
+  <script defer src="js/results_extra_view.js"></script>
+  <script defer src="js/compare_logic.js"></script>
+  <script defer src="js/compare_view.js"></script>
+  <script defer src="js/explainer_logic.js"></script>
+  <script defer src="js/explainer_view.js"></script>
+  <script defer src="data/online_boutique/results_test.js"></script>
+  <script defer src="js/final_test_logic.js"></script>
+  <script defer src="js/final_test_view.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">◈</span><div><div class="eyebrow">CODE KNOWLEDGE GRAPH / EG-POT LAB</div><h1>Online Boutique<span class="brand-divider">/</span><span class="subtitle">Graph Explorer</span></h1></div></div>
+    <div class="header-actions"><span class="offline-badge"><i></i> Offline · local dataset</span><button id="theme-toggle" aria-label="Switch to light theme">Light theme</button></div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Explore the graph">
+    <button role="tab" aria-selected="true" data-tab="graph" class="active">Graph</button>
+    <button role="tab" aria-selected="false" data-tab="how">How EG-POT works</button>
+    <button role="tab" aria-selected="false" data-tab="player">Traversal player</button>
+    <button role="tab" aria-selected="false" data-tab="compare">Compare methods</button>
+    <button role="tab" aria-selected="false" data-tab="ablations">Ablations</button>
+    <button role="tab" aria-selected="false" data-tab="results">Results</button>
+    <button role="tab" aria-selected="false" data-tab="finaltest">Final test (locked)</button>
+    <span class="tab-note">01 / EXPLORE</span>
+  </nav>
+  <main id="graph-panel" role="tabpanel" aria-label="Graph explorer" class="workspace">
+    <aside class="filters panel">
+      <div class="panel-heading"><h2>Scope the graph</h2><button id="reset-filters" class="text-button">Reset</button></div>
+      <p class="muted small">Start with services and contracts.<br>Reveal the detail when you need it.</p>
+      <section><div class="section-heading"><h3>Node types</h3><span id="type-tally" class="tiny"></span></div><div id="type-filters" class="filter-list"></div></section>
+      <section><div class="section-heading"><h3>Relations</h3><span class="tiny">DIRECTED</span></div><div id="relation-filters" class="filter-list"></div></section>
+      <section><div class="section-heading"><h3>Services</h3><button id="all-services" class="text-button">Select all</button></div><div id="service-filters" class="filter-list"></div></section>
+      <section class="label-section"><label class="filter-row"><input id="all-labels" type="checkbox"><span>Show all labels</span></label><p class="muted tiny">Contracts are labeled by default.<br>Hover any node to see its name.</p></section>
+    </aside>
+    <section class="graph-panel panel" aria-label="Interactive graph">
+      <div class="graph-toolbar"><div><span class="eyebrow">SERVICE MAP</span><span class="map-caption">Connections across the codebase</span></div><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Find a node or symbol…" aria-label="Search node IDs and names" autocomplete="off"><kbd>↵</kbd></div></div>
+      <div class="map-stage"><div id="network" tabindex="0" aria-label="Service graph. Drag to pan, scroll to zoom, click a node for details."></div><div class="map-hint"><span class="legend-diamond">◆</span> contract <span class="hint-divider">/</span> <span>●</span> code <span class="hint-divider">/</span> drag to pan · scroll to zoom</div><div class="map-controls"><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="fit" aria-label="Fit visible graph">↗</button></div><div id="search-status" class="search-status" role="status"></div></div>
+      <footer class="graph-footer"><span id="counts" role="status">Loading local graph…</span><span>Service clusters · directed links</span></footer>
+    </section>
+    <aside id="details" class="details panel" aria-label="Node details" aria-live="polite"></aside>
+  </main>
+  <section id="player-panel" role="tabpanel" aria-label="Traversal player" class="player" hidden>
+    <div class="player-selectors"><label>DEV QUERY<select id="player-query" aria-label="Query"></select></label><label>METHOD<select id="player-method" aria-label="Method"></select></label><label>BUDGET<select id="player-budget" aria-label="Node budget"><option>20</option><option>40</option></select></label></div>
+    <div class="player-heading"><div><h2 id="player-query-text">Select a local trace</h2><p class="tiny">START <code id="player-start"></code></p></div><button id="player-reveal">Reveal answer</button></div>
+    <div class="player-workspace">
+      <section class="panel player-map"><div class="player-map-heading"><span id="player-step-label">Loading</span><strong id="player-counter"></strong></div><div class="map-stage"><div id="player-network" tabindex="0" aria-label="Traversal graph"></div><div class="player-legend">★ start · solid collected · hollow candidate · mint selected<br>Color = service · gray = dropped · gold = revealed answer</div><button id="player-fit" class="player-fit" aria-label="Fit traversal graph">Fit graph</button></div><div class="player-controls"><button id="player-prev" aria-label="Previous step">←</button><button id="player-play">Play</button><button id="player-next" aria-label="Next step">→</button><select id="player-speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select><input id="player-slider" type="range" min="0" max="0" value="0" aria-label="Trace step"><button id="player-reset">Reset</button></div><div id="player-status" role="status" class="player-status"></div></section>
+      <aside class="panel player-side"><div id="player-inspector"></div><div id="player-answer" hidden></div></aside>
+    </div><footer id="player-metrics" hidden></footer>
+  </section>
+  <section id="how-panel" role="tabpanel" aria-label="How EG-POT works" class="explainer" hidden></section>
+  <section id="compare-panel" role="tabpanel" aria-label="Compare methods" class="compare" hidden></section>
+  <section id="results-panel" role="tabpanel" aria-label="Results" class="analytics" hidden></section>
+  <section id="ablations-panel" role="tabpanel" aria-label="Ablations" class="analytics" hidden></section>
+  <section id="final-test-panel" role="tabpanel" aria-label="Final test (locked)" class="analytics final-test" hidden></section>
+  <section id="placeholder" role="tabpanel" hidden><span class="eyebrow">EG-POT LAB</span><h2 id="placeholder-title"></h2><p>Coming in a later step.</p><button id="back-to-graph">Back to graph</button></section>
+  <footer class="page-footer"><span>GRAFT-CKG <span class="muted">/</span> Online Boutique</span><span>Local graph snapshot · no connection required</span></footer>
+</body>
+</html>
