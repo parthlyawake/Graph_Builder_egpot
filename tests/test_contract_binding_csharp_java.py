@@ -6,6 +6,7 @@ import json
 import pytest
 
 from multi_repo import RepoConfig, WorkspaceCKGBuilder, WorkspaceConfig
+from graph_builder_bindings import bind_managed_grpc
 from polyglot import _CSHARP_AVAILABLE, _JAVA_AVAILABLE
 
 
@@ -131,10 +132,11 @@ def test_unknown_contract_not_invented(tmp_path, language):
 def test_idempotence_and_deterministic_composition(tmp_path, language):
     builder, _, _ = fixture_workspace(tmp_path, language)
     expected = snapshot(builder.graph)
-    builder._resolve_cross_repo_producers()
-    builder._resolve_cross_repo_producers()
+    for _ in range(2):
+        for repo_builder in builder.repo_builders.values():
+            bind_managed_grpc(repo_builder, builder.graph, builder.canonical_contracts)
     assert snapshot(builder.graph) == expected
-    builder._compose_workspace()
+    builder.build()  # Recomposition is the senior builder's full-build path.
     assert snapshot(builder.graph) == expected
     assert snapshot(WorkspaceCKGBuilder(builder.config).build()) == expected
 

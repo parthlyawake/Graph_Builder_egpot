@@ -22,7 +22,7 @@ import os
 import re
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -57,6 +57,13 @@ class WorkspaceConfig:
     repositories: List[RepoConfig] = field(default_factory=list)
     shared_contracts: List[str] = field(default_factory=list)
     ignore_patterns: List[str] = field(default_factory=list)
+    exclude_nonproduction: bool = False
+    resolve_java_dispatch: bool = False
+
+    def __post_init__(self):
+        for name in ("exclude_nonproduction", "resolve_java_dispatch"):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be a boolean")
 
     @classmethod
     def from_file(cls, config_path: str) -> "WorkspaceConfig":
@@ -98,6 +105,8 @@ class WorkspaceConfig:
             repositories=repos,
             shared_contracts=data.get("shared_contracts", []),
             ignore_patterns=data.get("ignore_patterns", []),
+            exclude_nonproduction=data.get("exclude_nonproduction", False),
+            resolve_java_dispatch=data.get("resolve_java_dispatch", False),
         )
 
     @staticmethod
@@ -117,6 +126,11 @@ class WorkspaceConfig:
                 result["name"] = stripped.split(":", 1)[1].strip().strip('"\'')
             elif stripped.startswith("version:"):
                 result["version"] = stripped.split(":", 1)[1].strip().strip('"\'')
+            elif stripped.split(":", 1)[0] in {"exclude_nonproduction", "resolve_java_dispatch"}:
+                key, value = stripped.split(":", 1)
+                if value.strip().lower() not in {"true", "false"}:
+                    raise ValueError(f"{key} must be a boolean")
+                result[key] = value.strip().lower() == "true"
             elif stripped == "repositories:":
                 current_section = "repositories"
             elif stripped == "shared_contracts:":
@@ -275,6 +289,7 @@ class WorkspaceCKGBuilder:
                 continue
 
             builder = CKGBuilder(repo_full_path, repo_id=repo_cfg.id)
+            builder.exclude_nonproduction = self.config.exclude_nonproduction
             if self.config.ignore_patterns:
                 builder.ignore_patterns.extend(self.config.ignore_patterns)
             builder.build()
@@ -337,6 +352,8 @@ class WorkspaceCKGBuilder:
 
         # Step 11: Build workspace-level Semantic Layer (Lsem)
         self._build_semantic_layer()
+        if self.config.resolve_java_dispatch:
+            self._resolve_java_dispatch()
 
         elapsed = time.perf_counter() - t0
         kloc = self.total_loc / 1000.0 if self.total_loc else 0.001
@@ -352,6 +369,28 @@ class WorkspaceCKGBuilder:
         self._print_layer_statistics()
 
         return self.graph
+
+    def _resolve_java_dispatch(self):
+        from polyglot import JavaDispatchResolver
+
+        resolvers = {repo_id: JavaDispatchResolver(builder)
+                     for repo_id, builder in sorted(self.repo_builders.items())}
+        workspace_types = {}
+        for resolver in resolvers.values():
+            for name, records in resolver.types.items():
+                workspace_types.setdefault(name, []).extend(records)
+        for repo_id, resolver in resolvers.items():
+            resolver.workspace_types = workspace_types
+            resolver.service_types = {rid: r.types for rid, r in resolvers.items()}
+            for match in resolver.resolve():
+                caller, target = match.pop("caller"), match.pop("target")
+                identity = json.dumps([repo_id, caller, target, match["source_evidence"],
+                                       match["source_column"]], separators=(",", ":"))
+                key = "java_dispatch_" + hashlib.sha256(identity.encode()).hexdigest()
+                meta = HyperEdgeMetadata(d_scope=match.pop("scope_depth"),
+                                         id_ctx=match["source_evidence"].rsplit(":", 1)[0])
+                self.graph.add_edge(caller, target, key=key, relation="CALLS", layer="Ldep",
+                                    metadata=meta.to_dict(), **meta.to_dict(), **match)
 
     def update_files(self, repo_id, changed_rel_paths, deleted_rel_paths=()):
         """Rebuild after workspace source changes, guaranteeing fresh bindings.
@@ -1050,3 +1089,6 @@ class WorkspaceCKGBuilder:
                 clean_g.add_edge(u, v, key=k, **clean_d)
             nx.write_gexf(clean_g, output_path)
         print(f"[*] Workspace CKG exported to: {output_path} ({format})")
+        if self.config.exclude_nonproduction or self.config.resolve_java_dispatch:
+            Path(output_path).with_suffix(".build_config.json").write_text(
+                json.dumps(asdict(self.config), indent=2), encoding="utf-8")

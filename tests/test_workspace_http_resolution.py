@@ -232,7 +232,7 @@ def test_recomposition_and_incremental_equal_full(tmp_path):
  void send(){restTemplate.getForObject("http://orders/api/items/42", String.class);} }''')
     b.build()
     expected = {(u, v, d['http_method']) for u, v, d in bindings(b)}
-    b._compose_workspace()
+    b.build()  # Senior workspace entry point recomposes through a full rebuild.
     assert {(u, v, d['http_method']) for u, v, d in bindings(b)} == expected
     b.update_files('client', ['Client.java'])
     assert {(u, v, d['http_method']) for u, v, d in bindings(b)} == expected

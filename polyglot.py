@@ -1132,6 +1132,19 @@ class TreeSitterExtractor:
             }
             for ann_name, verb in http_verbs.items():
                 if ann_name in ann:
+                    verbs = [verb]
+                    if ann_name == "RequestMapping":
+                        modifiers = next((c for c in node.named_children if c.type == "modifiers"), node)
+                        mapping = next((c for c in modifiers.named_children
+                                        if c.type == "annotation" and self._text(
+                                            c.child_by_field_name("name"), source).rsplit(".", 1)[-1]
+                                        == "RequestMapping"), None)
+                        annotation = self._text(mapping, source) if mapping else ""
+                        declared = re.findall(r"RequestMethod\.(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)",
+                                              annotation)
+                        if re.search(r"\bmethod\s*=", annotation) and not declared:
+                            continue
+                        verbs = list(dict.fromkeys(declared)) or verbs
                     m_path = ann[ann_name]
                     prefix = getattr(builder, "_current_route_prefix", "")
                     if not m_path.startswith("/") and prefix and m_path:
@@ -1139,7 +1152,13 @@ class TreeSitterExtractor:
                     full_path = (prefix + m_path) if (prefix or m_path) else "/"
                     if not full_path.startswith("/"):
                         full_path = "/" + full_path
-                    builder.http_endpoints.setdefault((verb, full_path), []).append(function_id)
+                    for effective_verb in verbs:
+                        builder.http_endpoints.setdefault((effective_verb, full_path), []).append(function_id)
+                        if ann_name == "RequestMapping" and declared:
+                            builder.http_endpoint_evidence[(effective_verb, full_path, function_id)] = {
+                                "match_kind": "explicit_request_mapping",
+                                "source_evidence": f"{builder.current_file}:{node.child_by_field_name('name').start_point.row + 1}",
+                            }
                     break
 
             if "KafkaListener" in ann or "RabbitListener" in ann:
@@ -1185,3 +1204,280 @@ class TreeSitterExtractor:
             if child in skip_nodes:
                 continue
             self._visit(builder, child, source)
+
+
+class JavaDispatchResolver:
+    """Source-only, service-local Java dispatch; never changes parser state.
+
+    Used only by the workspace's opt-in additive pass. Read the already indexed
+    source files, resolve explicit receiver declarations using Java package/import
+    context, and return matches between EXISTING graph function nodes. Unknown
+    types, generic-dependent types, anonymous/lambda contexts, chained receivers,
+    ambiguous declarations/implementors and same-arity overloads are abstentions.
+    Method/field inheritance is limited to one superclass. This is static
+    declaration resolution, not a claim about runtime dependency injection.
+    """
+
+    def __init__(self, builder):
+        self.builder = builder
+        self.types = {}
+        self.workspace_types = self.types
+        self.service_types = {}
+        self.files = {}
+        self.node_index = {}
+        prefix = builder.repo_prefix
+        for nid, data in builder.graph.nodes(data=True):
+            file = data.get("file", "")
+            if prefix and file.startswith(prefix):
+                file = file[len(prefix):]
+            key = (file, data.get("line_no"), data.get("name"), data.get("type"))
+            self.node_index.setdefault(key, []).append(nid)
+        if not _JAVA_AVAILABLE:
+            return
+        parser = TreeSitterExtractor(".java").parser
+        for file, lines in sorted(builder.raw_file_lines.items()):
+            if not file.endswith(".java"):
+                continue
+            source = "\n".join(lines).encode("utf-8")
+            tree = parser.parse(source)
+            package, imports, wildcards = "", {}, []
+            for child in tree.root_node.named_children:
+                text = self._text(child, source)
+                if child.type == "package_declaration":
+                    package = text.removeprefix("package").strip().rstrip(";").strip()
+                elif child.type == "import_declaration" and not text.startswith("import static "):
+                    name = text.removeprefix("import").strip().rstrip(";").strip()
+                    if name.endswith(".*"):
+                        wildcards.append(name[:-2])
+                    else:
+                        imports.setdefault(name.rsplit(".", 1)[-1], []).append(name)
+            context = dict(file=file, source=source, tree=tree, package=package,
+                           imports=imports, wildcards=wildcards, classes=[])
+            self.files[file] = context
+            self._index_types(tree.root_node, context, [])
+
+    @staticmethod
+    def _text(node, source):
+        return TreeSitterExtractor._text(node, source) if node is not None else ""
+
+    @staticmethod
+    def _walk(node):
+        yield node
+        for child in node.named_children:
+            yield from JavaDispatchResolver._walk(child)
+
+    def _index_types(self, node, context, owners):
+        if node.type in {"class_declaration", "interface_declaration"}:
+            source = context["source"]
+            name = self._text(node.child_by_field_name("name"), source)
+            qualname = ".".join([*owners, name])
+            fqn = ".".join(x for x in (context["package"], qualname) if x)
+            mods = next((self._text(c, source) for c in node.named_children
+                         if c.type == "modifiers"), "")
+            record = dict(node=node, name=name, qualname=qualname, fqn=fqn,
+                          repo=self.builder.repo_id,
+                          context=context, abstract=node.type == "interface_declaration"
+                          or bool(re.search(r"\babstract\b", mods)),
+                          generic=node.child_by_field_name("type_parameters") is not None,
+                          interface=node.type == "interface_declaration", methods=[], fields={})
+            self.types.setdefault(fqn, []).append(record)
+            context["classes"].append(record)
+            kind = "interface" if record["interface"] else "class"
+            ids = self.node_index.get((context["file"], node.start_point.row + 1, name, kind), [])
+            record["id"] = ids[0] if len(ids) == 1 else None
+            record["super"] = None
+            record["bases"] = []
+            for child in node.named_children:
+                if child.type == "superclass":
+                    values = child.named_children
+                    if len(values) == 1:
+                        record["super"] = self._text(values[0], source)
+                        record["bases"].append(record["super"])
+                elif child.type in {"super_interfaces", "extends_interfaces"}:
+                    for item in child.named_children:
+                        values = item.named_children if item.type == "type_list" else [item]
+                        record["bases"].extend(self._text(c, source) for c in values)
+            body = node.child_by_field_name("body")
+            for child in body.named_children if body else []:
+                if child.type == "field_declaration":
+                    spelling = self._text(child.child_by_field_name("type"), source)
+                    for variable in child.named_children:
+                        if variable.type == "variable_declarator":
+                            field = self._text(variable.child_by_field_name("name"), source)
+                            record["fields"].setdefault(field, []).append(spelling)
+                elif child.type == "method_declaration":
+                    params = child.child_by_field_name("parameters")
+                    name = self._text(child.child_by_field_name("name"), source)
+                    mid = f'{record["id"]}.{name}' if record["id"] else None
+                    record["methods"].append(dict(
+                        node=child, owner=record, name=name,
+                        arity=len(params.named_children) if params else 0,
+                        id=mid if mid in self.builder.graph
+                        and self.builder.graph.nodes[mid].get("type") == "function" else None))
+            # Retain nested named classes, but not anonymous class bodies.
+            owners = [*owners, record["name"]]
+        for child in node.named_children:
+            self._index_types(child, context, owners)
+
+    def _type(self, spelling, owner):
+        if not re.fullmatch(r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*", spelling or ""):
+            return None
+        if spelling in {"var", "void"}:
+            return None
+        context = owner["context"]
+        local_types = self.service_types.get(owner["repo"], self.types)
+
+        def definitions(name):
+            return local_types.get(name, self.workspace_types.get(name, []))
+
+        candidates = []
+        # Lexically enclosing types, then explicit imports, then package scope.
+        lexical = owner["qualname"].split(".")
+        for count in range(len(lexical), 0, -1):
+            candidates.append(".".join(x for x in
+                              (context["package"], ".".join(lexical[:count]), spelling) if x))
+        for name in candidates:
+            found = local_types.get(name, [])
+            if found:
+                return found[0] if len(found) == 1 and not found[0]["generic"] else None
+        candidates = []
+        head, *tail = spelling.split(".")
+        imported = context["imports"].get(head, [])
+        if len(imported) > 1:
+            return None
+        if imported:
+            imported_name = ".".join([imported[0], *tail])
+            found = definitions(imported_name)
+            return found[0] if len(found) == 1 and not found[0]["generic"] else None
+        candidates.append(".".join(x for x in (context["package"], spelling) if x))
+        if "." in spelling or not context["package"]:
+            candidates.append(spelling)  # Fully qualified type, or the unnamed package.
+        for name in dict.fromkeys(candidates):
+            found = definitions(name)
+            if found:
+                return found[0] if len(found) == 1 and not found[0]["generic"] else None
+        found = [r for package in context["wildcards"]
+                 for r in definitions(package + "." + spelling)]
+        return found[0] if len(found) == 1 and not found[0]["generic"] else None
+
+    def _parent(self, owner):
+        return self._type(owner["super"], owner) if owner["super"] else None
+
+    def _implements(self, owner, target, seen=None):
+        seen = set() if seen is None else seen
+        if owner["fqn"] in seen:
+            return False
+        seen = seen | {owner["fqn"]}
+        for spelling in owner["bases"]:
+            base = self._type(spelling, owner)
+            if base and (base is target or self._implements(base, target, seen)):
+                return True
+        return False
+
+    def _methods(self, owner, name, arity, declaration=False):
+        found = [m for m in owner["methods"] if m["name"] == name and m["arity"] == arity]
+        if not found:
+            parents = ([self._type(b, owner) for b in owner["bases"]]
+                       if declaration and owner["interface"] else [self._parent(owner)])
+            found = [m for p in parents if p for m in p["methods"]
+                     if m["name"] == name and m["arity"] == arity]
+        if len(found) != 1 or not found[0]["id"]:
+            return None
+        if not declaration and found[0]["node"].child_by_field_name("body") is None:
+            return None
+        return found[0]
+
+    def _receiver(self, method, invocation, spelling):
+        owner, context = method["owner"], method["owner"]["context"]
+        source, node = context["source"], method["node"]
+        if spelling == "this":
+            return owner if not owner["generic"] else None
+        explicit_field = spelling.startswith("this.")
+        name = spelling.removeprefix("this.")
+        if not re.fullmatch(r"[A-Za-z_$][\w$]*", name):
+            return None
+        if not explicit_field:
+            locals_ = []
+            for variable in self._walk(node):
+                if variable.type != "variable_declarator" or variable.start_byte >= invocation.start_byte:
+                    continue
+                declaration = variable.parent
+                if (declaration.type != "local_variable_declaration"
+                        or self._text(variable.child_by_field_name("name"), source) != name):
+                    continue
+                scope = declaration.parent
+                if scope.start_byte <= invocation.start_byte < scope.end_byte:
+                    locals_.append((scope.end_byte - scope.start_byte,
+                                    self._text(declaration.child_by_field_name("type"), source)))
+            if locals_:
+                depth = min(size for size, _ in locals_)
+                types = [t for size, t in locals_ if size == depth]
+                return self._type(types[0], owner) if len(types) == 1 else None
+            params = node.child_by_field_name("parameters")
+            types = [self._text(p.child_by_field_name("type"), source)
+                     for p in params.named_children if self._text(p.child_by_field_name("name"), source) == name]
+            if types:
+                return self._type(types[0], owner) if len(types) == 1 else None
+        types = owner["fields"].get(name)
+        field_owner = owner
+        if types is None:
+            parent = self._parent(owner)
+            if parent:
+                types, field_owner = parent["fields"].get(name), parent
+        return self._type(types[0], field_owner) if types and len(types) == 1 else None
+
+    def resolve(self):
+        matches = []
+        for context in self.files.values():
+            for owner in context["classes"]:
+                for method in owner["methods"]:
+                    if not method["id"]:
+                        continue
+                    # Collapsed overload IDs cannot identify the caller's body.
+                    if sum(m["name"] == method["name"] for m in owner["methods"]) != 1:
+                        continue
+                    for call in self._walk(method["node"]):
+                        if call.type != "method_invocation":
+                            continue
+                        if (call.parent.type == "method_invocation"
+                                and call.parent.child_by_field_name("object") == call):
+                            continue
+                        parent = call.parent
+                        while parent and parent != method["node"]:
+                            if parent.type in {"lambda_expression", "class_body", "method_declaration"}:
+                                break
+                            parent = parent.parent
+                        if parent != method["node"]:
+                            continue
+                        receiver = self._text(call.child_by_field_name("object"), context["source"])
+                        if not re.fullmatch(r"(?:this\.)?[A-Za-z_$][\w$]*", receiver):
+                            continue
+                        static = self._receiver(method, call, receiver)
+                        if not static:
+                            continue
+                        name = self._text(call.child_by_field_name("name"), context["source"])
+                        args = call.child_by_field_name("arguments")
+                        arity = len(args.named_children) if args else 0
+                        via, concrete, kind = "", static, "direct"
+                        if static["abstract"]:
+                            declared = self._methods(static, name, arity, declaration=True)
+                            if not declared:
+                                continue
+                            impls = [r for records in self.types.values() for r in records
+                                     if not r["abstract"] and self._implements(r, static)]
+                            if len(impls) != 1:
+                                continue
+                            concrete, via, kind = impls[0], declared["id"], "single_impl"
+                        target = self._methods(concrete, name, arity)
+                        if not target:
+                            continue
+                        target_context = target["owner"]["context"]
+                        matches.append(dict(
+                            caller=method["id"], target=target["id"], match_kind=kind, via=via,
+                            static_type=static["fqn"], receiver=receiver, method_name=name, arity=arity,
+                            source_evidence=f'{context["file"]}:{call.start_point.row + 1}',
+                            source_column=call.start_point.column,
+                            target_source_evidence=f'{target_context["file"]}:'
+                            f'{target["node"].child_by_field_name("name").start_point.row + 1}',
+                            scope_depth=owner["qualname"].count(".") + 2))
+        return matches

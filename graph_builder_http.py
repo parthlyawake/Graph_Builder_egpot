@@ -7,6 +7,7 @@ deliberately left unresolved. Does not contact services or execute their code.
 from __future__ import annotations
 
 import ast
+import copy
 import json
 import os
 import re
@@ -137,111 +138,250 @@ def _caller(builder, file, line):
 
 
 def _python_requests(builder, file, text, environment):
-    """Source AST evaluation of constants, simple local variables and env URLs."""
+    """Bounded source evaluation, including one imported helper module.
+
+    No Python code is executed. Imports must be syntactic, definitions unique,
+    and conflicting branch values remain unknown. Objects carry only explicit
+    constructor assignments; methods are followed only at an actual call site.
+    Host/verb/path uniqueness is still enforced by resolve_workspace_http.
+    """
     try:
         tree = ast.parse(text)
     except SyntaxError:
         return []
-    results = []
-    imported = {}
-    for node in ast.walk(tree):
+    modules, definitions, globals_, results, active = {file: tree}, {}, {}, [], set()
+    local_imports = {}
+    # Resolve only files already indexed by this service, across one boundary.
+    for node in tree.body:
+        names = ([node.module] if isinstance(node, ast.ImportFrom) else
+                 [a.name for a in node.names] if isinstance(node, ast.Import) else [])
+        for name in names:
+            if not name:
+                continue
+            path = name.replace(".", "/") + ".py"
+            possible = {path, (Path(file).parent / path).as_posix()}
+            if isinstance(node, ast.ImportFrom) and node.level:
+                parent = Path(file).parent
+                for _ in range(node.level - 1):
+                    parent = parent.parent
+                possible = {(parent / path).as_posix()}
+            found = [p for p in possible if p in builder.raw_file_lines]
+            if len(found) != 1:
+                continue
+            path = found[0]
+            try:
+                modules[path] = ast.parse("\n".join(builder.raw_file_lines[path]))
+                local_imports[name] = path
+            except SyntaxError:
+                pass
+    for module, parsed in modules.items():
+        for item in parsed.body:
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                definitions.setdefault((module, item.name), []).append(item)
+
+    def definition(module, symbol):
+        found = definitions.get((module, symbol), [])
+        return found[0] if len(found) == 1 else None
+
+    def imports(node, values, module):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name in {"requests", "httpx", "urllib.request"}:
-                    imported[alias.asname or alias.name] = alias.name
-        if isinstance(node, ast.ImportFrom) and node.module in {
-                "requests", "httpx", "urllib.request"}:
+                key = alias.asname or alias.name.split(".")[0]
+                if alias.name in {"os", "requests", "httpx", "urllib", "urllib.request"}:
+                    values[key] = ("external", alias.name if alias.asname else key)
+                elif module == file and alias.name in local_imports:
+                    values[key] = ("module", local_imports[alias.name])
+        elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
-                imported[alias.asname or alias.name] = node.module + "." + alias.name
+                key = alias.asname or alias.name
+                if node.module in {"os", "requests", "httpx", "urllib", "urllib.request"}:
+                    values[key] = ("external", node.module + "." + alias.name)
+                elif module == file and node.module in local_imports:
+                    values[key] = ("definition", local_imports[node.module], alias.name)
 
-    def literal(node, values):
+    def assign(target, value, values, module, depth):
+        values[ast.unparse(target)] = value
+        if isinstance(target, ast.Attribute):
+            obj = evaluate(target.value, values, module, depth)
+            if isinstance(obj, dict):
+                obj[target.attr] = value
+        elif isinstance(target, ast.Subscript):
+            obj = evaluate(target.value, values, module, depth)
+            key = evaluate(target.slice, values, module, depth)
+            if isinstance(obj, dict) and isinstance(key, (str, int)):
+                obj[key] = value
+
+    def evaluate(node, values, module, depth=0, emit=False):
         if isinstance(node, ast.Constant):
-            return node.value if isinstance(node.value, str) else None
+            return node.value if isinstance(node.value, (str, int, bool)) else None
+        if node is None:
+            return None
+        if isinstance(node, (ast.Name, ast.Attribute, ast.Subscript)):
+            key = ast.unparse(node)
+            if key in values:
+                return values[key]
         if isinstance(node, ast.Name):
-            return values.get(node.id)
+            return globals_.get(module, {}).get(node.id)
+        if isinstance(node, ast.Dict):
+            pairs = [(evaluate(k, values, module, depth), evaluate(v, values, module, depth))
+                     for k, v in zip(node.keys, node.values)]
+            return {k: v for k, v in pairs if isinstance(k, (str, int))}
+        if isinstance(node, ast.Attribute):
+            obj = evaluate(node.value, values, module, depth)
+            if isinstance(obj, tuple):
+                if obj[0] == "external":
+                    return ("external", obj[1] + "." + node.attr)
+                if obj[0] == "module":
+                    return ("definition", obj[1], node.attr)
+            if isinstance(obj, dict):
+                if node.attr in obj:
+                    return obj[node.attr]
+                if "__source_class__" in obj:
+                    return ("bound", *obj["__source_class__"], node.attr, obj)
+            if isinstance(obj, str) and node.attr == "format":
+                return ("format", obj)
+        if isinstance(node, ast.Subscript):
+            obj = evaluate(node.value, values, module, depth)
+            key = evaluate(node.slice, values, module, depth)
+            if obj == ("external", "os.environ"):
+                return environment.get(key)
+            return obj.get(key) if isinstance(obj, dict) and isinstance(key, (str, int)) else None
         if isinstance(node, ast.JoinedStr):
-            pieces = [literal(v.value, values) if isinstance(v, ast.FormattedValue)
-                      else literal(v, values) for v in node.values]
-            return "".join(pieces) if all(isinstance(x, str) for x in pieces) else None
+            pieces = [evaluate(v.value if isinstance(v, ast.FormattedValue) else v,
+                               values, module, depth) for v in node.values]
+            return "".join(map(str, pieces)) if all(isinstance(x, (str, int)) for x in pieces) else None
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-            a, b = literal(node.left, values), literal(node.right, values)
+            a = evaluate(node.left, values, module, depth)
+            b = evaluate(node.right, values, module, depth)
             return a + b if isinstance(a, str) and isinstance(b, str) else None
-        if isinstance(node, ast.Call):
-            name = ast.unparse(node.func)
-            if name in ("os.getenv", "os.environ.get") and node.args:
-                key = literal(node.args[0], values)
-                return environment.get(key) if key else None
-            if isinstance(node.func, ast.Attribute) and node.func.attr == "format":
-                fmt = literal(node.func.value, values)
-                args = [literal(x, values) for x in node.args]
-                if isinstance(fmt, str) and all(isinstance(x, str) for x in args):
-                    try:
-                        return fmt.format(*args)
-                    except (ValueError, IndexError, KeyError):
-                        pass
-        return None
-
-    # Track source-level literals before each call. Branch-dependent values
-    # are deliberately not promoted to confirmed links.
-    def scan(node, values, caller):
-        if isinstance(node, ast.If):
-            before = dict(values)
-            left, right = dict(before), dict(before)
-            for s in node.body:
-                scan(s, left, caller)
-            for s in node.orelse:
-                scan(s, right, caller)
-            for key in set(left) | set(right):
-                values[key] = left.get(key) if left.get(key) == right.get(key) else None
-            return
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            return
-        if isinstance(node, ast.Assign):
-            result = literal(node.value, values)
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    values[target.id] = result
-        if isinstance(node, ast.Call):
-            name = ast.unparse(node.func)
-            head, _, rest = name.partition(".")
-            canonical = imported.get(head, "") + ("." + rest if rest else "")
+        if not isinstance(node, ast.Call) or any(k.arg is None for k in node.keywords):
+            return None
+        ref = evaluate(node.func, values, module, depth)
+        args = [evaluate(a, values, module, depth, emit) for a in node.args]
+        kwargs = {k.arg: evaluate(k.value, values, module, depth, emit) for k in node.keywords}
+        if not isinstance(ref, tuple):
+            return None
+        if ref[0] == "format":
+            try:
+                if all(isinstance(x, (str, int)) for x in [*args, *kwargs.values()]):
+                    return ref[1].format(*args, **kwargs)
+            except (ValueError, IndexError, KeyError):
+                pass
+            return None
+        if ref[0] == "external":
+            canonical = ref[1]
+            if canonical in {"os.getenv", "os.environ.get"}:
+                return environment.get(args[0]) if args else None
             op = canonical.rsplit(".", 1)[-1]
             verb = op.upper() if op in {
                 "get", "post", "put", "patch", "delete", "head", "options"
             } else "GET" if op == "urlopen" else None
+            url = kwargs.get("url", args[0] if args else None)
             if op == "request":
-                method_node = node.args[0] if node.args else None
-                verb = literal(method_node, values) if method_node else None
-            if canonical.startswith(("requests.", "httpx.", "urllib.request.")) and verb:
-                url_node = node.args[1] if op == "request" and len(node.args) > 1 else (
-                    node.args[0] if op != "request" and node.args else None
-                )
-                for kw in node.keywords:
-                    if kw.arg == "url":
-                        url_node = kw.value
-                    if kw.arg == "method" and op == "request":
-                        verb = literal(kw.value, values)
-                url = literal(url_node, values) if url_node else None
-                if isinstance(url, str) and url.startswith(("http://", "https://")):
-                    results.append((caller, url, str(verb).upper(), file, node.lineno,
-                                    "env_via_config" if environment else "literal_host"))
-        for child in ast.iter_child_nodes(node):
-            if not isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                scan(child, values, caller)
+                verb = kwargs.get("method", args[0] if args else None)
+                url = kwargs.get("url", args[1] if len(args) > 1 else None)
+            if (emit and caller and canonical.startswith(("requests.", "httpx.", "urllib.request."))
+                    and verb and isinstance(url, str) and url.startswith(("http://", "https://"))):
+                results.append((caller, url, str(verb).upper(), module, node.lineno,
+                                "helper" if module != file or depth else "env_via_config" if environment else "literal_host"))
+            return None
+        if depth >= 2:
+            return None
+        if ref[0] == "definition":
+            target_module, symbol = ref[1:]
+            function = definition(target_module, symbol)
+            if isinstance(function, ast.ClassDef):
+                obj = {"__source_class__": (target_module, symbol)}
+                initializers = [f for f in function.body if isinstance(f, ast.FunctionDef) and f.name == "__init__"]
+                if len(initializers) == 1:
+                    run(initializers[0], [obj, *args], kwargs, target_module, depth + 1, False)
+                return obj
+        elif ref[0] == "bound":
+            target_module, symbol, method, obj = ref[1:]
+            cls = definition(target_module, symbol)
+            found = [f for f in cls.body if isinstance(f, ast.FunctionDef) and f.name == method] if cls else []
+            function = found[0] if len(found) == 1 else None
+            args = [obj, *args]
+        else:
+            return None
+        if not isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return None
+        return run(function, args, kwargs, target_module, depth + 1, emit)
 
-    globals_ = {}
-    for stmt in tree.body:
-        if isinstance(stmt, ast.Assign):
-            for target in stmt.targets:
-                if isinstance(target, ast.Name):
-                    globals_[target.id] = literal(stmt.value, globals_)
+    def scan(statements, values, module, depth=0, emit=False):
+        returns = []
+        for node in statements:
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                imports(node, values, module)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                values[node.name] = ("definition", module, node.name)
+            elif isinstance(node, ast.If):
+                condition = evaluate(node.test, values, module, depth, emit)
+                if isinstance(condition, bool):
+                    got, stopped = scan(node.body if condition else node.orelse, values, module, depth, emit)
+                else:
+                    left, right = copy.deepcopy(values), copy.deepcopy(values)
+                    a, stop_a = scan(node.body, left, module, depth, emit)
+                    b, stop_b = scan(node.orelse, right, module, depth, emit)
+                    values.update({k: left.get(k) if left.get(k) == right.get(k) else None
+                                   for k in left.keys() | right.keys()})
+                    got, stopped = a + b, stop_a and stop_b
+                returns.extend(got)
+                if stopped:
+                    return returns, True
+            elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+                value = evaluate(node.value, values, module, depth, emit)
+                for dest in node.targets if isinstance(node, ast.Assign) else [node.target]:
+                    assign(dest, value, values, module, depth)
+            elif isinstance(node, (ast.Return, ast.Expr)):
+                value = evaluate(node.value, values, module, depth, emit)
+                if isinstance(node, ast.Return):
+                    return [*returns, value], True
+            elif isinstance(node, (ast.For, ast.While, ast.Try, ast.With)):
+                before, branch = copy.deepcopy(values), copy.deepcopy(values)
+                scan(node.body, branch, module, depth, emit)
+                branches = [before, branch]
+                if isinstance(node, ast.Try):
+                    for handler in node.handlers:
+                        caught = copy.deepcopy(before)
+                        scan(handler.body, caught, module, depth, emit)
+                        branches.append(caught)
+                otherwise = getattr(node, "orelse", [])
+                if otherwise:
+                    scan(otherwise, branch, module, depth, emit)
+                keys = set().union(*(b.keys() for b in branches))
+                values.update({k: branches[0].get(k) if all(b.get(k) == branches[0].get(k)
+                              for b in branches) else None for k in keys})
+                if isinstance(node, ast.Try):
+                    scan(node.finalbody, values, module, depth, emit)
+        return returns, False
+
+    def run(function, args, kwargs, module, depth, emit):
+        key = (module, function.lineno)
+        if key in active:
+            return None
+        active.add(key)
+        try:
+            values = copy.deepcopy(globals_.get(module, {}))
+            params = [*function.args.posonlyargs, *function.args.args]
+            values.update(dict(zip([p.arg for p in params], args)))
+            values.update(kwargs)
+            returned, stopped = scan(function.body, values, module, depth, emit)
+            return returned[0] if stopped and returned and all(v == returned[0] for v in returned) else None
+        finally:
+            active.remove(key)
+
+    caller = None
+    for module, parsed in modules.items():
+        values = {name: ("definition", module, name) for m, name in definitions if m == module}
+        globals_[module] = values
+        scan(parsed.body, values, module)
     for item in ast.walk(tree):
         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
             caller = _caller(builder, file, item.lineno)
             if caller:
-                values = dict(globals_)
-                for stmt in item.body:
-                    scan(stmt, values, caller)
+                params = [*item.args.posonlyargs, *item.args.args]
+                run(item, ["{*}"] * len(params), {}, file, 0, True)
     return results
 
 
