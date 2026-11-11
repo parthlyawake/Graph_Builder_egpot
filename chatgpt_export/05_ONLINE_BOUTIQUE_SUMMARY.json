@@ -1,0 +1,203 @@
+{
+  "workspace": "online_boutique_multi_repo",
+  "repositories_count": 12,
+  "total_loc": 6223,
+  "total_nodes": 2284,
+  "total_edges": 6275,
+  "layer_distribution": {
+    "Lsyn": 501,
+    "Ldep": 1769,
+    "Lflow": 3800,
+    "Lsem": 83,
+    "Lcontract": 122
+  },
+  "verification_status": "PASSED (9/9 checks, 0 errors, 0 warnings)",
+  "canonical_contracts": [
+    {
+      "rpc": "contract::hipstershop.CartService.AddItem",
+      "producer": "cartservice/src/cartstore/CartService.cs:AddItem",
+      "consumers": [
+        "frontend/main.go:main"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.CartService.GetCart",
+      "producer": "cartservice/src/cartstore/CartService.cs:GetCart",
+      "consumers": [
+        "frontend/main.go:main",
+        "checkoutservice/main.go:placeOrder"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.CartService.EmptyCart",
+      "producer": "cartservice/src/cartstore/CartService.cs:EmptyCart",
+      "consumers": [
+        "frontend/main.go:main",
+        "checkoutservice/main.go:placeOrder"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.PaymentService.Charge",
+      "producer": "paymentservice/server.js:charge",
+      "consumers": [
+        "checkoutservice/main.go:placeOrder"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.CurrencyService.GetSupportedCurrencies",
+      "producer": "currencyservice/server.js:getSupportedCurrencies",
+      "consumers": [
+        "frontend/main.go:main"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.CurrencyService.Convert",
+      "producer": "currencyservice/server.js:convert",
+      "consumers": [
+        "frontend/main.go:main",
+        "checkoutservice/main.go:placeOrder"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.ShippingService.GetQuote",
+      "producer": "shippingservice/main.go:GetQuote",
+      "consumers": [
+        "frontend/main.go:main",
+        "checkoutservice/main.go:placeOrder"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.ShippingService.ShipOrder",
+      "producer": "shippingservice/main.go:ShipOrder",
+      "consumers": [
+        "checkoutservice/main.go:placeOrder"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.ProductCatalogService.ListProducts",
+      "producer": "productcatalogservice/main.go:ListProducts",
+      "consumers": [
+        "frontend/main.go:main"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.ProductCatalogService.GetProduct",
+      "producer": "productcatalogservice/main.go:GetProduct",
+      "consumers": [
+        "frontend/main.go:main",
+        "checkoutservice/main.go:placeOrder",
+        "recommendationservice/recommendation_server.py:get_product_list"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.ProductCatalogService.SearchProducts",
+      "producer": "productcatalogservice/main.go:SearchProducts",
+      "consumers": [
+        "frontend/main.go:main"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.RecommendationService.ListRecommendations",
+      "producer": "recommendationservice/recommendation_server.py:ListRecommendations",
+      "consumers": [
+        "frontend/main.go:main"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.EmailService.SendOrderConfirmation",
+      "producer": "emailservice/email_server.py:SendOrderConfirmation",
+      "consumers": [
+        "checkoutservice/main.go:placeOrder"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.AdService.GetAds",
+      "producer": "adservice/src/main/java/hipstershop/AdService.java:getAds",
+      "consumers": [
+        "frontend/main.go:main"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    },
+    {
+      "rpc": "contract::hipstershop.CheckoutService.PlaceOrder",
+      "producer": "checkoutservice/main.go:PlaceOrder",
+      "consumers": [
+        "frontend/main.go:main"
+      ],
+      "dataflow_edges": [
+        "PASSES_ARG",
+        "FLOWS_TO",
+        "RETURNS"
+      ]
+    }
+  ]
+}

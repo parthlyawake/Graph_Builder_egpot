@@ -42,6 +42,10 @@ class EdgeType(str, Enum):
     IMPORTS = "imports"
     PRODUCES = "produces"        # service produces a gRPC/REST endpoint
     CONSUMES = "consumes"        # service consumes an endpoint
+    PASSES_ARG = "passes_arg"    # request arguments flow into a callee/contract
+    FLOWS_TO = "flows_to"        # propagated request/response values
+    RETURNS = "returns"          # returned values
+    MUTATES = "mutates"          # state mutation
     PRODUCES_EVENT = "produces_event"  # service publishes to a topic
     CONSUMES_EVENT = "consumes_event"  # service listens to a topic
     HTTP_CALLS = "http_calls"    # service calls a REST endpoint
@@ -57,6 +61,8 @@ class Language(str, Enum):
     JAVA = "java"
     JAVASCRIPT = "javascript"
     TYPESCRIPT = "typescript"
+    CSHARP = "csharp"
+    KOTLIN = "kotlin"
     PROTOBUF = "protobuf"
     UNKNOWN = "unknown"
 

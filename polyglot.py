@@ -35,6 +35,14 @@ try:  # C# adapter — install with: pip install tree-sitter-c-sharp
 except ImportError:
     _CSHARP_AVAILABLE = False
 
+try:  # Kotlin adapter — install with: pip install tree-sitter-kotlin
+    import tree_sitter_kotlin  # type: ignore
+
+    _KOTLIN_AVAILABLE = True
+except ImportError:
+    _KOTLIN_AVAILABLE = False
+
+
 
 class TreeSitterExtractor:
     # Core extensions always supported; Java/C# enabled if packages installed.
@@ -43,6 +51,9 @@ class TreeSitterExtractor:
         EXTENSIONS.add(".java")
     if _CSHARP_AVAILABLE:
         EXTENSIONS.add(".cs")
+    if _KOTLIN_AVAILABLE:
+        EXTENSIONS.add(".kt")
+        EXTENSIONS.add(".kts")
 
     def __init__(self, extension):
         if extension == ".go":
@@ -57,6 +68,10 @@ class TreeSitterExtractor:
             if not _CSHARP_AVAILABLE:
                 raise RuntimeError("tree-sitter-c-sharp is not installed. Run: pip install tree-sitter-c-sharp")
             grammar = tree_sitter_c_sharp.language()
+        elif extension in {".kt", ".kts"}:
+            if not _KOTLIN_AVAILABLE:
+                raise RuntimeError("tree-sitter-kotlin is not installed. Run: pip install tree-sitter-kotlin")
+            grammar = tree_sitter_kotlin.language()
         elif extension in {".ts", ".tsx"}:
             grammar = tree_sitter_typescript.language_typescript()
         else:
@@ -65,6 +80,7 @@ class TreeSitterExtractor:
         self.is_go = extension == ".go"
         self.is_java = extension == ".java"
         self.is_csharp = extension == ".cs"
+        self.is_kotlin = extension in {".kt", ".kts"}
 
     @staticmethod
     def _text(node, source):
@@ -104,8 +120,63 @@ class TreeSitterExtractor:
         full_comment = "\n".join(comments)
         cleaned = re.sub(r"^/\*\*|\*/$", "", full_comment)
         cleaned = re.sub(r"(?m)^\s*\*\s?", "", cleaned)
+        cleaned = re.sub(r"(?m)^\s*///\s?", "", cleaned)
         cleaned = re.sub(r"(?m)^\s*//\s?", "", cleaned)
         return cleaned.strip() or None
+
+    @staticmethod
+    def _extract_csharp_attributes(node, source):
+        """Extract C# attributes from node attribute_list children.
+        Returns dict: {AttributeName: string_value or ""}
+        """
+        attributes = {}
+        for c in node.named_children:
+            if c.type == "attribute_list":
+                for attr in c.named_children:
+                    if attr.type == "attribute":
+                        name_node = attr.child_by_field_name("name") or (attr.named_children[0] if attr.named_children else None)
+                        if not name_node:
+                            continue
+                        attr_name = TreeSitterExtractor._text(name_node, source)
+                        val = ""
+                        args_node = attr.child_by_field_name("arguments") or next(
+                            (ch for ch in attr.named_children if ch.type == "attribute_argument_list"), None
+                        )
+                        if args_node:
+                            raw_args = TreeSitterExtractor._text(args_node, source)
+                            str_match = re.search(r"['\"]([^'\"]+)['\"]", raw_args)
+                            if str_match:
+                                val = str_match.group(1)
+                        attributes[attr_name] = val
+        return attributes
+
+    @staticmethod
+    def _extract_kotlin_annotations(node, source):
+        """Extract Kotlin annotations from node or modifiers child.
+        Returns dict: {AnnotationName: string_value or ""}
+        """
+        annotations = {}
+        modifiers = next((c for c in node.named_children if c.type == "modifiers"), None)
+        target_nodes = [node]
+        if modifiers:
+            target_nodes.extend(modifiers.named_children)
+        for c in target_nodes:
+            if c.type == "annotation":
+                ctor = next((ch for ch in c.named_children if ch.type == "constructor_invocation"), None)
+                user_type = next((ch for ch in c.named_children if ch.type == "user_type"), None)
+                if ctor:
+                    user_type = next((ch for ch in ctor.named_children if ch.type == "user_type"), None)
+                if user_type:
+                    ident = next((ch for ch in user_type.named_children if ch.type == "identifier"), None)
+                    if ident:
+                        ann_name = TreeSitterExtractor._text(ident, source).lstrip("@")
+                        ann_value = ""
+                        raw_text = TreeSitterExtractor._text(c, source)
+                        str_match = re.search(r"['\"]([^'\"]+)['\"]", raw_text)
+                        if str_match:
+                            ann_value = str_match.group(1)
+                        annotations[ann_name] = ann_value
+        return annotations
 
     @staticmethod
     def _extract_java_annotations(node, source):
@@ -129,7 +200,7 @@ class TreeSitterExtractor:
                 )
                 if args_node:
                     raw_args = TreeSitterExtractor._text(args_node, source)
-                    str_match = re.search(r'["\']([^"\']+)["\']', raw_args)
+                    str_match = re.search(r"['\"]([^'\"]+)['\"]", raw_args)
                     if str_match:
                         ann_value = str_match.group(1)
                 annotations[ann_name] = ann_value
@@ -151,7 +222,8 @@ class TreeSitterExtractor:
             code=f"// File: {rel_path}\n// Lines: {len(builder.raw_file_lines[rel_path])}",
         )
         self._register_imports(builder, rel_path, text, file_id)
-        self._visit(builder, self.parser.parse(source).root_node, source)
+        parsed = self.parser.parse(source)
+        self._visit(builder, parsed.root_node, source)
         # Next-style file routes have no explicit router-registration call.
         parts = rel_path.replace("\\", "/").split("/")
         if len(parts) >= 3 and parts[-1] in {"route.ts", "route.tsx", "route.js", "route.jsx"}:
@@ -163,6 +235,7 @@ class TreeSitterExtractor:
                     handler_id = f"{builder.current_file_ctx}:{method}"
                     if handler_id in builder.graph and builder.graph.nodes[handler_id].get("type") == "function":
                         builder.http_endpoints.setdefault((method, route_path), []).append(handler_id)
+        return {"syntax_errors": bool(parsed.root_node.has_error)}
 
     # ------------------------------------------------------------------
     # IMPORTS
@@ -226,6 +299,18 @@ class TreeSitterExtractor:
                 builder.add_ckg_node(symbol, "module", "Ldep", specifier)
             builder.add_ckg_edge(file_id, symbol, "IMPORTS", "Ldep")
 
+        # C#: using System.IO; / using Microsoft.AspNetCore.Mvc;
+        if self.is_csharp or rel_path.endswith(".cs"):
+            for imp in re.findall(r"(?m)^\s*using\s+(?:static\s+)?([a-zA-Z0-9_.]+)\s*;", text):
+                simple_name = imp.rsplit(".", 1)[-1]
+                self._add_import(builder, rel_path, file_id, simple_name, imp)
+
+        # Kotlin: import org.springframework.web.bind.annotation.GetMapping
+        if self.is_kotlin or rel_path.endswith((".kt", ".kts")):
+            for imp in re.findall(r"(?m)^\s*import\s+([a-zA-Z0-9_.]+)(?:\.\*)?\s*", text):
+                simple_name = imp.rsplit(".", 1)[-1]
+                self._add_import(builder, rel_path, file_id, simple_name, imp)
+
         # Java: import [static] package.Class; / import package.*;
         if self.is_java or rel_path.endswith(".java"):
             for imp in re.findall(r"(?m)^\s*import\s+(?:static\s+)?([a-zA-Z0-9_.]+)(?:\.\*)?\s*;", text):
@@ -245,33 +330,93 @@ class TreeSitterExtractor:
     # ------------------------------------------------------------------
     def _visit(self, builder, node, source):
         if node.type == "class_declaration":
-            name_node = node.child_by_field_name("name")
+            name_node = node.child_by_field_name("name") or next(
+                (c for c in node.named_children if c.type in ("identifier", "type_identifier")), None
+            )
             if name_node:
                 name = self._text(name_node, source)
                 class_id = builder.get_node_id(name)
                 builder.add_ckg_node(class_id, "class", "Lsyn", name, self._line(node))
                 builder.register_symbol(class_id, name)
+                # Managed gRPC requires an explicit registration, not inheritance
+                # alone. Keep the base and qualified class as evidence.
+                if self.is_java or self.is_csharp:
+                    heritage_node = next((c for c in node.named_children
+                                          if c.type in ("superclass", "base_list", "class_heritage")), None)
+                    if heritage_node:
+                        heritage_text = self._text(heritage_node, source)
+                        pattern = (r"(?:^|\.)\b(\w+)Grpc\.\1ImplBase\s*$"
+                                   if self.is_java else r"(?:^|\.)\b(\w+)\.\1Base\s*$")
+                        for base in re.sub(r"^(?:extends\s+|:\s*)", "", heritage_text).split(","):
+                            match = re.search(pattern, base.strip())
+                            if match:
+                                namespace = []
+                                ancestor = node.parent
+                                while ancestor is not None:
+                                    if ancestor.type in ("namespace_declaration", "file_scoped_namespace_declaration"):
+                                        nn = ancestor.child_by_field_name("name")
+                                        if nn is not None:
+                                            namespace.insert(0, self._text(nn, source))
+                                    ancestor = ancestor.parent
+                                if self.is_java:
+                                    root = node
+                                    while root.parent is not None:
+                                        root = root.parent
+                                    package = next((x for x in root.named_children if x.type == "package_declaration"), None)
+                                    if package is not None:
+                                        namespace = [re.sub(r"^package\s+|;\s*$", "", self._text(package, source)).strip()]
+                                builder.graph.nodes[class_id].update(
+                                    grpc_service=match.group(1),
+                                    grpc_language="java" if self.is_java else "csharp",
+                                    grpc_qualified_name=".".join([*namespace, *builder.current_scope, name]))
                 docstring = self._extract_doc_comment(node, source)
                 if docstring:
                     builder.docstrings[class_id] = docstring
                     builder.graph.nodes[class_id]["docstring"] = docstring
                 builder.add_ckg_edge(builder.get_current_scope_id(), class_id, "CONTAINS", "Lsyn")
                 
-                # Java Spring route prefix & Feign client handling
+                # Java & Kotlin Spring route prefix / Feign client & C# ASP.NET route handling
                 old_prefix = getattr(builder, "_current_route_prefix", "")
+                old_cs_prefix = getattr(builder, "_current_csharp_route_prefix", "")
                 if self.is_java:
                     ann = self._extract_java_annotations(node, source)
                     if "RequestMapping" in ann:
                         builder._current_route_prefix = ann["RequestMapping"].rstrip("/")
                     if "FeignClient" in ann and ann["FeignClient"]:
                         builder.grpc_client_vars.setdefault(builder.current_file, {})[name] = ann["FeignClient"]
+                elif self.is_kotlin:
+                    ann = self._extract_kotlin_annotations(node, source)
+                    if "RequestMapping" in ann:
+                        builder._current_route_prefix = ann["RequestMapping"].rstrip("/")
+                    if "FeignClient" in ann and ann["FeignClient"]:
+                        builder.grpc_client_vars.setdefault(builder.current_file, {})[name] = ann["FeignClient"]
+                elif self.is_csharp:
+                    cs_attrs = self._extract_csharp_attributes(node, source)
+                    if "Route" in cs_attrs:
+                        r_val = cs_attrs["Route"].replace("[controller]", name.replace("Controller", "").lower())
+                        builder._current_csharp_route_prefix = "/" + r_val.strip("/")
 
-                heritage = next((c for c in node.named_children if c.type in ("class_heritage", "superclass", "super_interfaces")), None)
+                heritage = next((c for c in node.named_children if c.type in ("class_heritage", "superclass", "super_interfaces", "base_list", "delegation_specifiers", "super_type_list")), None)
                 if heritage:
                     heritage_text = self._text(heritage, source)
-                    base = re.sub(r"^(?:extends|implements)\s+", "", heritage_text).split("implements", 1)[0].strip()
+                    base = re.sub(r"^(?:extends|implements|:)\s*", "", heritage_text).split("implements", 1)[0].strip()
                     if base:
                         builder.class_base_records.append((class_id, base, builder.current_file, builder.scope_depth))
+                        # Java gRPC servicer: class X extends <Service>Grpc.<Service>ImplBase
+                        java_match = re.search(r"(\w+?)(?:Grpc)?\.\w*ImplBase$", base) or re.search(r"(\w+?)ImplBase$", base)
+                        if java_match and not self.is_java:
+                            builder.grpc_servicer_records.append((class_id, java_match.group(1), builder.current_file))
+                        # C# gRPC servicer: class X : <Service>.<Service>Base
+                        csharp_match = re.search(r"(\w+?)\.\w*ServiceBase$", base) or re.search(r"(\w+?)Base$", base)
+                        if csharp_match:
+                            svc_cand = csharp_match.group(1)
+                            if svc_cand.endswith("Service") and not self.is_csharp:
+                                builder.grpc_servicer_records.append((class_id, svc_cand, builder.current_file))
+                        # Kotlin gRPC servicer: class X : <Service>CoroutineImplBase() / <Service>ImplBase()
+                        if self.is_kotlin:
+                            kt_match = re.search(r"(\w+?)(?:CoroutineImplBase|ImplBase)(?:\(\))?$", base.strip())
+                            if kt_match:
+                                builder.grpc_servicer_records.append((class_id, kt_match.group(1), builder.current_file))
                     implemented = re.search(r"\bimplements\s+(.+)$", heritage_text)
                     if implemented:
                         for spelling in implemented.group(1).split(","):
@@ -279,8 +424,10 @@ class TreeSitterExtractor:
                                 (class_id, spelling.strip(), builder.current_file, builder.scope_depth)
                             )
                 self._with_scope(builder, name, lambda: self._visit_children(builder, node, source))
-                if self.is_java:
+                if self.is_java or self.is_kotlin:
                     builder._current_route_prefix = old_prefix
+                if self.is_csharp:
+                    builder._current_csharp_route_prefix = old_cs_prefix
                 return
 
         if node.type == "type_declaration" and self.is_go:
@@ -368,6 +515,106 @@ class TreeSitterExtractor:
                     builder.calls_to_resolve.append(
                         (scope_id, target_name, builder.scope_depth, builder.current_file)
                     )
+
+        # C# Constructor Dependency Injection
+        if self.is_csharp and node.type == "constructor_declaration":
+            params_node = node.child_by_field_name("parameters") or next(
+                (c for c in node.named_children if c.type == "parameter_list"), None
+            )
+            if params_node:
+                for param in params_node.named_children:
+                    if param.type == "parameter":
+                        t_node = param.child_by_field_name("type") or (param.named_children[0] if param.named_children else None)
+                        n_node = param.child_by_field_name("name") or (param.named_children[-1] if param.named_children else None)
+                        if t_node and n_node:
+                            t_text = self._text(t_node, source).strip()
+                            p_name = self._text(n_node, source).strip()
+                            m = re.search(r"(\w+?)Client$", t_text) or re.search(r"(\w+?)Service$", t_text)
+                            if m:
+                                svc = m.group(1)
+                                builder.grpc_client_vars.setdefault(builder.current_file, {})[p_name] = svc
+                                builder.grpc_client_vars.setdefault(builder.current_file, {})[f"_{p_name}"] = svc
+
+        # gRPC server registration: C# MapGrpcService<T>() and Java addService(new T()).
+        if self.is_csharp and node.type == "invocation_expression":
+            function = node.child_by_field_name("function")
+            generic = function
+            if function is not None and function.type == "member_access_expression":
+                generic = function.child_by_field_name("name")
+            if generic is not None and generic.type == "generic_name":
+                identifier = next((c for c in generic.named_children if c.type == "identifier"), None)
+                type_args = next((c for c in generic.named_children if c.type == "type_argument_list"), None)
+                if (identifier is not None and self._text(identifier, source) == "MapGrpcService"
+                        and type_args is not None and len(type_args.named_children) == 1):
+                    builder.managed_grpc_registrations.append((
+                        "csharp", self._text(type_args.named_children[0], source),
+                        builder.current_file, builder.get_current_scope_id()))
+
+        if self.is_java and node.type == "method_invocation":
+            name_node = node.child_by_field_name("name")
+            args_node = node.child_by_field_name("arguments")
+            if (name_node is not None and self._text(name_node, source) == "addService"
+                    and args_node is not None and len(args_node.named_children) == 1):
+                created = args_node.named_children[0]
+                if created.type == "object_creation_expression":
+                    typ = created.child_by_field_name("type")
+                    if typ is not None:
+                        builder.managed_grpc_registrations.append((
+                            "java", self._text(typ, source),
+                            builder.current_file, builder.get_current_scope_id()))
+
+        # C# method invocation / call
+        if self.is_csharp and node.type == "invocation_expression" and builder.current_scope:
+            scope_id = builder.get_current_scope_id()
+            expr = node.child_by_field_name("expression") or (node.named_children[0] if node.named_children else None)
+            arguments = node.child_by_field_name("arguments") or next(
+                (c for c in node.named_children if c.type == "argument_list"), None
+            )
+            if expr:
+                expr_text = self._text(expr, source)
+                if "." in expr_text:
+                    obj_text, _, m_name = expr_text.rpartition(".")
+                    obj_text = obj_text.strip()
+                    m_name = m_name.strip()
+                    if obj_text in builder.grpc_client_vars.get(builder.current_file, {}):
+                        target_svc = builder.grpc_client_vars[builder.current_file][obj_text]
+                        builder.grpc_calls_to_resolve.append((scope_id, target_svc, m_name, builder.current_file))
+                    if "http" in obj_text.lower() or m_name in ("GetAsync", "PostAsync", "PostAsJsonAsync", "PutAsync", "DeleteAsync"):
+                        if arguments and arguments.named_children:
+                            arg0 = self._text(arguments.named_children[0], source)
+                            p_match = re.search(r"['\"](?:https?://[^'\"/]+)?(/[^'\"]+)['\"]", arg0)
+                            if p_match:
+                                h_method = "POST" if "post" in m_name.lower() else "GET"
+                                builder.http_calls_to_resolve.append((scope_id, p_match.group(1), h_method, builder.current_file))
+                    builder.calls_to_resolve.append((scope_id, expr_text, builder.scope_depth, builder.current_file))
+                else:
+                    builder.calls_to_resolve.append((scope_id, expr_text, builder.scope_depth, builder.current_file))
+
+        # Kotlin method calls: both qualified (client.fetch()) and simple (helper()).
+        if self.is_kotlin and node.type in {"call_expression", "navigation_expression"} and builder.current_scope:
+            scope_id = builder.get_current_scope_id()
+            raw_text = self._text(node, source)
+            if "(" in raw_text:
+                prefix_part = raw_text.split("(", 1)[0].strip()
+                if "." in prefix_part:
+                    obj_text, _, m_name = prefix_part.rpartition(".")
+                    obj_text, m_name = obj_text.strip(), m_name.strip()
+                    if obj_text in builder.grpc_client_vars.get(builder.current_file, {}):
+                        target_svc = builder.grpc_client_vars[builder.current_file][obj_text]
+                        builder.grpc_calls_to_resolve.append((scope_id, target_svc, m_name, builder.current_file))
+                    if m_name == "send" and ("kafka" in obj_text.lower() or "producer" in obj_text.lower()):
+                        first_arg_match = re.search(r"['\"]([^'\"]+)['\"]", raw_text)
+                        if first_arg_match:
+                            topic_name = first_arg_match.group(1)
+                            topic_id = f"topic::{topic_name}"
+                            if not builder.graph.has_node(topic_id):
+                                builder.add_ckg_node(topic_id, "topic_contract", "Lcontract", topic_name)
+                            builder.add_ckg_edge(scope_id, topic_id, "PRODUCES_EVENT", "Lcontract")
+                    callee = f"{obj_text}.{m_name}" if obj_text else m_name
+                else:
+                    callee = prefix_part
+                if callee:
+                    builder.calls_to_resolve.append((scope_id, callee, builder.scope_depth, builder.current_file))
 
         # Java constructor call: new OrderResponse(...)
         if node.type == "object_creation_expression" and builder.current_scope:
@@ -796,7 +1043,14 @@ class TreeSitterExtractor:
             builder.current_scope.append(receiver)
             builder.scope_depth += 1
         function_id = builder.get_node_id(name)
+        ambiguous_definition = (self.is_java and function_id in builder.graph
+                                and builder.graph.nodes[function_id].get("type") == "function")
         builder.add_ckg_node(function_id, "function", "Lsyn", name, self._line(node))
+        if ambiguous_definition:
+            builder.graph.nodes[function_id]["http_ambiguous_definition"] = True
+        if self.is_csharp and any(c.type == "modifier" and self._text(c, source) == "override"
+                                  for c in node.named_children):
+            builder.graph.nodes[function_id]["is_override"] = True
         builder.register_symbol(function_id, name)
         docstring = self._extract_doc_comment(node, source)
         if docstring:
@@ -811,6 +1065,59 @@ class TreeSitterExtractor:
             receiver_match = re.match(r"\(\s*([A-Za-z_]\w*)\s+", receiver_text)
             if receiver_match:
                 builder.var_types.setdefault(function_id, {})[receiver_match.group(1)] = receiver
+
+        # C# ASP.NET REST endpoints
+        if self.is_csharp:
+            attrs = self._extract_csharp_attributes(node, source)
+            csharp_verbs = {
+                "HttpGet": "GET",
+                "HttpPost": "POST",
+                "HttpPut": "PUT",
+                "HttpDelete": "DELETE",
+                "HttpPatch": "PATCH",
+                "Route": "GET",
+            }
+            for attr_name, verb in csharp_verbs.items():
+                if attr_name in attrs:
+                    sub_path = attrs[attr_name].strip('"\'')
+                    prefix = getattr(builder, "_current_csharp_route_prefix", "")
+                    if sub_path and not sub_path.startswith("/") and prefix:
+                        sub_path = "/" + sub_path
+                    full_path = (prefix + sub_path) if (prefix or sub_path) else "/"
+                    if not full_path.startswith("/"):
+                        full_path = "/" + full_path
+                    builder.http_endpoints.setdefault((verb, full_path), []).append(function_id)
+                    break
+
+        # Kotlin Spring REST endpoints and Event Listeners
+        if self.is_kotlin:
+            ann = self._extract_kotlin_annotations(node, source)
+            http_verbs = {
+                "GetMapping": "GET",
+                "PostMapping": "POST",
+                "PutMapping": "PUT",
+                "DeleteMapping": "DELETE",
+                "PatchMapping": "PATCH",
+                "RequestMapping": "GET",
+            }
+            for ann_name, verb in http_verbs.items():
+                if ann_name in ann:
+                    m_path = ann[ann_name]
+                    prefix = getattr(builder, "_current_route_prefix", "")
+                    if not m_path.startswith("/") and prefix and m_path:
+                        m_path = "/" + m_path
+                    full_path = (prefix + m_path) if (prefix or m_path) else "/"
+                    if not full_path.startswith("/"):
+                        full_path = "/" + full_path
+                    builder.http_endpoints.setdefault((verb, full_path), []).append(function_id)
+                    break
+
+            if "KafkaListener" in ann or "RabbitListener" in ann:
+                topic_name = ann.get("KafkaListener") or ann.get("RabbitListener") or "event-stream"
+                topic_id = f"topic::{topic_name}"
+                if not builder.graph.has_node(topic_id):
+                    builder.add_ckg_node(topic_id, "topic_contract", "Lcontract", topic_name)
+                builder.add_ckg_edge(function_id, topic_id, "CONSUMES_EVENT", "Lcontract")
 
         # Java Spring REST endpoints and Event Listeners
         if self.is_java:
