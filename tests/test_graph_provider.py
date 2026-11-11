@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import pytest
+import networkx as nx
 
 from contracts.graph_provider import GraphProvider
 from contracts.graph_types import (
@@ -174,3 +175,54 @@ def test_resolve_symptom_java_stacktrace(polyglot_provider):
     )
     res = polyglot_provider.resolve_symptom(event)
     assert isinstance(res, list)
+
+
+@pytest.mark.parametrize("relation, expected", [
+    ("PASSES_ARG", EdgeType.PASSES_ARG),
+    ("FLOWS_TO", EdgeType.FLOWS_TO),
+    ("RETURNS", EdgeType.RETURNS),
+    ("MUTATES", EdgeType.MUTATES),
+])
+def test_dataflow_edges_keep_their_types(polyglot_provider, relation, expected):
+    """The GraphProvider adapter must not flatten Lflow edges to DEPENDS_ON."""
+    edge = polyglot_provider._to_typed_edge(
+        "src", "dst", {"relation": relation, "layer": "Lflow", "metadata": {"c_type": 1.0}}
+    )
+    assert edge.edge_type == expected
+    assert edge.metadata["raw_relation"] == relation
+    assert edge.metadata["layer"] == "Lflow"
+    assert edge.metadata["c_type"] == 1.0
+
+
+def test_parallel_contract_and_dataflow_edges_survive_forward_traversal():
+    """Parallel edges must retain their semantics; only identical relations collapse."""
+    caller = "frontend/main.go:frontendServer.getCurrencies"
+    rpc = "contract::CurrencyService.GetSupportedCurrencies"
+    handler = "currencyservice/server.js:getSupportedCurrencies"
+    graph = nx.MultiDiGraph()
+    graph.add_node(caller, type="function", name="getCurrencies")
+    graph.add_node(rpc, type="rpc_contract", name="GetSupportedCurrencies")
+    graph.add_node(handler, type="function", name="getSupportedCurrencies")
+    graph.add_edge(caller, rpc, key="contract", relation="CONSUMES", layer="Lcontract")
+    graph.add_edge(caller, rpc, key="argument", relation="PASSES_ARG", layer="Lflow")
+    graph.add_edge(caller, rpc, key="argument-repeat", relation="PASSES_ARG", layer="Lflow")
+    graph.add_edge(rpc, caller, key="response", relation="FLOWS_TO", layer="Lflow")
+    graph.add_edge(rpc, handler, key="request", relation="FLOWS_TO", layer="Lflow")
+    graph.add_edge(handler, rpc, key="return", relation="RETURNS", layer="Lflow")
+    graph.add_edge(handler, rpc, key="implements", relation="IMPLEMENTS", layer="Lcontract")
+
+    provider = SCKGGraphProvider(graph)
+    subgraph = provider.forward_traverse(
+        provider.get_node_detail(caller), TraversalPolicy(max_depth=3, max_nodes=10)
+    )
+    edges = {(e.source_id, e.target_id, e.edge_type, e.metadata["raw_relation"])
+             for e in subgraph.edges}
+    assert edges == {
+        (caller, rpc, EdgeType.CONSUMES, "CONSUMES"),
+        (caller, rpc, EdgeType.PASSES_ARG, "PASSES_ARG"),
+        (rpc, caller, EdgeType.FLOWS_TO, "FLOWS_TO"),
+        (rpc, handler, EdgeType.FLOWS_TO, "FLOWS_TO"),
+        (handler, rpc, EdgeType.RETURNS, "RETURNS"),
+        (handler, rpc, EdgeType.IMPLEMENTS, "IMPLEMENTS"),
+    }
+    assert len(subgraph.edges) == len(edges) == 6

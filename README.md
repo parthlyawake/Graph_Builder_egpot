@@ -6,6 +6,8 @@ Run the [local graph viewer](TEAMMATE_GRAPH_GUIDE.md) on your repository, read t
 
 For graph construction checks on eight polyglot systems, read the [baseline audit](GRAPH_BUILDER_POLYGLOT_AUDIT.md) and [fix validation](GRAPH_BUILDER_FIX_VALIDATION.md).
 
+For the latest file-retrieval comparison across those checkouts, open the [interactive dashboard](polyglot_retrieval_dashboard.html) or read the [benchmark report](POLYGLOT_REPO_RETRIEVAL_REPORT.md). The dashboard is a self-contained HTML file and works on localhost or directly in a browser.
+
 ---
 
 ## Overview

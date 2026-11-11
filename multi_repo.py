@@ -250,6 +250,20 @@ class WorkspaceCKGBuilder:
         print(f"[*] Initializing GRAFT-CKG Workspace: '{self.config.name}' (v{self.config.version})")
         print(f"[*] Repositories to index: {len(self.config.repositories)}")
 
+        # A second build must not accumulate stale contracts or duplicate edges.
+        self.graph.clear()
+        self.repo_builders.clear()
+        self.canonical_contracts.clear()
+        self.contract_skews.clear()
+        self.http_endpoints.clear()
+        self.symbols_by_name.clear()
+        self.docstrings.clear()
+        self.raw_file_lines.clear()
+        self.total_loc = 0
+        self.edge_counter = 0
+        self.vectorizer = self.tfidf_matrix = self.bm25_index = None
+        self.indexed_node_ids = []
+
         t0 = time.perf_counter()
 
         # Step 1: Parse and build each repository graph with strict repo_id namespacing
@@ -302,6 +316,9 @@ class WorkspaceCKGBuilder:
 
         # Step 5: Resolve cross-repository gRPC server implementation bindings (producers)
         self._resolve_cross_repo_grpc_producers()
+        from graph_builder_bindings import bind_managed_grpc
+        for builder in self.repo_builders.values():
+            bind_managed_grpc(builder, self.graph, self.canonical_contracts)
 
         # Step 6: Resolve cross-repository HTTP dependency calls
         self._resolve_cross_repo_http_calls()
@@ -309,7 +326,16 @@ class WorkspaceCKGBuilder:
         # Step 7: Resolve cross-repository unresolved gRPC calls (consumers)
         self._resolve_cross_repo_grpc_calls()
 
-        # Step 7: Build workspace-level Semantic Layer (Lsem)
+        # Step 8: Resolve cross-repository proto type identity (P8)
+        self._resolve_cross_repo_proto_types()
+
+        # Step 9: Resolve inter-service dataflow through contract RPCs (P4)
+        self._resolve_inter_service_dataflow()
+
+        # Step 10: Index OpenAPI and GraphQL contract specs (P5)
+        self._index_openapi_and_graphql()
+
+        # Step 11: Build workspace-level Semantic Layer (Lsem)
         self._build_semantic_layer()
 
         elapsed = time.perf_counter() - t0
@@ -327,6 +353,18 @@ class WorkspaceCKGBuilder:
 
         return self.graph
 
+    def update_files(self, repo_id, changed_rel_paths, deleted_rel_paths=()):
+        """Rebuild after workspace source changes, guaranteeing fresh bindings.
+
+        This is deliberately a full-composition correctness fallback, not an
+        incremental speed-up. It avoids retaining stale shared registrations,
+        HTTP links, or canonical contracts when a service or proto changes.
+        Source edits/deletions must already be reflected on disk.
+        """
+        if repo_id not in {cfg.id for cfg in self.config.repositories}:
+            raise KeyError(f"Unknown workspace repository: {repo_id}")
+        return self.build()
+
     def _index_shared_contracts(self):
         """Parse standalone protobuf files declared in shared_contracts."""
         for contract_entry in self.config.shared_contracts:
@@ -340,6 +378,7 @@ class WorkspaceCKGBuilder:
                             self._parse_single_shared_proto(os.path.join(root, f))
 
     def _parse_single_shared_proto(self, proto_path: str):
+        from proto_parser import ProtoParser
         with open(proto_path, "rb") as f:
             raw = f.read()
         p_hash = hashlib.sha256(raw).hexdigest()
@@ -358,18 +397,21 @@ class WorkspaceCKGBuilder:
             code=f"// Shared proto contract: {rel_path}",
         )
 
-        text = raw.decode("utf-8", errors="replace")
-        text = re.sub(r"//[^\n]*", "", text)
-        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-        text = re.sub(r"\)\s*\{\s*\}", ");", text)
+        pf = ProtoParser.parse_text(raw.decode("utf-8", errors="replace"))
 
-        for s_match in re.finditer(r"service\s+(\w+)\s*\{", text):
-            service_name = s_match.group(1)
-            depth, i = 1, s_match.end()
-            while i < len(text) and depth:
-                depth += {"{": 1, "}": -1}.get(text[i], 0)
-                i += 1
-            body = text[s_match.end():i - 1]
+        # Register message types (P8)
+        for msg_name, msg_obj in pf.messages.items():
+            msg_id = f"contract::message::{msg_name}"
+            if not self.graph.has_node(msg_id):
+                field_names = [f.name for f in msg_obj.fields.values()]
+                self.graph.add_node(
+                    msg_id, id=msg_id, type="contract", layer="Lcontract",
+                    name=msg_name, file=rel_path, repo="shared_contracts",
+                    code=f"message {msg_name} {{ " + ", ".join(field_names) + " }}"
+                )
+            self.graph.add_edge(file_id, msg_id, key=f"e_sh_{file_id}_{msg_id}", relation="CONTAINS", layer="Lsyn")
+
+        for service_name, s_obj in pf.services.items():
             service_id = f"contract::{service_name}"
             if not self.graph.has_node(service_id):
                 self.graph.add_node(service_id, id=service_id, type="service_contract", layer="Lcontract", name=service_name)
@@ -382,8 +424,9 @@ class WorkspaceCKGBuilder:
             self.graph.add_edge(file_id, service_id, key=f"e_sh_{file_id}_{service_id}", relation="CONTAINS", layer="Lsyn")
 
             rpcs = {}
-            for r_match in re.finditer(r"rpc\s+(\w+)\s*\(\s*(\w+)\s*\)\s*returns\s*\(\s*(\w+)\s*\)", body):
-                rpc_name, req, resp = r_match.groups()
+            for rpc_name, rpc_obj in s_obj.rpcs.items():
+                req = rpc_obj.request_type
+                resp = rpc_obj.response_type
                 rpc_id = f"contract::{service_name}.{rpc_name}"
                 if not self.graph.has_node(rpc_id):
                     self.graph.add_node(rpc_id, id=rpc_id, type="rpc_contract", layer="Lcontract", name=rpc_name)
@@ -398,6 +441,11 @@ class WorkspaceCKGBuilder:
                     "response_type": resp,
                 })
                 self.graph.add_edge(service_id, rpc_id, key=f"e_sh_{service_id}_{rpc_id}", relation="DEFINES_RPC", layer="Lcontract")
+
+                req_msg_id = f"contract::message::{req}"
+                if self.graph.has_node(req_msg_id):
+                    self.graph.add_edge(req_msg_id, rpc_id, key=f"e_sh_use_{req}_{rpc_id}", relation="USES", layer="Ldep")
+
                 rpcs[rpc_name] = rpc_id
 
             self.canonical_contracts[service_name] = {
@@ -616,40 +664,9 @@ class WorkspaceCKGBuilder:
             print(f"[*] Cross-Repository gRPC Producer Resolution: {resolved} cross-service producer bindings created.")
 
     def _resolve_cross_repo_http_calls(self):
-        """Binds frontend and client HTTP calls in Repo A to routes declared in Repo B."""
-        resolved = 0
-        for caller_repo_id, builder in self.repo_builders.items():
-            for caller_id, clean_path, method, id_ctx in builder.http_calls_to_resolve:
-                targets = list(dict.fromkeys([
-                    *self.http_endpoints.get((method.upper(), clean_path), []),
-                    *self.http_endpoints.get(("*", clean_path), []),
-                ]))
-                for target_id in targets:
-                    if target_id == caller_id:
-                        continue
-                    already_bound = any(
-                        target == target_id and d.get("relation") == "HTTP_CALLS"
-                        for _, target, d in self.graph.out_edges(caller_id, data=True)
-                    )
-                    if already_bound:
-                        continue
-                    meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx=id_ctx)
-                    e_id = f"w_http_{caller_id}_{target_id}"
-                    self.graph.add_edge(
-                        caller_id,
-                        target_id,
-                        key=e_id,
-                        relation="HTTP_CALLS",
-                        layer="Ldep",
-                        metadata=meta.to_dict(),
-                        d_scope=meta.d_scope,
-                        f_call=meta.f_call,
-                        c_type=meta.c_type,
-                        id_ctx=meta.id_ctx,
-                    )
-                    resolved += 1
-        if resolved:
-            print(f"[*] Cross-Repository HTTP Resolution: {resolved} cross-service HTTP bindings created.")
+        """Resolve source-evidenced and unique cross-repository HTTP calls."""
+        from graph_builder_http import resolve_workspace_http
+        return resolve_workspace_http(self)
 
     def _resolve_cross_repo_grpc_calls(self):
         """Binds stub calls in Repo A to contracts declared in Repo B or shared contracts."""
@@ -683,6 +700,164 @@ class WorkspaceCKGBuilder:
                         resolved += 1
         if resolved:
             print(f"[*] Cross-Repository gRPC Resolution: {resolved} cross-service consumer bindings created.")
+
+    def _resolve_cross_repo_proto_types(self):
+        """P8: Binds cross-language type declarations to canonical proto message contracts."""
+        resolved = 0
+        proto_msg_nodes = [
+            (n, d.get("name", n.split("::")[-1]))
+            for n, d in self.graph.nodes(data=True)
+            if n.startswith("contract::message::")
+        ]
+        if not proto_msg_nodes:
+            return
+
+        for msg_id, msg_name in proto_msg_nodes:
+            for repo_id, builder in self.repo_builders.items():
+                cands = [
+                    nid for nid in builder.symbols_by_name.get(msg_name, [])
+                    if builder.graph.has_node(nid) and builder.graph.nodes[nid].get("type") in ("class", "struct", "type")
+                ]
+                for cid in cands:
+                    if cid in self.graph:
+                        e_key = f"w_type_impl_{cid}_{msg_id}"
+                        if not self.graph.has_edge(cid, msg_id, key=e_key):
+                            meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx=repo_id)
+                            self.graph.add_edge(
+                                cid,
+                                msg_id,
+                                key=e_key,
+                                relation="IMPLEMENTS",
+                                layer="Lcontract",
+                                metadata=meta.to_dict(),
+                                d_scope=0,
+                                f_call=1.0,
+                                c_type=1.0,
+                                id_ctx=repo_id,
+                            )
+                            resolved += 1
+        if resolved:
+            print(f"[*] Cross-Language Proto Type Identity: {resolved} type-to-contract bindings established.")
+
+    def _resolve_inter_service_dataflow(self):
+        """P4: Emits Lflow edges across service boundaries via canonical contract RPC nodes.
+        
+        Caller -[PASSES_ARG]-> RPC -[FLOWS_TO]-> Handler
+        Handler -[RETURNS]-> RPC -[FLOWS_TO]-> Caller
+        """
+        resolved = 0
+        canonical_rpcs = [
+            n for n in self.graph.nodes
+            if self.graph.nodes[n].get("type") == "rpc_contract" or (n.startswith("contract::") and "." in n and not n.startswith("contract::http:"))
+        ]
+        for rpc_id in canonical_rpcs:
+            callers = [
+                u for u, v, d in self.graph.in_edges(rpc_id, data=True)
+                if d.get("relation") == "CONSUMES"
+            ]
+            handlers = [
+                u for u, v, d in self.graph.in_edges(rpc_id, data=True)
+                if d.get("relation") == "IMPLEMENTS"
+            ]
+            for u in callers:
+                # Caller passes argument to RPC contract
+                e_pass = f"w_flow_arg_{u}_{rpc_id}"
+                if not self.graph.has_edge(u, rpc_id, key=e_pass):
+                    meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo")
+                    self.graph.add_edge(
+                        u, rpc_id, key=e_pass, relation="PASSES_ARG", layer="Lflow",
+                        metadata=meta.to_dict(), d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo"
+                    )
+                    resolved += 1
+                # Contract response flows back to caller
+                e_resp = f"w_flow_resp_{rpc_id}_{u}"
+                if not self.graph.has_edge(rpc_id, u, key=e_resp):
+                    meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo")
+                    self.graph.add_edge(
+                        rpc_id, u, key=e_resp, relation="FLOWS_TO", layer="Lflow",
+                        metadata=meta.to_dict(), d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo"
+                    )
+                    resolved += 1
+            for h in handlers:
+                # Contract request flows into handler
+                e_hflow = f"w_flow_req_{rpc_id}_{h}"
+                if not self.graph.has_edge(rpc_id, h, key=e_hflow):
+                    meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo")
+                    self.graph.add_edge(
+                        rpc_id, h, key=e_hflow, relation="FLOWS_TO", layer="Lflow",
+                        metadata=meta.to_dict(), d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo"
+                    )
+                    resolved += 1
+                # Handler returns to contract
+                e_hret = f"w_flow_ret_{h}_{rpc_id}"
+                if not self.graph.has_edge(h, rpc_id, key=e_hret):
+                    meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo")
+                    self.graph.add_edge(
+                        h, rpc_id, key=e_hret, relation="RETURNS", layer="Lflow",
+                        metadata=meta.to_dict(), d_scope=0, f_call=1.0, c_type=1.0, id_ctx="cross_repo"
+                    )
+                    resolved += 1
+        if resolved:
+            print(f"[*] Inter-Service Dataflow: {resolved} cross-service Lflow edges established.")
+
+    def _index_openapi_and_graphql(self):
+        """P5: Extends Lcontract with OpenAPI REST endpoints and GraphQL schemas."""
+        from openapi_graphql_parser import OpenAPIContractParser, GraphQLContractParser
+        base_dir = self.config.base_dir if hasattr(self.config, "base_dir") else "."
+        for root, _, files in os.walk(base_dir):
+            if any(p in root for p in ("node_modules", ".git", ".pytest_cache", "tmp")):
+                continue
+            for f in files:
+                f_path = os.path.join(root, f)
+                rel_f = os.path.relpath(f_path, base_dir).replace("\\", "/")
+                # OpenAPI
+                if f.lower() in ("openapi.yaml", "openapi.json", "swagger.yaml", "swagger.json") or (
+                    (f.endswith(".yaml") or f.endswith(".json")) and "openapi" in f.lower()
+                ):
+                    spec = OpenAPIContractParser.parse_file(f_path)
+                    if spec and spec.operations:
+                        file_id = f"file::{rel_f}"
+                        if not self.graph.has_node(file_id):
+                            self.graph.add_node(file_id, id=file_id, type="file", layer="Lsyn", name=f, file=rel_f, line_no=1)
+                        for op in spec.operations:
+                            ep_id = f"endpoint::{op.method}::{op.path}"
+                            if not self.graph.has_node(ep_id):
+                                self.graph.add_node(
+                                    ep_id, id=ep_id, type="endpoint", layer="Lcontract",
+                                    name=f"{op.method} {op.path}", path=op.path, method=op.method,
+                                    operation_id=op.operation_id, spec="openapi"
+                                )
+                                self.graph.add_edge(file_id, ep_id, key=f"e_api_{file_id}_{ep_id}", relation="CONTAINS", layer="Lsyn")
+                            handlers = list(dict.fromkeys([
+                                *self.http_endpoints.get((op.method, op.path), []),
+                                *self.http_endpoints.get(("*", op.path), []),
+                            ]))
+                            for hid in handlers:
+                                if hid in self.graph and not self.graph.has_edge(hid, ep_id):
+                                    self.graph.add_edge(hid, ep_id, key=f"w_api_impl_{hid}_{ep_id}", relation="IMPLEMENTS", layer="Lcontract")
+
+                # GraphQL
+                elif f.endswith((".graphql", ".gql")):
+                    try:
+                        with open(f_path, "r", encoding="utf-8", errors="replace") as gfile:
+                            g_text = gfile.read()
+                        g_spec = GraphQLContractParser.parse_text(g_text)
+                        if g_spec and g_spec.types:
+                            file_id = f"file::{rel_f}"
+                            if not self.graph.has_node(file_id):
+                                self.graph.add_node(file_id, id=file_id, type="file", layer="Lsyn", name=f, file=rel_f, line_no=1)
+                            for tname, gtype in g_spec.types.items():
+                                for fname, fobj in gtype.fields.items():
+                                    gql_id = f"contract::graphql::{tname}::{fname}"
+                                    if not self.graph.has_node(gql_id):
+                                        self.graph.add_node(
+                                            gql_id, id=gql_id, type="contract", layer="Lcontract",
+                                            name=f"{tname}.{fname}", kind=gtype.kind.lower(),
+                                            field=fname, return_type=fobj.type_name, spec="graphql"
+                                        )
+                                        self.graph.add_edge(file_id, gql_id, key=f"e_gql_{file_id}_{gql_id}", relation="CONTAINS", layer="Lsyn")
+                    except Exception:
+                        pass
 
     def _build_semantic_layer(self, similarity_threshold: float = 0.60):
         """Constructs the unified Lsem semantic similarity plane across all repositories."""

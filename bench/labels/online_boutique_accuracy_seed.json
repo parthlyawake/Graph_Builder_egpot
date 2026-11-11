@@ -1,0 +1,136 @@
+{
+  "dataset": "Online Boutique",
+  "status": "seed_from_existing_labels_not_independently_reaudited",
+  "description": "21 existing source-inspected consumer annotations converted to exact triples. No closed-world scope or source evidence asserted. Validate against pinned upstream before publication.",
+  "nodes": [],
+  "edges": [
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.GetCart",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.emptyCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.EmptyCart",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.insertCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.AddItem",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getCurrencies",
+      "relation": "CONSUMES",
+      "target": "contract::CurrencyService.GetSupportedCurrencies",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.convertCurrency",
+      "relation": "CONSUMES",
+      "target": "contract::CurrencyService.Convert",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getProducts",
+      "relation": "CONSUMES",
+      "target": "contract::ProductCatalogService.ListProducts",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getProduct",
+      "relation": "CONSUMES",
+      "target": "contract::ProductCatalogService.GetProduct",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getShippingQuote",
+      "relation": "CONSUMES",
+      "target": "contract::ShippingService.GetQuote",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getRecommendations",
+      "relation": "CONSUMES",
+      "target": "contract::RecommendationService.ListRecommendations",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getAd",
+      "relation": "CONSUMES",
+      "target": "contract::AdService.GetAds",
+      "language": "go"
+    },
+    {
+      "source": "src/frontend/handlers.go:frontendServer.placeOrderHandler",
+      "relation": "CONSUMES",
+      "target": "contract::CheckoutService.PlaceOrder",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.getUserCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.GetCart",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.emptyUserCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.EmptyCart",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.prepOrderItems",
+      "relation": "CONSUMES",
+      "target": "contract::ProductCatalogService.GetProduct",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.convertCurrency",
+      "relation": "CONSUMES",
+      "target": "contract::CurrencyService.Convert",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.chargeCard",
+      "relation": "CONSUMES",
+      "target": "contract::PaymentService.Charge",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.sendOrderConfirmation",
+      "relation": "CONSUMES",
+      "target": "contract::EmailService.SendOrderConfirmation",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.shipOrder",
+      "relation": "CONSUMES",
+      "target": "contract::ShippingService.ShipOrder",
+      "language": "go"
+    },
+    {
+      "source": "src/checkoutservice/main.go:checkoutService.quoteShipping",
+      "relation": "CONSUMES",
+      "target": "contract::ShippingService.GetQuote",
+      "language": "go"
+    },
+    {
+      "source": "src/recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations",
+      "relation": "CONSUMES",
+      "target": "contract::ProductCatalogService.ListProducts",
+      "language": "python"
+    },
+    {
+      "source": "src/emailservice/email_client.py:send_confirmation_email",
+      "relation": "CONSUMES",
+      "target": "contract::EmailService.SendOrderConfirmation",
+      "language": "python"
+    }
+  ],
+  "closed_scopes": [],
+  "negatives": []
+}
