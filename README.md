@@ -61,6 +61,8 @@ Reads a `workspace.yaml` configuration, instantiates a CKG builder for each repo
 - Computes the workspace-level semantic layer ($L_{\text{sem}}$) across all repositories.
 - Implements `rebuild_incremental(changed_files_by_repo)` for workspace-wide streaming updates.
 
+For high-precision cross-service HTTP graphs, set `strict_http_source_evidence: true` in `workspace.yaml` (or `WorkspaceConfig`). The default is `false` for backwards compatibility. Strict mode preserves HTTP edges supported by a resolved source URL, HTTP verb, and unique destination service/handler, but suppresses legacy path-only guesses. It can reduce recall for JS/TS/Go requests whose hosts are not yet resolved. Python `urllib` import aliases are supported, and ambiguous Java overload caller nodes are never treated as confirmed HTTP call sources.
+
 ### traversal.py — Graph-Guided Traversal & Grafting
 
 Provides deterministic, typed graph traversal primitives across all five layers:

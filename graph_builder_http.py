@@ -147,10 +147,13 @@ def _python_requests(builder, file, text, environment):
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name in {"requests", "httpx", "urllib.request"}:
-                    imported[alias.asname or alias.name] = alias.name
+                if alias.name in {"requests", "httpx", "urllib", "urllib.request"}:
+                    # "import urllib.request" binds "urllib", whereas
+                    # "import urllib.request as req" binds "req".
+                    bound = alias.asname or alias.name.split(".", 1)[0]
+                    imported[bound] = alias.name if alias.asname else bound
         if isinstance(node, ast.ImportFrom) and node.module in {
-                "requests", "httpx", "urllib.request"}:
+                "requests", "httpx", "urllib", "urllib.request"}:
             for alias in node.names:
                 imported[alias.asname or alias.name] = node.module + "." + alias.name
 
@@ -423,6 +426,11 @@ def resolve_workspace_http(workspace):
     for source_repo, builder in workspace.repo_builders.items():
         requests = source_requests(builder, environments.get(source_repo, {}))
         for caller, url, verb, file, line, kind in requests:
+            # Java overloaded methods can currently share one graph node ID.
+            # That node is not a trustworthy source of a confirmed HTTP call.
+            if (caller not in workspace.graph
+                    or workspace.graph.nodes[caller].get("http_ambiguous_definition")):
+                continue
             parsed = urlsplit(url)
             host = (parsed.hostname or "").lower()
             destinations = aliases.get(host, set())
@@ -459,6 +467,13 @@ def resolve_workspace_http(workspace):
         # Retain JS/TS/Go legacy path-only links only when there is exactly
         # one destination. Java source paths are never guessed from a route.
         for caller, path, method, file in builder.http_calls_to_resolve:
+            # Optional high-precision mode: a route-only match cannot establish
+            # which service owns a caller's HTTP request.
+            if getattr(workspace.config, "strict_http_source_evidence", False):
+                continue
+            if (caller not in workspace.graph
+                    or workspace.graph.nodes[caller].get("http_ambiguous_definition")):
+                continue
             if file.endswith(".java"):
                 continue
             if file.endswith(".py") and any(r[0] == caller for r in requests):

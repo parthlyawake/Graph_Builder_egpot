@@ -57,6 +57,7 @@ class WorkspaceConfig:
     repositories: List[RepoConfig] = field(default_factory=list)
     shared_contracts: List[str] = field(default_factory=list)
     ignore_patterns: List[str] = field(default_factory=list)
+    strict_http_source_evidence: bool = False  # opt-in: disable hostless path-only HTTP matches
 
     @classmethod
     def from_file(cls, config_path: str) -> "WorkspaceConfig":
@@ -98,6 +99,7 @@ class WorkspaceConfig:
             repositories=repos,
             shared_contracts=data.get("shared_contracts", []),
             ignore_patterns=data.get("ignore_patterns", []),
+            strict_http_source_evidence=data.get("strict_http_source_evidence") is True,
         )
 
     @staticmethod
