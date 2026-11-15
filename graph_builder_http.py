@@ -271,11 +271,37 @@ def _python_requests(builder, file, text, environment):
             for target in stmt.targets:
                 if isinstance(target, ast.Name):
                     globals_[target.id] = literal(stmt.value, globals_)
+    class_client_bindings = {}
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef):
+            continue
+        values = {}
+        initializers = [m for m in cls.body if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))
+                        and m.name == "__init__"]
+        for init in initializers:
+            for assignment in ast.walk(init):
+                if not isinstance(assignment, ast.Assign) or not isinstance(assignment.value, ast.Call):
+                    continue
+                spelled = ast.unparse(assignment.value.func)
+                head, _, rest = spelled.partition(".")
+                canonical = imported.get(head, head) + ("." + rest if rest else "")
+                if canonical not in {"httpx.Client", "httpx.AsyncClient", "requests.Session",
+                                     "requests.session", "aiohttp.ClientSession",
+                                     "urllib3.PoolManager"}:
+                    continue
+                for target in assignment.targets:
+                    if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name) and target.value.id == "self":
+                        values[ast.unparse(target)] = "__http_client__:" + canonical.split(".", 1)[0]
+        for fn in cls.body:
+            if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                class_client_bindings[id(fn)] = values
+
     for item in ast.walk(tree):
         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
             caller = _caller(builder, file, item.lineno)
             if caller:
                 values = dict(globals_)
+                values.update(class_client_bindings.get(id(item), {}))
                 for stmt in item.body:
                     scan(stmt, values, caller)
     return results
