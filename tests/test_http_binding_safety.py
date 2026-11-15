@@ -119,3 +119,43 @@ def test_strict_mode_defaults_off_and_loads_from_workspace_config():
     assert WorkspaceConfig.from_dict(
         {"strict_http_source_evidence": "false"}
     ).strict_http_source_evidence is False
+
+
+@pytest.mark.parametrize("source", [
+    'import httpx\n'
+    'def fetch():\n'
+    '    with httpx.Client() as client:\n'
+    '        return client.get("http://orders/api/items")\n',
+    'from httpx import AsyncClient as Client\n'
+    'async def fetch():\n'
+    '    async with Client() as client:\n'
+    '        return await client.get("http://orders/api/items")\n',
+    'import aiohttp\n'
+    'async def fetch():\n'
+    '    async with aiohttp.ClientSession() as session:\n'
+    '        return await session.get("http://orders/api/items")\n',
+    'import urllib3\n'
+    'def fetch():\n'
+    '    pool = urllib3.PoolManager()\n'
+    '    return pool.request("GET", "http://orders/api/items")\n',
+    'from urllib.request import Request, urlopen\n'
+    'def fetch():\n'
+    '    req = Request("http://orders/api/items")\n'
+    '    return urlopen(req)\n',
+])
+def test_inferred_python_http_client_instances(tmp_path, source):
+    workspace, caller, handler = _workspace(tmp_path, source=source, strict=True)
+    assert resolve_workspace_http(workspace) == 1
+    assert {(u, v) for u, v, _ in _http_edges(workspace)} == {(caller, handler)}
+
+
+def test_unresolved_python_runtime_host_not_promoted(tmp_path):
+    source = (
+        'import httpx\n'
+        'def fetch(host):\n'
+        '    client = httpx.Client()\n'
+        '    return client.get("http://" + host + "/api/items")\n'
+    )
+    workspace, _, _ = _workspace(tmp_path, source=source, strict=True)
+    assert resolve_workspace_http(workspace) == 0
+    assert not _http_edges(workspace)
