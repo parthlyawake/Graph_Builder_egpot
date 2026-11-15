@@ -161,7 +161,11 @@ def extract_requests(builder, file, source, configuration):
                 for target in statement.targets:
                     if isinstance(target, ast.Name):
                         values[target.id] = value
-            if isinstance(statement, (ast.If, ast.Try, ast.With, ast.AsyncWith)):
+            if isinstance(statement, (ast.If, ast.Try, ast.With, ast.AsyncWith,
+                                      ast.For, ast.AsyncFor, ast.While)):
+                # Visit nested, zero-or-more loop bodies independently. Facts
+                # established in a loop must not escape as unconditional
+                # assignments; extraction only records literal URL evidence.
                 branches = [getattr(statement, "body", ()),
                             getattr(statement, "orelse", ()),
                             getattr(statement, "finalbody", ())]

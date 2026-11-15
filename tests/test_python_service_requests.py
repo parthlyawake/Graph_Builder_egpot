@@ -25,3 +25,24 @@ def send_request(url):
     given = extract_requests(builder, "service.py", code, {"DETAILS_HOSTNAME": "catalogue"})
     assert any(item[1] == "http://catalogue:9080/details/*"
                and item[-1] == "python_source_wrapper" for item in given)
+
+
+def test_wrapper_calls_within_for_loop_are_discovered(tmp_path):
+    content = """
+import requests
+base = {"name": "http://reviews:9080", "endpoint": "reviews"}
+def reviews(product_id):
+    for _ in range(2):
+        try:
+            url = base["name"] + "/" + base["endpoint"] + "/" + str(product_id)
+            return send_request(url)
+        except Exception:
+            pass
+def send_request(url):
+    return requests.get(url)
+"""
+    (tmp_path / "review.py").write_text(content)
+    builder = CKGBuilder(str(tmp_path))
+    builder.build()
+    calls = extract_requests(builder, "review.py", content, {})
+    assert any(item[1] == "http://reviews:9080/reviews/*" for item in calls)
