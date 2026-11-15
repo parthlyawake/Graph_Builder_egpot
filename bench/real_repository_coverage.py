@@ -27,7 +27,7 @@ SKIP_DIRS = frozenset({
     ".git", "node_modules", "vendor", ".venv", "venv", "dist",
     "build", "target", "__pycache__", ".gradle",
 })
-SCHEMAS = frozenset({".thrift", ".pdl", ".avsc"})
+SCHEMAS = frozenset({".thrift", ".pdl", ".avsc", ".proto"})
 
 
 def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
@@ -68,6 +68,11 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
                 if schema_ext:
                     if ext == ".avsc":
                         json.loads(raw)
+                    elif ext == ".proto":
+                        from proto_parser import ProtoParser
+                        text = raw.decode("utf-8")
+                        ProtoParser.validate_structure(text)
+                        ProtoParser.parse_text(text)
                     else:
                         text = raw.decode("utf-8")
                         if not re.search(r"\b(service|struct|enum|exception|union)\b", text) and ext == ".thrift":
@@ -130,6 +135,9 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
     report = {
         "root": str(root),
         "audit_type": "grammar_and_schema_syntax_not_graph_accuracy",
+        "schema_validation_note": (
+            "Protobuf fallback checks structural balance, not complete grammar validation."
+        ),
         "discovered_source_and_schema_files": total_files,
         "checked_scopes": [str(root)],
         "languages": {k: dict(v) for k, v in sorted(languages.items())},
@@ -190,7 +198,9 @@ def main():
         "issues_sample": report["issues"][:20],
         "full_coverage": report["source_coverage_complete"],
     }, indent=2))
-    if missing or (args.fail_on_incomplete and not report["source_coverage_complete"]):
+    graph_incomplete = args.build_graph and not report["graph"]["source_coverage_complete"]
+    if missing or (args.fail_on_incomplete and
+                   (not report["source_coverage_complete"] or graph_incomplete)):
         raise SystemExit(1)
 
 
