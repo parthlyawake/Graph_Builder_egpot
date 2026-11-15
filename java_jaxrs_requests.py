@@ -74,7 +74,9 @@ def _expr(node, data, variables, environment, depth=0):
             # never invent an unknown host or missing URL prefix.
             if l.text is not None and l.text.startswith(("http://", "https://")):
                 if l.text.endswith("/") and right is not None and right.type == "identifier":
-                    return Value(l.text + "*", True)
+                    # A dynamic path identifier is not a deployment choice.
+                    # Preserve only the host/configuration uncertainty.
+                    return Value(l.text + "*", l.conditional)
             return Value()
     if node.type == "ternary_expression":
         cond = node.child_by_field_name("condition")
