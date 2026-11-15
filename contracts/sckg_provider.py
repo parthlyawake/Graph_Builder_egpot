@@ -126,6 +126,12 @@ class SCKGGraphProvider(GraphProvider):
             return NodeType.SERVICE
         if t in ("topic_contract", "topic") or "topic::" in node_id:
             return NodeType.TOPIC_CONTRACT
+        if t == "queue_contract" or node_id.startswith("queue::"):
+            return NodeType.QUEUE_CONTRACT
+        if t == "graphql_operation" or node_id.startswith("graphqlop::"):
+            return NodeType.GRAPHQL_OPERATION
+        if t == "schema_field":
+            return NodeType.SCHEMA_FIELD
         if t in ("http_endpoint", "endpoint") or "endpoint::" in node_id:
             return NodeType.ENDPOINT
         if t == "http_callsite":
@@ -167,18 +173,30 @@ class SCKGGraphProvider(GraphProvider):
                 return Language.PYTHON
             if "go" in l:
                 return Language.GO
-            if "java" in l:
-                return Language.JAVA
             if "typescript" in l or l == "ts":
                 return Language.TYPESCRIPT
             if "javascript" in l or l == "js":
                 return Language.JAVASCRIPT
+            if "java" in l:
+                return Language.JAVA
             if "csharp" in l or l == "cs":
                 return Language.CSHARP
             if "kotlin" in l or l == "kt":
                 return Language.KOTLIN
             if "proto" in l:
                 return Language.PROTOBUF
+            named = {
+                "ruby": Language.RUBY, "rb": Language.RUBY,
+                "lua": Language.LUA,
+                "cpp": Language.CPP, "c++": Language.CPP,
+                "c": Language.C,
+                "scala": Language.SCALA,
+                "thrift": Language.THRIFT,
+                "avro": Language.AVRO,
+                "pdl": Language.PDL,
+            }
+            if l in named:
+                return named[l]
 
         if file_path:
             ext = os.path.splitext(file_path)[1].lower()
@@ -196,6 +214,20 @@ class SCKGGraphProvider(GraphProvider):
                 ".kt": Language.KOTLIN,
                 ".kts": Language.KOTLIN,
                 ".proto": Language.PROTOBUF,
+                ".rb": Language.RUBY,
+                ".lua": Language.LUA,
+                ".cc": Language.CPP,
+                ".cpp": Language.CPP,
+                ".cxx": Language.CPP,
+                ".h": Language.CPP,
+                ".hpp": Language.CPP,
+                ".hh": Language.CPP,
+                ".hxx": Language.CPP,
+                ".c": Language.C,
+                ".scala": Language.SCALA,
+                ".thrift": Language.THRIFT,
+                ".avsc": Language.AVRO,
+                ".pdl": Language.PDL,
             }
             if ext in mapping:
                 return mapping[ext]

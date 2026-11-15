@@ -24,12 +24,15 @@ class NodeType(str, Enum):
     SERVICE = "service"
     CONTRACT = "contract"       # e.g., a Protobuf message / OpenAPI endpoint
     TOPIC_CONTRACT = "topic_contract"  # e.g., Kafka / RabbitMQ message topic
+    QUEUE_CONTRACT = "queue_contract"  # AMQP queue with a consumer
     ENDPOINT = "endpoint"       # e.g., REST / HTTP route endpoint
     HTTP_CALLSITE = "http_callsite"  # request with an unresolved host
     CALLSITE = "callsite"
     ARGUMENT_EXPRESSION = "argument_expression"
     PROTO_FIELD = "proto_field"
     SCHEMA_CONTRACT = "schema_contract"
+    SCHEMA_FIELD = "schema_field"
+    GRAPHQL_OPERATION = "graphql_operation"
     COMMIT = "commit"
     FILE = "file"
     MODULE = "module"
@@ -76,6 +79,14 @@ class Language(str, Enum):
     CSHARP = "csharp"
     KOTLIN = "kotlin"
     PROTOBUF = "protobuf"
+    RUBY = "ruby"
+    LUA = "lua"
+    CPP = "cpp"
+    C = "c"
+    SCALA = "scala"
+    THRIFT = "thrift"
+    AVRO = "avro"
+    PDL = "pdl"
     UNKNOWN = "unknown"
 
 
