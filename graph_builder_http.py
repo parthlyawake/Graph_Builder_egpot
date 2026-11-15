@@ -505,11 +505,14 @@ def resolve_workspace_http(workspace):
             dest = next(iter(destinations))
             matches = set()
             for (method, path), handlers in workspace.http_endpoints.items():
-                if method not in {verb, "*"} or not path_matches(path, parsed.path):
+                if method not in {verb, "*"}:
                     continue
                 matches.update(handler for handler in handlers
                                if handler in workspace.graph
-                               and workspace.graph.nodes[handler].get("repo") == dest)
+                               and workspace.graph.nodes[handler].get("repo") == dest
+                               and (path_matches(path, parsed.path)
+                                    or (workspace.graph.nodes[handler].get("http_prefix_mount")
+                                        and parsed.path.startswith(path.rstrip("/") + "/"))))
             if len(matches) != 1:
                 continue
             target = next(iter(matches))

@@ -419,6 +419,47 @@ def _go_routes(workspace, builder, sources):
                               join_path(prefix, path), handler, raw_path=path)
 
 
+def _ruby_routes(workspace, builder, sources):
+    """WEBrick mount_proc handlers are prefix-mounted and method-independent."""
+    from extended_language_adapters import GRAMMAR_MODULES
+    from tree_sitter import Language, Parser
+    import importlib
+    grammar = importlib.import_module(GRAMMAR_MODULES["ruby"])
+    parser = Parser(Language(grammar.language()))
+    for file, source in sorted(sources.items()):
+        if not file.endswith(".rb") or "mount_proc" not in source:
+            continue
+        raw = source.encode("utf-8")
+        tree = parser.parse(raw)
+        calls = set()
+        stack = [tree.root_node]
+        while stack:
+            node = stack.pop()
+            if node.type == "call":
+                calls.add(node.start_byte)
+            stack.extend(node.named_children)
+        for match in re.finditer(
+                r"\b[A-Za-z_]\w*\.mount_proc\s*\(?\s*['\"](/[^'\"]*)['\"]",
+                source):
+            if len(source[:match.start()].encode("utf-8")) not in calls:
+                continue
+            path = match.group(1)
+            line = source.count("\n", 0, match.start()) + 1
+            identifier = f"{builder.repo_prefix}{file}:http_route@{line}"
+            file_id = f"file::{builder.repo_prefix}{file}"
+            if identifier not in workspace.graph:
+                builder.current_file = file
+                builder.add_ckg_node(identifier, "function", "Lsyn",
+                                     "mount_proc", line, code=match.group(0))
+                builder.graph.nodes[identifier]["http_prefix_mount"] = True
+                builder.add_ckg_edge(file_id, identifier, "CONTAINS", "Lsyn")
+                workspace.graph.add_node(identifier, **builder.graph.nodes[identifier])
+                if file_id in workspace.graph:
+                    workspace.graph.add_edge(
+                        file_id, identifier, relation="CONTAINS", layer="Lsyn")
+            _register(workspace, builder, "*", path, identifier)
+
+
 def register_routes(workspace):
     """Augment workspace routes, retaining only source-grounded handler IDs."""
     for builder in workspace.repo_builders.values():
@@ -430,6 +471,7 @@ def register_routes(workspace):
         _django_routes(workspace, builder)
         _js_routes(workspace, builder, sources)
         _go_routes(workspace, builder, sources)
+        _ruby_routes(workspace, builder, sources)
 
 
 def _raw(node, source):
