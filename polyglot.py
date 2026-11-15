@@ -85,6 +85,25 @@ class TreeSitterExtractor:
         self.is_java = extension == ".java"
         self.is_csharp = extension == ".cs"
         self.is_kotlin = extension in {".kt", ".kts"}
+        self.extension = extension
+        self._alternate = None
+        if extension in {".ts", ".tsx"}:
+            # Tree-sitter's TS and TSX grammars overlap but accept different
+            # generic-arrow/JSX ambiguities. Retry only when the first AST
+            # actually reports an error; never declare a partial AST complete.
+            alternate = (tree_sitter_typescript.language_tsx() if extension == ".ts"
+                         else tree_sitter_typescript.language_typescript())
+            self._alternate = Parser(Language(alternate))
+
+    def parse_source(self, source):
+        """Return (Tree, grammar_name), favoring a fully valid source AST."""
+        primary = self.parser.parse(source)
+        if not primary.root_node.has_error or self._alternate is None:
+            return primary, self.extension.lstrip(".")
+        secondary = self._alternate.parse(source)
+        if not secondary.root_node.has_error:
+            return secondary, "tsx" if self.extension == ".ts" else "ts"
+        return primary, self.extension.lstrip(".")
 
     @staticmethod
     def _text(node, source):
@@ -226,7 +245,12 @@ class TreeSitterExtractor:
             code=f"// File: {rel_path}\n// Lines: {len(builder.raw_file_lines[rel_path])}",
         )
         self._register_imports(builder, rel_path, text, file_id)
-        parsed = self.parser.parse(source)
+        parsed, grammar_used = self.parse_source(source)
+        if grammar_used != self.extension.lstrip("."):
+            builder.graph.graph.setdefault("parser_recovery_modes", {})[rel_path] = {
+                "original_extension": self.extension, "selected_grammar": grammar_used,
+                "validation": "tree_sitter_error_free",
+            }
         self._visit(builder, parsed.root_node, source)
         # Next-style file routes have no explicit router-registration call.
         parts = rel_path.replace("\\", "/").split("/")

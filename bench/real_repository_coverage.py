@@ -41,6 +41,7 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
     total_files = 0
     ignored_files = 0
     parser_cache = {}
+    grammar_recovery = []
 
     for base, dirs, files in os.walk(root):
         dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
@@ -95,9 +96,18 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
                             parser = Parser(Language(grammar.language()))
                         else:
                             from polyglot import TreeSitterExtractor
-                            parser = TreeSitterExtractor(ext).parser
+                            parser = TreeSitterExtractor(ext)
                         parser_cache[key] = parser
-                    tree = parser.parse(raw)
+                    if spec.parser == "tree_sitter":
+                        tree, grammar_used = parser.parse_source(raw)
+                        if grammar_used != ext.lstrip("."):
+                            grammar_recovery.append({
+                                "file": rel_path,
+                                "extension": ext,
+                                "selected_grammar": grammar_used,
+                            })
+                    else:
+                        tree = parser.parse(raw)
                     if tree.root_node.has_error:
                         counts["partial"] += 1
                         # Diagnostics point to parser-error syntax, not merely
@@ -145,6 +155,8 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
         "unsupported_extensions": dict(sorted(unsupported.items())),
         "oversized_or_symlink_files": ignored_files,
         "parse_issue_count": len(failures),
+        "grammar_recoveries": grammar_recovery[:300],
+        "grammar_recovery_count": len(grammar_recovery),
         "issues": failures[:300],
         "source_coverage_complete": not failures and not unsupported and total_files > 0,
     }
