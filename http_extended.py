@@ -62,7 +62,53 @@ def _register(workspace, builder, method, path, handler, raw_path=None):
                 del workspace.http_endpoints[old]
 
 
-def _python_routes(workspace, builder, file, text):
+def _external_python_mounts(sources):
+    """Match imported router variables to a unique file in the same repository."""
+    result = {}
+    modules = {p: p[:-3].replace("/", ".") for p in sources if p.endswith(".py")}
+
+    def destination(current, module, level):
+        if not module:
+            return None
+        base = list(PurePosixPath(current).parts[:-1]) if level else []
+        if level > 1:
+            base = base[:-(level - 1)]
+        stem = "/".join([*base, *module.split(".")])
+        candidates = [stem + ".py", stem + "/__init__.py"]
+        found = [x for x in candidates if x in sources]
+        return found[0] if len(found) == 1 else None
+
+    for file, text in sorted(sources.items()):
+        if not file.endswith(".py"):
+            continue
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        imported = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                target = destination(file, node.module or "", node.level)
+                if target:
+                    for alias in node.names:
+                        imported[alias.asname or alias.name] = (target, alias.name)
+        for node in ast.walk(tree):
+            if (not isinstance(node, ast.Call) or
+                    not isinstance(node.func, ast.Attribute) or
+                    node.func.attr not in {"include_router", "register_blueprint"} or
+                    not node.args or not isinstance(node.args[0], ast.Name)):
+                continue
+            remote = imported.get(node.args[0].id)
+            if not remote:
+                continue
+            key = "prefix" if node.func.attr == "include_router" else "url_prefix"
+            prefix = next((literal_python(k.value) for k in node.keywords
+                           if k.arg == key), "") or ""
+            result.setdefault(remote, set()).add(prefix)
+    return result
+
+
+def _python_routes(workspace, builder, file, text, external_mounts=None):
     try:
         tree = ast.parse(text)
     except SyntaxError:
@@ -116,7 +162,7 @@ def _python_routes(workspace, builder, file, text):
                     verbs = [literal_python(x).upper() for x in kw.value.elts
                              if literal_python(x) and literal_python(x).upper() in VERBS]
             base = creators.get(receiver, "")
-            mount_prefixes = mounts.get(receiver, {""})
+            mount_prefixes = (external_mounts or {}).get((file, receiver)) or mounts.get(receiver, {""})
             for mount in sorted(mount_prefixes):
                 full = join_path(join_path(mount, base), raw)
                 for method in verbs:
@@ -282,9 +328,10 @@ def register_routes(workspace):
     """Augment workspace routes, retaining only source-grounded handler IDs."""
     for builder in workspace.repo_builders.values():
         sources = {p: "\n".join(lines) for p, lines in builder.raw_file_lines.items()}
+        external_mounts = _external_python_mounts(sources)
         for file, text in sorted(sources.items()):
             if file.endswith(".py"):
-                _python_routes(workspace, builder, file, text)
+                _python_routes(workspace, builder, file, text, external_mounts)
         _django_routes(workspace, builder)
         _js_routes(workspace, builder, sources)
         _go_routes(workspace, builder, sources)
