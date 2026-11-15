@@ -593,6 +593,8 @@ class CKGBuilder(ast.NodeVisitor):
         # Protocol-typed event producers/consumers: AMQP/RabbitMQ and Kafka.
         from message_contracts import index_message_contracts
         index_message_contracts(self)
+        from spring_amqp import bind_spring_listener_containers
+        self.spring_amqp_links = bind_spring_listener_containers(self)
 
         # Typed Thrift runtime edges for single-repository C++ graphs.
         # Multi-repository graphs bind again after canonical composition.
