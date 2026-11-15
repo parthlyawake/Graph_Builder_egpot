@@ -41,7 +41,12 @@ VALID_RELATIONS = {
     # Lsem
     "SEMANTIC_SIMILARITY", "SEMANTIC_SIMILAR", "RELATES_TO",
     # Llineage
-    "CHANGED_IN", "CO_CHANGED_WITH"
+    "CHANGED_IN", "CO_CHANGED_WITH",
+    # Source callsites and contract schema structure.
+    "INVOKES", "EVALUATES", "HAS_CALLSITE", "DECLARES_FIELD",
+    "NESTED_MESSAGE", "ACCEPTS_SCHEMA", "RETURNS_SCHEMA",
+    "HTTP_REQUEST", "POSSIBLE_HTTP_TARGET",
+    "PRODUCES_EVENT", "CONSUMES_EVENT", "CONTRACT_SKEW",
 }
 
 
@@ -310,7 +315,10 @@ class SCKGGraphVerifier:
             for rpc in rpcs:
                 expected_rpcs.add(f"contract::{svc}.{rpc}")
         for n in self.graph.nodes:
-            if n.startswith("contract::") and "." in n and not n.startswith("contract::http:"):
+            if n.startswith("contract::") and (
+                self.graph.nodes[n].get("type") == "rpc_contract" or
+                (n.count("::") == 1 and "." in n)
+            ):
                 expected_rpcs.add(n)
 
         if not expected_rpcs:
@@ -396,7 +404,10 @@ class SCKGGraphVerifier:
         total_rpcs_with_consumers = 0
         disconnected = []
 
-        canonical_rpcs = [n for n in self.graph.nodes if n.startswith("contract::") and "." in n]
+        canonical_rpcs = [n for n in self.graph.nodes if n.startswith("contract::") and (
+                self.graph.nodes[n].get("type") == "rpc_contract" or
+                (n.count("::") == 1 and "." in n)
+            )]
         for rpc in canonical_rpcs:
             consumers = [
                 u for u, v, d in self.graph.in_edges(rpc, data=True)
@@ -434,7 +445,10 @@ class SCKGGraphVerifier:
     def _check_traversal_and_blast_radius(self) -> CheckResult:
         """Ensures traversal across contract boundaries functions correctly."""
         traversal = SCKGTraversal(self.builder)
-        canonical_rpcs = [n for n in self.graph.nodes if n.startswith("contract::") and "." in n]
+        canonical_rpcs = [n for n in self.graph.nodes if n.startswith("contract::") and (
+                self.graph.nodes[n].get("type") == "rpc_contract" or
+                (n.count("::") == 1 and "." in n)
+            )]
         if not canonical_rpcs:
             return CheckResult(
                 name="Traversal: Blast Radius Traversal Soundness",

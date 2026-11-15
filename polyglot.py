@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import os
 import re
+import hashlib
+from static_dispatch import parameter_types, literal_kind
 
 from tree_sitter import Language, Parser
 import tree_sitter_javascript
@@ -584,10 +586,13 @@ class TreeSitterExtractor:
                             arg0 = self._text(arguments.named_children[0], source)
                             p_match = re.search(r"['\"](?:https?://[^'\"/]+)?(/[^'\"]+)['\"]", arg0)
                             if p_match:
-                                h_method = "POST" if "post" in m_name.lower() else "GET"
+                                h_verb = re.search(r"(get|post|put|patch|delete|head|options)", m_name, flags=re.I)
+                                h_method = h_verb.group(1).upper() if h_verb else "GET"
                                 builder.http_calls_to_resolve.append((scope_id, p_match.group(1), h_method, builder.current_file))
+                    self._record_call_evidence(builder, node, source, expr_text, arguments)
                     builder.calls_to_resolve.append((scope_id, expr_text, builder.scope_depth, builder.current_file))
                 else:
+                    self._record_call_evidence(builder, node, source, expr_text, arguments)
                     builder.calls_to_resolve.append((scope_id, expr_text, builder.scope_depth, builder.current_file))
 
         # Kotlin method calls: both qualified (client.fetch()) and simple (helper()).
@@ -651,7 +656,8 @@ class TreeSitterExtractor:
                         arg0_text = self._text(arguments.named_children[0], source)
                         p_match = re.search(r'["\'](?:https?://[^/"\']+)?(/[^"\']+)["\']', arg0_text)
                         if p_match:
-                            h_method = "POST" if "post" in m_name.lower() else "GET"
+                            h_verb = re.search(r"(get|post|put|patch|delete|head|options)", m_name, flags=re.I)
+                            h_method = h_verb.group(1).upper() if h_verb else "GET"
                             builder.http_calls_to_resolve.append((scope_id, p_match.group(1), h_method, builder.current_file))
 
                 # Feign client method call: inventoryClient.checkStock(...)
@@ -660,6 +666,7 @@ class TreeSitterExtractor:
                     builder.grpc_calls_to_resolve.append((scope_id, target_svc, m_name, builder.current_file))
 
                 callee = f"{obj_text}.{m_name}" if obj_text else m_name
+                self._record_call_evidence(builder, node, source, callee, arguments)
                 builder.calls_to_resolve.append((scope_id, callee, builder.scope_depth, builder.current_file))
 
         if node.type == "call_expression":
@@ -685,13 +692,24 @@ class TreeSitterExtractor:
                     else:
                         http_call = self._literal_http_call(node, raw_callee, source)
                         if http_call:
-                            path, method = http_call
-                            builder.http_calls_to_resolve.append(
-                                (builder.get_current_scope_id(), path, method, builder.current_file)
-                            )
+                            url, method = http_call
+                            if url.startswith(("http://", "https://")):
+                                # Preserve host evidence for workspace-level service
+                                # resolution instead of stripping to a route-only guess.
+                                builder.http_literal_urls.append((
+                                    builder.get_current_scope_id(), url, method,
+                                    builder.current_file, self._line(node)
+                                ))
+                            elif url.startswith("/"):
+                                builder.http_calls_to_resolve.append((
+                                    builder.get_current_scope_id(), url, method,
+                                    builder.current_file
+                                ))
                         callee = raw_callee.replace("this.", "self.")
                         if callee.startswith("super."):
                             callee = "super()." + callee[len("super."):]
+                        self._record_call_evidence(
+                            builder, node, source, callee, node.child_by_field_name("arguments"))
                         builder.calls_to_resolve.append(
                             (builder.get_current_scope_id(), callee, builder.scope_depth, builder.current_file)
                         )
@@ -946,15 +964,19 @@ class TreeSitterExtractor:
                     h_id = f"{builder.current_file_ctx}:{h_name}"
                     builder.http_endpoints.setdefault(("*", path), []).append(h_id)
 
-        # Go client HTTP call: http.Get("http://...") or http.Post("...")
+        # Go literal host is required to assert cross-service binding.
         if raw_callee in ("http.Get", "http.Post"):
             method = "GET" if raw_callee == "http.Get" else "POST"
             url_arg = self._call_argument_text(node, source, index=0)
-            if url_arg:
-                path_match = re.match(r"['\"`](?:https?://[^/'\"`]+)?(/[^'\"`]+)['\"`]", url_arg)
-                if path_match:
-                    path = path_match.group(1)
-                    builder.http_calls_to_resolve.append((scope_id, path, method, builder.current_file))
+            url = url_arg.strip("'\"`") if url_arg else ""
+            if url.startswith(("http://", "https://")):
+                builder.http_literal_urls.append((
+                    scope_id, url, method, builder.current_file, self._line(node)
+                ))
+            elif url.startswith("/"):
+                builder.http_calls_to_resolve.append((
+                    scope_id, url, method, builder.current_file
+                ))
 
         # http.NewRequestWithContext(ctx, "POST", base+"/path", ...)
         # retains the visible path while keeping the host unresolved.
@@ -964,18 +986,23 @@ class TreeSitterExtractor:
             url_arg = self._call_argument_text(node, source, index=url_index)
             method = method_arg.strip("'\"`").upper() if method_arg else ""
             if method in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"} and url_arg:
-                literal = re.fullmatch(r"""["'`](?:https?://[^/"'`]+)?(/[^"'`]+)["'`]""", url_arg)
-                if literal:
-                    builder.http_calls_to_resolve.append(
-                        (scope_id, literal.group(1), method, builder.current_file)
-                    )
+                url = url_arg.strip("'\"`")
+                if url.startswith(("http://", "https://")):
+                    builder.http_literal_urls.append((
+                        scope_id, url, method, builder.current_file,
+                        self._line(node)
+                    ))
+                elif url.startswith("/"):
+                    builder.http_calls_to_resolve.append((
+                        scope_id, url, method, builder.current_file
+                    ))
                 else:
                     suffix = re.search(r"""\+\s*["'`](/[^"'`]+)["'`]\s*$""", url_arg)
                     if suffix:
-                        builder.dynamic_http_calls.append(
-                            (scope_id, method, suffix.group(1), builder.current_file,
-                             self._line(node), node.start_point.column)
-                        )
+                        builder.dynamic_http_calls.append((
+                            scope_id, method, suffix.group(1), builder.current_file,
+                            self._line(node), node.start_point.column
+                        ))
 
         builder.calls_to_resolve.append(
             (scope_id, callee, builder.scope_depth, builder.current_file)
@@ -1032,6 +1059,25 @@ class TreeSitterExtractor:
                 return variable_id
         return None
 
+    def _record_call_evidence(self, builder, node, source, callee, arguments):
+        if not builder.current_scope:
+            return
+        items = [self._text(arg, source) for arg in arguments.named_children] if arguments else []
+        ref = node.child_by_field_name("name") or node.child_by_field_name("function") or node
+        ref_text = self._text(ref, source).split("(", 1)[0]
+        last_name = callee.rsplit(".", 1)[-1]
+        offset = ref_text.rfind(last_name)
+        position = ref.start_point.column + (offset if offset >= 0 else 0)
+        builder.callsite_evidence.append({
+            "caller": builder.get_current_scope_id(),
+            "callee": callee,
+            "file": builder.current_file,
+            "line": self._line(ref),
+            "column": position,
+            "arguments": items,
+            "argument_kinds": [literal_kind(arg) for arg in items],
+        })
+
     def _add_function(self, builder, node, source, name, receiver=None):
         if receiver:
             # Go method: scope under its receiver type so IDs read Type.Method.
@@ -1042,12 +1088,30 @@ class TreeSitterExtractor:
                 builder.add_ckg_edge(builder.get_current_scope_id(), type_id, "CONTAINS", "Lsyn")
             builder.current_scope.append(receiver)
             builder.scope_depth += 1
-        function_id = builder.get_node_id(name)
-        ambiguous_definition = (self.is_java and function_id in builder.graph
-                                and builder.graph.nodes[function_id].get("type") == "function")
+        original_id = builder.get_node_id(name)
+        function_id = original_id
+        params_node = node.child_by_field_name("parameters") or node.child_by_field_name("parameter")
+        signature = " ".join(self._text(params_node, source).split()) if params_node else "()"
+        overload_scope = name
+        # Keep existing IDs for the first declaration; distinguish overloads
+        # without silently overwriting their source location and body.
+        if (self.is_java or self.is_csharp) and original_id in builder.graph and (
+                builder.graph.nodes[original_id].get("type") == "function"):
+            builder.graph.nodes[original_id]["http_ambiguous_definition"] = True
+            digest = hashlib.sha256(signature.encode("utf-8")).hexdigest()[:12]
+            function_id = f"{original_id}@overload:{digest}"
+            if function_id in builder.graph:
+                function_id += f":line{self._line(node)}"
+            overload_scope = f"{name}@overload:{digest}"
         builder.add_ckg_node(function_id, "function", "Lsyn", name, self._line(node))
-        if ambiguous_definition:
-            builder.graph.nodes[function_id]["http_ambiguous_definition"] = True
+        if self.is_java or self.is_csharp:
+            builder.graph.nodes[function_id]["signature"] = signature
+            builder.graph.nodes[function_id]["overload_group"] = original_id
+            declared = parameter_types(signature)
+            builder.graph.nodes[function_id]["param_types"] = declared
+            builder.graph.nodes[function_id]["arity"] = len(declared)
+            if function_id != original_id:
+                builder.graph.nodes[function_id]["http_ambiguous_definition"] = True
         if self.is_csharp and any(c.type == "modifier" and self._text(c, source) == "override"
                                   for c in node.named_children):
             builder.graph.nodes[function_id]["is_override"] = True
@@ -1154,7 +1218,10 @@ class TreeSitterExtractor:
         if parameters:
             parameter_text = self._text(parameters, source).strip("()")
             for entry in parameter_text.split(","):
-                match = re.match(r"\s*([A-Za-z_$][\w$]*)", entry)
+                if self.is_java or self.is_csharp:
+                    match = re.search(r"([A-Za-z_$][\w$]*)\s*(?:\[\])?\s*$", entry.strip())
+                else:
+                    match = re.match(r"\s*([A-Za-z_$][\w$]*)", entry)
                 if not match:
                     continue
                 parameter = match.group(1)
@@ -1162,8 +1229,9 @@ class TreeSitterExtractor:
                 builder.add_ckg_node(var_id, "variable", "Lflow", parameter, self._line(parameters))
                 builder.var_defs[function_id][parameter] = var_id
                 builder.add_ckg_edge(function_id, var_id, "PASSES_ARG", "Lflow")
+        builder.graph.nodes[function_id]["param_names"] = list(builder.var_defs[function_id])
         self._with_scope(
-            builder, name,
+            builder, overload_scope,
             lambda: self._visit_children(builder, node, source, skip_nodes=(parameters,)),
         )
         if receiver:

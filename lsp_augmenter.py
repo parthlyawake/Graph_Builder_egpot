@@ -38,35 +38,60 @@ class LSPIndexProvider:
         # Optional dynamic hook
         self._dynamic_resolver: Optional[Callable[[str, Optional[int], str], Optional[str]]] = None
 
-    def register(self, source_file: str, symbol_name: str, target_node_id: str, line: Optional[int] = None):
-        norm_file = source_file.replace("\\", "/")
-        self._by_symbol[(norm_file, symbol_name)] = target_node_id
+    def register(self, source_file: str, symbol_name: str,
+                 target_node_id: str, line: Optional[int] = None):
+        """Record a definition, treating disagreeing imports as ambiguous.
+
+        A single (file, symbol) can legitimately point to different targets
+        on different lines; only source-location-specific evidence can
+        disambiguate such occurrences.
+        """
+        norm_file = source_file.replace("\\\\", "/")
+        symbol_key = (norm_file, symbol_name)
+        if symbol_key in self._by_symbol and (
+                self._by_symbol[symbol_key] != target_node_id):
+            self._by_symbol[symbol_key] = None
+        else:
+            self._by_symbol[symbol_key] = target_node_id
         if line is not None:
-            self._by_line_symbol[(norm_file, line, symbol_name)] = target_node_id
+            line_key = (norm_file, line, symbol_name)
+            if line_key in self._by_line_symbol and (
+                    self._by_line_symbol[line_key] != target_node_id):
+                self._by_line_symbol[line_key] = None
+            else:
+                self._by_line_symbol[line_key] = target_node_id
 
     def set_dynamic_resolver(self, resolver: Callable[[str, Optional[int], str], Optional[str]]):
         self._dynamic_resolver = resolver
 
-    def resolve(self, source_file: str, symbol_name: str, line: Optional[int] = None) -> Optional[str]:
-        norm_file = source_file.replace("\\", "/")
+    def resolve(self, source_file: str, symbol_name: str,
+                line: Optional[int] = None) -> Optional[str]:
+        norm_file = source_file.replace("\\\\", "/")
         if line is not None:
-            target = self._by_line_symbol.get((norm_file, line, symbol_name))
-            if target:
-                return target
+            key = (norm_file, line, symbol_name)
+            if key in self._by_line_symbol:
+                return self._by_line_symbol[key]
+        key = (norm_file, symbol_name)
+        if key in self._by_symbol and self._by_symbol[key]:
+            return self._by_symbol[key]
+        if key in self._by_symbol and self._by_symbol[key] is None:
+            # Known ambiguity: do not fall back to basename coincidences.
+            return self._dynamic_resolver(norm_file, line, symbol_name) if (
+                self._dynamic_resolver) else None
 
-        target = self._by_symbol.get((norm_file, symbol_name))
-        if target:
-            return target
-
-        # Check by basename match if full path differed
-        base = os.path.basename(norm_file)
-        for (f, sym), tid in self._by_symbol.items():
-            if sym == symbol_name and (f.endswith("/" + base) or os.path.basename(f) == base):
-                return tid
-
+        # A same-basename file in a different directory is not compiler
+        # evidence for an exact symbol. Only accept basename compatibility
+        # when the caller supplied *no* directory component at all.
+        if "/" not in norm_file:
+            matches = {
+                target for (file, sym), target in self._by_symbol.items()
+                if target and sym == symbol_name
+                and os.path.basename(file) == norm_file
+            }
+            if len(matches) == 1:
+                return next(iter(matches))
         if self._dynamic_resolver:
             return self._dynamic_resolver(norm_file, line, symbol_name)
-
         return None
 
     def load_from_dict(self, mapping: Dict[str, Any]):

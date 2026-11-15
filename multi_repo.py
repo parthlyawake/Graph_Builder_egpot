@@ -33,6 +33,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 # Ensure current directory is on path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from graft_ckg import CKGBuilder, HyperEdgeMetadata
+from semantic_neighbors import sparse_semantic_pairs
 
 try:
     from rank_bm25 import BM25Okapi
@@ -336,6 +337,8 @@ class WorkspaceCKGBuilder:
 
         # Step 10: Index OpenAPI and GraphQL contract specs (P5)
         self._index_openapi_and_graphql()
+        self._resolve_graphql_java_bindings()
+        self._index_graphql_operations()
 
         # Step 11: Build workspace-level Semantic Layer (Lsem)
         self._build_semantic_layer()
@@ -356,16 +359,9 @@ class WorkspaceCKGBuilder:
         return self.graph
 
     def update_files(self, repo_id, changed_rel_paths, deleted_rel_paths=()):
-        """Rebuild after workspace source changes, guaranteeing fresh bindings.
-
-        This is deliberately a full-composition correctness fallback, not an
-        incremental speed-up. It avoids retaining stale shared registrations,
-        HTTP links, or canonical contracts when a service or proto changes.
-        Source edits/deletions must already be reflected on disk.
-        """
-        if repo_id not in {cfg.id for cfg in self.config.repositories}:
-            raise KeyError(f"Unknown workspace repository: {repo_id}")
-        return self.build()
+        """Reparse only changed source files; recompose workspace relations."""
+        from workspace_incremental import update_workspace_files
+        return update_workspace_files(self, repo_id, changed_rel_paths, deleted_rel_paths)
 
     def _index_shared_contracts(self):
         """Parse standalone protobuf files declared in shared_contracts."""
@@ -399,7 +395,13 @@ class WorkspaceCKGBuilder:
             code=f"// Shared proto contract: {rel_path}",
         )
 
-        pf = ProtoParser.parse_text(raw.decode("utf-8", errors="replace"))
+        from proto_compiler import compile_proto_file
+        pf, parser_mode = compile_proto_file(proto_path, self.config.base_dir)
+        if pf is None:
+            pf = ProtoParser.parse_text(raw.decode("utf-8", errors="replace"))
+        self.graph.graph.setdefault("proto_parse_modes", {})[rel_path] = (
+            parser_mode if parser_mode == "protoc" else "source_fallback"
+        )
 
         # Register message types (P8)
         for msg_name, msg_obj in pf.messages.items():
@@ -412,6 +414,8 @@ class WorkspaceCKGBuilder:
                     code=f"message {msg_name} {{ " + ", ".join(field_names) + " }}"
                 )
             self.graph.add_edge(file_id, msg_id, key=f"e_sh_{file_id}_{msg_id}", relation="CONTAINS", layer="Lsyn")
+            from proto_field_graph import emit_message_fields
+            emit_message_fields(self.graph, msg_id, msg_obj, file_path=rel_path)
 
         for service_name, s_obj in pf.services.items():
             service_id = f"contract::{service_name}"
@@ -447,6 +451,8 @@ class WorkspaceCKGBuilder:
                 req_msg_id = f"contract::message::{req}"
                 if self.graph.has_node(req_msg_id):
                     self.graph.add_edge(req_msg_id, rpc_id, key=f"e_sh_use_{req}_{rpc_id}", relation="USES", layer="Ldep")
+                from proto_field_graph import emit_rpc_message_types
+                emit_rpc_message_types(self.graph, rpc_id, req, resp)
 
                 rpcs[rpc_name] = rpc_id
 
@@ -830,6 +836,8 @@ class WorkspaceCKGBuilder:
                                     operation_id=op.operation_id, spec="openapi"
                                 )
                                 self.graph.add_edge(file_id, ep_id, key=f"e_api_{file_id}_{ep_id}", relation="CONTAINS", layer="Lsyn")
+                            from contract_schema_graph import emit_openapi_schema_edges
+                            emit_openapi_schema_edges(self.graph, ep_id, op)
                             handlers = list(dict.fromkeys([
                                 *self.http_endpoints.get((op.method, op.path), []),
                                 *self.http_endpoints.get(("*", op.path), []),
@@ -844,6 +852,9 @@ class WorkspaceCKGBuilder:
                         with open(f_path, "r", encoding="utf-8", errors="replace") as gfile:
                             g_text = gfile.read()
                         g_spec = GraphQLContractParser.parse_text(g_text)
+                        if g_spec and g_spec.root_types:
+                            self.graph.graph.setdefault("graphql_root_types", {}).update(
+                                g_spec.root_types)
                         if g_spec and g_spec.types:
                             file_id = f"file::{rel_f}"
                             if not self.graph.has_node(file_id):
@@ -860,6 +871,16 @@ class WorkspaceCKGBuilder:
                                         self.graph.add_edge(file_id, gql_id, key=f"e_gql_{file_id}_{gql_id}", relation="CONTAINS", layer="Lsyn")
                     except Exception:
                         pass
+
+    def _resolve_graphql_java_bindings(self):
+        """Link explicit Java RuntimeWiring DataFetchers to known schema fields."""
+        from graphql_java_bindings import bind_java_graphql_datafetchers
+        return bind_java_graphql_datafetchers(self)
+
+    def _index_graphql_operations(self):
+        """Attach GraphQL document operation nodes to discovered schema roots."""
+        from graphql_links import link_graphql_operations
+        return link_graphql_operations(self, self.config.base_dir)
 
     def _build_semantic_layer(self, similarity_threshold: float = 0.60):
         """Constructs the unified Lsem semantic similarity plane across all repositories."""
@@ -890,21 +911,16 @@ class WorkspaceCKGBuilder:
                 tokenized = [t.lower().split() for t in corpus]
                 self.bm25_index = BM25Okapi(tokenized)
 
-            sim_matrix = cosine_similarity(self.tfidf_matrix)
             links_added = 0
-            n = len(indexed_nodes)
-            for i in range(n):
-                for j in range(i + 1, min(n, i + 30)):
-                    score = float(sim_matrix[i, j])
-                    if score >= similarity_threshold:
-                        u, v = indexed_nodes[i], indexed_nodes[j]
-                        meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=score, id_ctx="workspace_semantic")
-                        self.graph.add_edge(
-                            u, v, key=f"w_sem_{i}_{j}", relation="SEMANTIC_SIMILAR",
-                            layer="Lsem", metadata=meta.to_dict(),
-                            d_scope=0, f_call=1.0, c_type=score, id_ctx="workspace_semantic"
-                        )
-                        links_added += 1
+            for i, j, score in sparse_semantic_pairs(self.tfidf_matrix, threshold=similarity_threshold):
+                u, v = indexed_nodes[i], indexed_nodes[j]
+                meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=score, id_ctx="workspace_semantic")
+                self.graph.add_edge(
+                    u, v, key=f"w_sem_{i}_{j}", relation="SEMANTIC_SIMILAR",
+                    layer="Lsem", metadata=meta.to_dict(),
+                    d_scope=0, f_call=1.0, c_type=score, id_ctx="workspace_semantic"
+                )
+                links_added += 1
             print(f"[*] Workspace Semantic Layer generated: {links_added} cross-concept relational links.")
         except Exception as exc:
             print(f"[!] Warning: Semantic layer generation failed: {exc}")
@@ -950,6 +966,8 @@ class WorkspaceCKGBuilder:
                 "loc": b.total_loc,
                 "nodes": b.graph.number_of_nodes(),
                 "edges": b.graph.number_of_edges(),
+                "source_coverage_complete": b.get_language_report().get("full_source_coverage", False),
+                "skipped_files": list(getattr(b, "skipped_files", [])),
             }
 
         return {
@@ -967,6 +985,10 @@ class WorkspaceCKGBuilder:
             "http_calls_edges": http_calls_count,
             "produces_event_edges": produces_event_count,
             "consumes_event_edges": consumes_event_count,
+            "source_coverage_complete": all(
+                r["source_coverage_complete"] for r in repos_summary.values()
+            ) if repos_summary else False,
+            "skipped_file_count": sum(len(r["skipped_files"]) for r in repos_summary.values()),
             "contract_skews": self.contract_skews,
             "skew_count": len(self.contract_skews),
         }

@@ -22,6 +22,8 @@ class ProtoField:
     tag: int
     repeated: bool = False
     optional: bool = False
+    map_key_type: str = ""
+    map_value_type: str = ""
 
 
 @dataclass
@@ -213,23 +215,52 @@ class ProtoParser:
             elif kind == "enum":
                 msg.enums[name] = cls._parse_enum_body(sub_body)
 
-        # Fields: [optional|repeated|required] type name = number [ [options] ];
-        # or map<k, v> name = number;
+        # Remove child message/enum bodies before extracting parent fields.
+        # Retain oneof contents, whose members are fields of the parent.
+        visible = list(body)
+        declaration = re.compile(r"\b(?:message|enum)\s+[A-Za-z_][\w]*\s*\{")
+        offset = 0
+        while True:
+            match = declaration.search(body, offset)
+            if not match:
+                break
+            depth, end = 1, match.end()
+            while end < len(body) and depth:
+                depth += (body[end] == "{") - (body[end] == "}")
+                end += 1
+            for pos in range(match.start(), end):
+                if visible[pos] != "\n":
+                    visible[pos] = " "
+            offset = end
+        visible_text = "".join(visible)
+
+        # Supports standard field modifiers, fully qualified types, oneof
+        # members, and map<K, V> declarations.
         field_pattern = re.compile(
-            r'^\s*(repeated|optional|required)?\s*([a-zA-Z0-9_.]+|<[^>]+>)\s+([a-zA-Z0-9_]+)\s*=\s*(\d+)',
-            re.MULTILINE
+            r"(?:(?<=;)|(?<=\{)|^)\s*(repeated|optional|required)?\s*"
+            r"(map\s*<\s*[\w.]+\s*,\s*[\w.]+\s*>|[\w.]+)"
+            r"\s+([A-Za-z_]\w*)\s*=\s*(\d+)\b",
+            re.MULTILINE,
         )
-        for m in field_pattern.finditer(body):
-            modifier = m.group(1) or ""
-            f_type = m.group(2)
-            f_name = m.group(3)
-            f_tag = int(m.group(4))
-            msg.fields[f_name] = ProtoField(
-                name=f_name,
-                type_name=f_type.rsplit(".", 1)[-1],
-                tag=f_tag,
-                repeated=(modifier == "repeated"),
-                optional=(modifier == "optional")
+        for match in field_pattern.finditer(visible_text):
+            modifier, raw_type, name, tag = (
+                match.group(1) or "", match.group(2),
+                match.group(3), int(match.group(4))
+            )
+            map_match = re.fullmatch(
+                r"map\s*<\s*([\w.]+)\s*,\s*([\w.]+)\s*>", raw_type
+            )
+            if name in msg.fields:
+                raise ValueError(f"Duplicate protobuf field {message_name}.{name}")
+            msg.fields[name] = ProtoField(
+                name=name,
+                type_name=re.sub(r"\s+", "", raw_type)
+                    if map_match else raw_type.rsplit(".", 1)[-1],
+                tag=tag,
+                repeated=modifier == "repeated",
+                optional=modifier == "optional",
+                map_key_type=map_match.group(1) if map_match else "",
+                map_value_type=map_match.group(2) if map_match else "",
             )
         return msg
 

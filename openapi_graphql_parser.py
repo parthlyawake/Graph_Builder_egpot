@@ -30,6 +30,8 @@ class OpenAPIOperation:
     parameters: List[Dict[str, Any]] = field(default_factory=list)
     request_body: Dict[str, Any] = field(default_factory=dict)
     responses: Dict[str, Any] = field(default_factory=dict)
+    request_schema: Dict[str, Any] = field(default_factory=dict)
+    response_schemas: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -75,24 +77,69 @@ class OpenAPIContractParser:
             spec.title = info.get("title", "")
             spec.version = str(info.get("version", ""))
 
+        from openapi_schema import resolve_local_refs
         paths = data.get("paths", {})
         if isinstance(paths, dict):
-            for path, path_item in paths.items():
+            for path, item in paths.items():
+                path_item = resolve_local_refs(data, item)
                 if not isinstance(path_item, dict):
                     continue
+                inherited = path_item.get("parameters", [])
                 for method in ("get", "post", "put", "delete", "patch", "head", "options"):
                     op_data = path_item.get(method)
-                    if isinstance(op_data, dict):
-                        op = OpenAPIOperation(
-                            method=method.upper(),
-                            path=path,
-                            operation_id=op_data.get("operationId", ""),
-                            summary=op_data.get("summary", ""),
-                            parameters=op_data.get("parameters", []) if isinstance(op_data.get("parameters"), list) else [],
-                            request_body=op_data.get("requestBody", {}) if isinstance(op_data.get("requestBody"), dict) else {},
-                            responses=op_data.get("responses", {}) if isinstance(op_data.get("responses"), dict) else {},
-                        )
-                        spec.operations.append(op)
+                    if not isinstance(op_data, dict):
+                        continue
+                    definition = resolve_local_refs(data, op_data)
+                    params = [*inherited, *definition.get("parameters", [])]
+                    unique_params = {
+                        (p.get("name"), p.get("in")): p for p in params
+                        if isinstance(p, dict)
+                    }
+                    request = definition.get("requestBody", {})
+                    responses = definition.get("responses", {})
+                    if not isinstance(request, dict):
+                        request = {}
+                    if not isinstance(responses, dict):
+                        responses = {}
+                    # Swagger 2 request bodies are represented as in:body params.
+                    if not request:
+                        body = next((p for p in unique_params.values()
+                                     if p.get("in") == "body"), None)
+                        if body:
+                            request = {"content": {
+                                data.get("consumes", ["application/json"])[0]:
+                                {"schema": body.get("schema", {})}
+                            }}
+                    request_content = request.get("content", {})
+                    request_schema = {
+                        media: spec.get("schema", {})
+                        for media, spec in request_content.items()
+                        if isinstance(spec, dict)
+                    } if isinstance(request_content, dict) else {}
+                    response_schemas = {}
+                    for status, response in responses.items():
+                        if not isinstance(response, dict):
+                            continue
+                        content = response.get("content")
+                        if isinstance(content, dict):
+                            response_schemas[str(status)] = {
+                                media: body.get("schema", {})
+                                for media, body in content.items()
+                                if isinstance(body, dict)
+                            }
+                        elif isinstance(response.get("schema"), dict):
+                            response_schemas[str(status)] = {
+                                "application/json": response["schema"]
+                            }
+                    spec.operations.append(OpenAPIOperation(
+                        method=method.upper(), path=path,
+                        operation_id=definition.get("operationId", ""),
+                        summary=definition.get("summary", ""),
+                        parameters=list(unique_params.values()),
+                        request_body=request, responses=responses,
+                        request_schema=request_schema,
+                        response_schemas=response_schemas,
+                    ))
         return spec
 
 
@@ -113,6 +160,8 @@ class GraphQLType:
 @dataclass
 class GraphQLSpec:
     types: Dict[str, GraphQLType] = field(default_factory=dict)
+    root_types: Dict[str, str] = field(default_factory=dict)
+    invalid: bool = False
 
 
 class GraphQLContractParser:
@@ -121,6 +170,20 @@ class GraphQLContractParser:
     @classmethod
     def parse_text(cls, text: str) -> GraphQLSpec:
         spec = GraphQLSpec()
+        from graphql_ast_support import parse_schema_ast
+        parsed = parse_schema_ast(text)
+        if parsed is not None:
+            spec.invalid = bool(parsed.get("invalid"))
+            spec.root_types.update(parsed.get("root_types", {}))
+            for name, entity in parsed.get("types", {}).items():
+                item = GraphQLType(name=name, kind=entity["kind"])
+                for field_name, definition in entity["fields"].items():
+                    item.fields[field_name] = GraphQLField(
+                        name=field_name, type_name=definition["type_name"],
+                        arguments=definition["arguments"],
+                    )
+                spec.types[name] = item
+            return spec
         # Strip comments
         cleaned = re.sub(r'#[^\n]*', '', text)
 
@@ -146,5 +209,8 @@ class GraphQLContractParser:
 
                 gt.fields[f_name] = GraphQLField(name=f_name, type_name=f_return, arguments=args)
 
-            spec.types[name] = gt
+            if name in spec.types:
+                spec.types[name].fields.update(gt.fields)
+            else:
+                spec.types[name] = gt
         return spec
