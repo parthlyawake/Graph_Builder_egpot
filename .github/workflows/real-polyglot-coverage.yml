@@ -11,6 +11,9 @@ on:
       - message_contracts.py
       - graft_ckg.py
       - polyglot.py
+      - graph_builder_http.py
+      - http_extended.py
+      - local_language_imports.py
       - bench/real_repository_coverage.py
       - .github/workflows/real-polyglot-coverage.yml
 
@@ -75,7 +78,8 @@ jobs:
       - name: Audit Train-Ticket representative service sources
         run: |
           python bench/real_repository_coverage.py --root _upstream \
-            --expect-languages java --output bench/results/real_train_ticket.json
+            --expect-languages java --build-graph \
+            --output bench/results/real_train_ticket.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -142,11 +146,17 @@ jobs:
           python bench/real_repository_coverage.py --root _upstream \
             --expect-languages scala,java,python,typescript \
             --expect-schema pdl,avsc --output bench/results/real_datahub.json
+      - name: Construct representative real DataHub Python graph
+        run: |
+          python bench/real_repository_coverage.py --root _upstream/datahub-actions/src \
+            --build-graph --output bench/results/real_datahub_actions_graph.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: real-datahub-audit
-          path: bench/results/real_datahub.json
+          path: |
+            bench/results/real_datahub.json
+            bench/results/real_datahub_actions_graph.json
 
   sockshop:
     runs-on: ubuntu-latest
@@ -195,7 +205,7 @@ jobs:
       - name: Audit real Sock Shop service language
         run: |
           python bench/real_repository_coverage.py --root _upstream \
-            --expect-languages ${{ matrix.language }} \
+            --expect-languages ${{ matrix.language }} --build-graph \
             --output bench/results/real_sockshop_${{ matrix.name }}.json
       - uses: actions/upload-artifact@v4
         if: always()
