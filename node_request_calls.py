@@ -46,7 +46,7 @@ def _imports(builder, file, source):
     bindings = {}
     dirname = posixpath.dirname(file)
     for match in re.finditer(
-        r"\b(?:var|const|let)\s+(\w+)\s*=\s*require\s*\(\s*"
+        r"(?:\b(?:var|const|let)\s+|,\s*)(\w+)\s*=\s*require\s*\(\s*"
         r"(['\"])(\.[^'\"]+)\2\s*\)", source):
         alias, requested = match.group(1), match.group(3)
         stem = posixpath.normpath(posixpath.join(dirname, requested))
@@ -128,7 +128,7 @@ def extract_node_request_calls(builder, graph):
         if not re.search(r"\brequire\s*\(\s*['\"]request['\"]\s*\)", source):
             continue
         aliases = set(re.findall(
-            r"\b(?:var|const|let)\s+(\w+)\s*=\s*require\s*\(\s*"
+            r"(?:\b(?:var|const|let)\s+|,\s*)(\w+)\s*=\s*require\s*\(\s*"
             r"['\"]request['\"]\s*\)", source))
         if not aliases:
             continue

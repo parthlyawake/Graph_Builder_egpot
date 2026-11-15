@@ -22,6 +22,11 @@ on:
       - kafka_schema_links.py
       - graphql_embedded.py
       - python_service_requests.py
+      - node_request_calls.py
+      - spring_amqp_bindings.py
+      - traversal.py
+      - contracts/graph_types.py
+      - contracts/sckg_provider.py
       - workspace_discovery.py
       - bench/build_workspace.py
       - .github/workflows/real-polyglot-coverage.yml
