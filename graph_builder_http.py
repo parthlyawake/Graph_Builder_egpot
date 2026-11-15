@@ -147,13 +147,13 @@ def _python_requests(builder, file, text, environment):
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name in {"requests", "httpx", "urllib", "urllib.request"}:
+                if alias.name in {"requests", "httpx", "urllib", "urllib.request", "aiohttp", "urllib3"}:
                     # "import urllib.request" binds "urllib", whereas
                     # "import urllib.request as req" binds "req".
                     bound = alias.asname or alias.name.split(".", 1)[0]
                     imported[bound] = alias.name if alias.asname else bound
         if isinstance(node, ast.ImportFrom) and node.module in {
-                "requests", "httpx", "urllib", "urllib.request"}:
+                "requests", "httpx", "urllib", "urllib.request", "aiohttp", "urllib3"}:
             for alias in node.names:
                 imported[alias.asname or alias.name] = node.module + "." + alias.name
 
@@ -171,6 +171,8 @@ def _python_requests(builder, file, text, environment):
             return a + b if isinstance(a, str) and isinstance(b, str) else None
         if isinstance(node, ast.Call):
             name = ast.unparse(node.func)
+            if name.endswith(".Request") and node.args:
+                return literal(node.args[0], values)
             if name in ("os.getenv", "os.environ.get") and node.args:
                 key = literal(node.args[0], values)
                 return environment.get(key) if key else None
@@ -187,6 +189,23 @@ def _python_requests(builder, file, text, environment):
     # Track source-level literals before each call. Branch-dependent values
     # are deliberately not promoted to confirmed links.
     def scan(node, values, caller):
+        def client_kind(func):
+            spelled = ast.unparse(func)
+            head, _, rest = spelled.partition(".")
+            canonical = imported.get(head, head) + ("." + rest if rest else "")
+            if canonical in {"requests.Session", "requests.session", "httpx.Client",
+                             "httpx.AsyncClient", "aiohttp.ClientSession",
+                             "urllib3.PoolManager"}:
+                return canonical.split(".", 1)[0]
+            return None
+
+        if isinstance(node, (ast.With, ast.AsyncWith)):
+            for item in node.items:
+                if (isinstance(item.context_expr, ast.Call)
+                        and item.optional_vars is not None):
+                    kind = client_kind(item.context_expr.func)
+                    if kind:
+                        values[ast.unparse(item.optional_vars)] = "__http_client__:" + kind
         if isinstance(node, ast.If):
             before = dict(values)
             left, right = dict(before), dict(before)
@@ -201,13 +220,26 @@ def _python_requests(builder, file, text, environment):
             return
         if isinstance(node, ast.Assign):
             result = literal(node.value, values)
+            if isinstance(node.value, ast.Call):
+                kind = client_kind(node.value.func)
+                if kind:
+                    result = "__http_client__:" + kind
             for target in node.targets:
-                if isinstance(target, ast.Name):
-                    values[target.id] = result
+                if isinstance(target, (ast.Name, ast.Attribute)):
+                    values[ast.unparse(target)] = result
         if isinstance(node, ast.Call):
             name = ast.unparse(node.func)
             head, _, rest = name.partition(".")
             canonical = imported.get(head, "") + ("." + rest if rest else "")
+            for identifier, binding in values.items():
+                if (isinstance(binding, str) and binding.startswith("__http_client__:")
+                        and name.startswith(identifier + ".")):
+                    canonical = binding.split(":", 1)[1] + "." + name[len(identifier) + 1:]
+                    break
+            if not canonical and name.startswith("httpx.Client()."):
+                canonical = "httpx." + name.rsplit(".", 1)[-1]
+            if not canonical and name.startswith("requests.Session()."):
+                canonical = "requests." + name.rsplit(".", 1)[-1]
             op = canonical.rsplit(".", 1)[-1]
             verb = op.upper() if op in {
                 "get", "post", "put", "patch", "delete", "head", "options"
@@ -215,7 +247,8 @@ def _python_requests(builder, file, text, environment):
             if op == "request":
                 method_node = node.args[0] if node.args else None
                 verb = literal(method_node, values) if method_node else None
-            if canonical.startswith(("requests.", "httpx.", "urllib.request.")) and verb:
+            if canonical.startswith(("requests.", "httpx.", "aiohttp.",
+                                     "urllib.request.", "urllib3.")) and verb:
                 url_node = node.args[1] if op == "request" and len(node.args) > 1 else (
                     node.args[0] if op != "request" and node.args else None
                 )
