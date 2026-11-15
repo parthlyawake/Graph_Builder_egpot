@@ -37,6 +37,8 @@ const express = require("express");
 const router = express.Router();
 function listItems(req, res) { return res.json([]); }
 router.get("/list", listItems);
+// router.get("/ghost", listItems);
+/* router.post("/secret", listItems); */
 module.exports = router;
 ''',
         "ui/app.js": '''
@@ -168,6 +170,8 @@ def test_express_imported_router_prefix_and_host_urls(system):
     assert not edges(system, "ui/client.js:unknownHost")
     assert "ui/routes.js:listItems" in system.http_endpoints[("GET", "/api/list")]
     assert "ui/routes.js:listItems" not in system.http_endpoints.get(("GET", "/list"), [])
+    assert ("GET", "/ghost") not in system.http_endpoints
+    assert ("POST", "/secret") not in system.http_endpoints
 
 
 def test_go_gin_group_and_static_new_request(system):
