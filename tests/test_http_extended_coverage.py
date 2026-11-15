@@ -126,6 +126,26 @@ func main() {
     })
 }
 ''',
+        "go_client/uncertain.go": '''
+package client
+import (
+    "net/http"
+    "os"
+)
+func Other() {
+    base := "http://orders:8000"
+    _ = base
+}
+func Unknown() {
+    base := os.Getenv("DYNAMIC_HOST")
+    http.Get(base + "/api/v2/items")
+}
+func Mutated() {
+    base := "http://orders:8000"
+    base = os.Getenv("DYNAMIC_HOST")
+    http.Get(base + "/api/v2/items")
+}
+''',
         "go_client/client.go": '''
 package client
 import "net/http"
@@ -210,3 +230,13 @@ def test_fastify_object_routes_and_express_chain(system):
 def test_chi_lexical_router_prefix(system):
     assert "chi_api/main.go:Read" in system.http_endpoints[("GET", "/api/items")]
     assert "chi_api/main.go:Read" not in system.http_endpoints.get(("GET", "/items"), [])
+
+
+def test_go_unknown_values_do_not_leak_across_functions(system):
+    assert not edges(system, "go_client/uncertain.go:Unknown")
+    assert not edges(system, "go_client/uncertain.go:Mutated")
+
+
+def test_django_include_does_not_assert_unprefixed_url(system):
+    assert "django/api/views.py:status" not in system.http_endpoints.get(
+        ("*", "/status"), [])
