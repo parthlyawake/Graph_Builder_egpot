@@ -432,6 +432,7 @@ jobs:
             --build-graph \
             --expect-languages cpp \
             --expect-schema thrift \
+            --min-thrift-implements 1 --min-thrift-consumes 1 \
             --output bench/results/deathstar_social_graph.json
       - uses: actions/upload-artifact@v4
         if: always()

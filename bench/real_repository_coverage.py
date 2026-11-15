@@ -184,6 +184,8 @@ def main():
     p.add_argument("--expect-schema", default="")
     p.add_argument("--max-bytes", type=int, default=5_000_000)
     p.add_argument("--build-graph", action="store_true")
+    p.add_argument("--min-thrift-consumes", type=int, default=0)
+    p.add_argument("--min-thrift-implements", type=int, default=0)
     p.add_argument("--fail-on-incomplete", action="store_true")
     args = p.parse_args()
 
@@ -198,6 +200,12 @@ def main():
         "schema:" + ext for ext in expected_schema
         if report["schemas"].get("." + ext.lstrip("."), {}).get("parsed", 0) == 0
     ]
+    if args.build_graph:
+        result = report["graph"].get("thrift_bindings", {})
+        if result.get("consumes", 0) < args.min_thrift_consumes:
+            missing.append("thrift_consumes_below_minimum")
+        if result.get("implements", 0) < args.min_thrift_implements:
+            missing.append("thrift_implements_below_minimum")
     report["missing_expected_capabilities"] = missing
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -210,6 +218,11 @@ def main():
         "parse_issue_count": report["parse_issue_count"],
         "unsupported_extensions": report["unsupported_extensions"],
         "missing_expected": missing,
+        "thrift_bindings": report.get("graph", {}).get("thrift_bindings", {}),
+        "graph_protocol_relations": {
+            name: count for name, count in report.get("graph", {}).get("relations", {}).items()
+            if name in {"IMPLEMENTS", "CONSUMES", "ROUTES_TO", "HTTP_CALLS"}
+        },
         "issues_sample": report["issues"][:20],
         "full_coverage": report["source_coverage_complete"],
     }, indent=2))
