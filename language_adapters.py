@@ -28,7 +28,7 @@ BASE = ("file_nodes", "functions", "dependencies", "source_locations")
 SPECS = (
     LanguageSpec("python", (".py",), "ast", None,
                  BASE + ("classes", "dataflow", "http", "grpc")),
-    LanguageSpec("javascript", (".js", ".jsx"), "tree_sitter", "tree-sitter-javascript",
+    LanguageSpec("javascript", (".js", ".jsx", ".mjs", ".cjs"), "tree_sitter", "tree-sitter-javascript",
                  BASE + ("classes", "dataflow", "http", "grpc")),
     LanguageSpec("typescript", (".ts", ".tsx"), "tree_sitter", "tree-sitter-typescript",
                  BASE + ("classes", "interfaces", "dataflow", "http", "grpc")),
@@ -49,12 +49,14 @@ SPECS = (
                  BASE + ("classes", "namespaces", "literal_imports")),
     LanguageSpec("c", (".c",), "tree_sitter_legacy", "tree-sitter-c",
                  BASE + ("structs", "literal_imports")),
+    LanguageSpec("scala", (".scala",), "tree_sitter_legacy", "tree-sitter-scala",
+                 BASE + ("classes", "literal_imports")),
 )
 BY_EXTENSION = {ext: spec for spec in SPECS for ext in spec.extensions}
 # Other known application languages are reported, never treated as parsed.
 KNOWN_UNSUPPORTED = frozenset({
     ".rs", ".php", ".ex", ".exs", ".erl",
-    ".swift", ".scala", ".sc", ".dart", ".pl", ".r",
+    ".swift", ".sc", ".dart", ".pl", ".r",
 })
 
 

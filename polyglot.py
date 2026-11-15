@@ -48,7 +48,7 @@ except ImportError:
 
 class TreeSitterExtractor:
     # Core extensions always supported; Java/C# enabled if packages installed.
-    EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".go"}
+    EXTENSIONS = {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".go"}
     if _JAVA_AVAILABLE:
         EXTENSIONS.add(".java")
     if _CSHARP_AVAILABLE:

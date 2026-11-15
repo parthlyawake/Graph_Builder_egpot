@@ -12,6 +12,7 @@ tree-sitter-ruby>=0.23,<0.24
 tree-sitter-cpp>=0.23,<0.24
 tree-sitter-c>=0.23,<0.24
 tree-sitter-lua>=0.4,<0.6
+tree-sitter-scala>=0.26,<0.27
 pyyaml>=6.0
 rank_bm25>=0.2
 tiktoken>=0.5          # BPE token counting for paper token-redundancy metric

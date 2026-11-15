@@ -17,6 +17,7 @@ GRAMMAR_MODULES = {
     "lua": "tree_sitter_lua",
     "cpp": "tree_sitter_cpp",
     "c": "tree_sitter_c",
+    "scala": "tree_sitter_scala",
 }
 EXTENSION_LANGUAGE = {
     ".rb": "ruby",
@@ -29,6 +30,7 @@ EXTENSION_LANGUAGE = {
     ".hxx": "cpp",
     ".h": "cpp",  # C-compatible headers can use the C++ grammar.
     ".c": "c",
+    ".scala": "scala",
 }
 DECLARATIONS = {
     "ruby": {
@@ -52,12 +54,19 @@ DECLARATIONS = {
         "struct_specifier": "class",
         "function_definition": "function",
     },
+    "scala": {
+        "class_definition": "class",
+        "object_definition": "module",
+        "trait_definition": "class",
+        "function_definition": "function",
+    },
 }
 CALLS = {
     "ruby": {"call", "command", "command_call", "method_call"},
     "lua": {"function_call", "method_call"},
     "cpp": {"call_expression"},
     "c": {"call_expression"},
+    "scala": {"call_expression"},
 }
 IDENTIFIERS = frozenset({
     "identifier", "constant", "type_identifier", "field_identifier",
@@ -108,6 +117,8 @@ def _name_of(node, raw, lang):
     if lang in {"cpp", "c"}:
         spelling = spelling.split("(", 1)[0].split("<", 1)[0].rsplit("::", 1)[-1]
         spelling = re.sub(r"^[*&\s]+", "", spelling)
+    if lang == "scala":
+        spelling = spelling.rsplit(".", 1)[-1]
     if lang == "ruby":
         spelling = spelling.rsplit(".", 1)[-1]
     if lang == "lua":

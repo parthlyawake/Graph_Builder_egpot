@@ -22,6 +22,7 @@ FIXTURES = {
     "lua": (".lua", "function helper() return 1 end\nfunction run() return helper() end\n", {"helper", "run"}),
     "cpp": (".cpp", "int helper() { return 1; }\nint run() { return helper(); }\n", {"helper", "run"}),
     "c": (".c", "int helper() { return 1; }\nint run() { return helper(); }\n", {"helper", "run"}),
+    "scala": (".scala", "object Service { def helper(): Int = 1; def run(): Int = helper() }\n", {"helper", "run"}),
 }
 
 
