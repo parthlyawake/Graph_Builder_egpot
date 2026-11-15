@@ -86,6 +86,7 @@ class TreeSitterExtractor:
         self.is_csharp = extension == ".cs"
         self.is_kotlin = extension in {".kt", ".kts"}
         self.extension = extension
+        self.last_projection = None
         self._alternate = None
         if extension in {".ts", ".tsx"}:
             # Tree-sitter's TS and TSX grammars overlap but accept different
@@ -103,6 +104,23 @@ class TreeSitterExtractor:
         secondary = self._alternate.parse(source)
         if not secondary.root_node.has_error:
             return secondary, "tsx" if self.extension == ".ts" else "ts"
+        # Modern CSS-in-JS can contain syntactically valid TypeScript
+        # expressions within template tokens that the grammar does not
+        # recover. Preserve offsets and record the lossy projection.
+        if self.extension in {".ts", ".tsx"}:
+            from typescript_template_recovery import project_css_templates
+            projection, spans = project_css_templates(source, primary.root_node)
+            if spans:
+                projected = self.parser.parse(projection)
+                if not projected.root_node.has_error:
+                    self.last_projection = {
+                        "kind": "offset_preserving_css_template_projection",
+                        "masked_templates": len(spans),
+                        "masked_bytes": sum(end - start for start, end in spans),
+                        "validated": "projected_ast_only",
+                        "exact_source_syntax_verified": False,
+                    }
+                    return projected, self.extension.lstrip(".")
         return primary, self.extension.lstrip(".")
 
     @staticmethod
@@ -246,6 +264,8 @@ class TreeSitterExtractor:
         )
         self._register_imports(builder, rel_path, text, file_id)
         parsed, grammar_used = self.parse_source(source)
+        if self.last_projection:
+            builder.graph.graph.setdefault("grammar_projections", {})[rel_path] = self.last_projection
         if grammar_used != self.extension.lstrip("."):
             builder.graph.graph.setdefault("parser_recovery_modes", {})[rel_path] = {
                 "original_extension": self.extension, "selected_grammar": grammar_used,
@@ -263,7 +283,8 @@ class TreeSitterExtractor:
                     handler_id = f"{builder.current_file_ctx}:{method}"
                     if handler_id in builder.graph and builder.graph.nodes[handler_id].get("type") == "function":
                         builder.http_endpoints.setdefault((method, route_path), []).append(handler_id)
-        return {"syntax_errors": bool(parsed.root_node.has_error)}
+        return {"syntax_errors": bool(parsed.root_node.has_error),
+                "parser_projection": self.last_projection}
 
     # ------------------------------------------------------------------
     # IMPORTS

@@ -25,6 +25,7 @@ on:
       - node_request_calls.py
       - go_kit_routes.py
       - cpp_grammar_recovery.py
+      - typescript_template_recovery.py
       - framework_http_routes.py
       - java_jaxrs_requests.py
       - graphql_links.py

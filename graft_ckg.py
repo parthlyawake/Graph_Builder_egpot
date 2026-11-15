@@ -620,6 +620,9 @@ class CKGBuilder(ast.NodeVisitor):
         print(f"    - Graph Nodes:     {self.graph.number_of_nodes()}")
         print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
         self._print_layer_statistics()
+        if self.graph.graph.get("grammar_projections"):
+            self.language_report.setdefault("parser_projections", {}).update(
+                self.graph.graph["grammar_projections"])
         self.language_report["complete"] = not self.language_report["parse_errors"]
         self.language_report["full_source_coverage"] = (
             self.language_report["complete"] and

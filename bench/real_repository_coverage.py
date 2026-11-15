@@ -100,6 +100,17 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
                         parser_cache[key] = parser
                     if spec.parser == "tree_sitter":
                         tree, grammar_used = parser.parse_source(raw)
+                        if parser.last_projection:
+                            grammar_recovery.append({
+                                "file": rel_path, "extension": ext,
+                                "projection": parser.last_projection,
+                            })
+                            counts["recovered_projection"] += 1
+                            failures.append({
+                                "path": rel_path, "language": spec.name,
+                                "reason": "only projected AST verified; original grammar unresolved",
+                            })
+                            continue
                         if grammar_used != ext.lstrip("."):
                             grammar_recovery.append({
                                 "file": rel_path,
