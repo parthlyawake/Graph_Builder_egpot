@@ -23,6 +23,7 @@ on:
       - graphql_embedded.py
       - python_service_requests.py
       - node_request_calls.py
+      - go_kit_routes.py
       - spring_amqp_bindings.py
       - traversal.py
       - contracts/graph_types.py

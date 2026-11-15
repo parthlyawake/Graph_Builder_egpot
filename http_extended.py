@@ -471,6 +471,8 @@ def register_routes(workspace):
         _django_routes(workspace, builder)
         _js_routes(workspace, builder, sources)
         _go_routes(workspace, builder, sources)
+        from go_kit_routes import register_go_kit_routes
+        register_go_kit_routes(workspace, builder, sources)
         _ruby_routes(workspace, builder, sources)
 
 
