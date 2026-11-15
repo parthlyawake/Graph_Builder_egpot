@@ -430,6 +430,7 @@ class CKGBuilder(ast.NodeVisitor):
         # 1. Scan files (deterministic sorted walk)
         source_files = []
         proto_files = []
+        schema_files = []
         missing_grammars = set()
         self.language_diagnostics = []
         self.skipped_files = []
@@ -437,6 +438,7 @@ class CKGBuilder(ast.NodeVisitor):
             "capabilities": advertised_capabilities(),
             "languages": {},
             "unsupported_files": {},
+            "schema_contracts": {"discovered": 0, "parsed": 0, "failed": 0, "declarations": 0},
             "parse_errors": [],
             "coverage_note": "Features describe implemented extraction paths, not verified completeness.",
         }
@@ -467,6 +469,9 @@ class CKGBuilder(ast.NodeVisitor):
                     source_files.append((rel_path, full_path))
                 elif ext == ".proto":
                     proto_files.append((rel_path, full_path))
+                elif ext in {".thrift", ".pdl", ".avsc"}:
+                    schema_files.append((rel_path, full_path))
+                    self.language_report["schema_contracts"]["discovered"] += 1
                 elif ext in KNOWN_UNSUPPORTED:
                     counts = self.language_report["unsupported_files"]
                     counts[ext] = counts.get(ext, 0) + 1
@@ -486,7 +491,8 @@ class CKGBuilder(ast.NodeVisitor):
                 ". Install with `pip install -r requirements.txt` and rebuild."
             )
 
-        print(f"[*] Found {len(source_files)} supported source files, {len(proto_files)} proto files.")
+        print(f"[*] Found {len(source_files)} supported source files, "
+              f"{len(proto_files)} proto files, {len(schema_files)} schema files.")
         self.module_to_file = {}
         basename_candidates = {}
         for rel_path, _ in source_files:
@@ -509,7 +515,23 @@ class CKGBuilder(ast.NodeVisitor):
             except Exception as e:
                 print(f"[!] Warning: Error parsing proto {rel_path}: {e}")
 
-        # Pass 1: All seven languages use one adapter boundary and one audit.
+        # Pass 0b: General IDL/schema indexing, independent of repository names.
+        from schema_contracts_extended import parse_schema
+        for rel_path, full_path in schema_files:
+            try:
+                result = parse_schema(self, rel_path, full_path)
+                self.language_report["schema_contracts"]["parsed"] += 1
+                self.language_report["schema_contracts"]["declarations"] += result["declarations"]
+            except Exception as exc:
+                self.language_report["schema_contracts"]["failed"] += 1
+                entry = {"file": rel_path, "language": "schema", "error": str(exc)}
+                self.language_report["parse_errors"].append(entry)
+                self.skipped_files.append({
+                    "repo": self.repo_id or "", "file": rel_path, "language": "schema",
+                    "reason": str(exc),
+                })
+
+        # Pass 1: Registered languages use one adapter boundary and one audit.
         for rel_path, full_path in source_files:
             spec = spec_for(rel_path)
             counters = self.language_report["languages"][spec.name]
@@ -584,7 +606,7 @@ class CKGBuilder(ast.NodeVisitor):
         return self.graph
 
     def get_language_report(self):
-        """Structured build diagnostics for all seven adapters and unsupported files."""
+        """Structured build diagnostics for language and schema adapters."""
         return self.language_report
 
     def update_files(self, changed_rel_paths, deleted_rel_paths=()):

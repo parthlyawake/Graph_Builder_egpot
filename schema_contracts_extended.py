@@ -211,10 +211,10 @@ def parse_avsc(builder, rel_path, full_path):
         kind = schema.get("type")
         if isinstance(kind, (dict, list)):
             walk(kind, namespace, depth + 1)
-        if kind in {"array", "map"}:
+        if isinstance(kind, str) and kind in {"array", "map"}:
             walk(schema.get("items") if kind == "array" else schema.get("values"),
                  namespace, depth + 1)
-        if kind not in {"record", "enum", "fixed"}:
+        if not isinstance(kind, str) or kind not in {"record", "enum", "fixed"}:
             return
         name = schema.get("name")
         if not isinstance(name, str) or not name:
