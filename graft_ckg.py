@@ -575,6 +575,9 @@ class CKGBuilder(ast.NodeVisitor):
         self._build_dynamic_http_calls()
         self._resolve_http_calls()
         self._resolve_contract_layer()
+        # Protocol-typed event producers/consumers: AMQP/RabbitMQ and Kafka.
+        from message_contracts import index_message_contracts
+        index_message_contracts(self)
 
         # Pass 3: Construct Semantic Layer (Lsem)
         self._build_semantic_layer()
