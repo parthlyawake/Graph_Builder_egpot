@@ -42,6 +42,7 @@ def run(manifest, report, graph_path=None, *, strict=False, min_http=0):
         "verification": verification,
         "relations": dict(sorted(relationships.items())),
         "unresolved_http_candidates": possible,
+        "http_resolution_diagnostics": graph.graph.get("http_resolution_diagnostics", {}),
         "runtime_bindings": runtime,
         "gate": {"passed": not failures, "failed_checks": failures,
                  "strict_coverage": strict, "minimum_confirmed_http": min_http},

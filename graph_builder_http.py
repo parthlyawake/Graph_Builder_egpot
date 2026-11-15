@@ -10,7 +10,7 @@ import ast
 import json
 import os
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -500,8 +500,12 @@ def resolve_workspace_http(workspace):
     register_routes(workspace)
     aliases, environments = deployment_context(workspace)
     resolved = 0
+    diagnostics = {}
     for source_repo, builder in workspace.repo_builders.items():
         requests = source_requests(builder, environments.get(source_repo, {}))
+        outcomes = Counter()
+        samples = []
+        outcomes["extracted_requests"] = len(requests)
         for caller, url, verb, file, line, kind in requests:
             # Java overloaded methods can currently share one graph node ID.
             # That node is not a trustworthy source of a confirmed HTTP call.
@@ -515,11 +519,16 @@ def resolve_workspace_http(workspace):
                         file_id, caller, relation="CONTAINS", layer="Lsyn")
             if (caller not in workspace.graph
                     or workspace.graph.nodes[caller].get("http_ambiguous_definition")):
+                outcomes["unknown_caller"] += 1
                 continue
             parsed = urlsplit(url)
             host = (parsed.hostname or "").lower()
             destinations = aliases.get(host, set())
             if not host or "{" in host or len(destinations) != 1:
+                outcomes["host_unresolved_or_ambiguous"] += 1
+                if len(samples) < 12:
+                    samples.append({"file": file, "line": line, "verb": verb,
+                                    "host": host, "reason": "host_unresolved"})
                 continue
             dest = next(iter(destinations))
             matches = set()
@@ -533,12 +542,20 @@ def resolve_workspace_http(workspace):
                                     or (workspace.graph.nodes[handler].get("http_prefix_mount")
                                         and parsed.path.startswith(path.rstrip("/") + "/"))))
             if len(matches) != 1:
+                outcomes["no_unique_route"] += 1
+                if len(samples) < 12:
+                    samples.append({"file": file, "line": line, "verb": verb,
+                                    "host": host, "destination": dest,
+                                    "route": parsed.path, "matches": len(matches),
+                                    "reason": "no_unique_route"})
                 continue
             target = next(iter(matches))
             if workspace.graph.nodes[target].get("http_ambiguous_definition"):
+                outcomes["ambiguous_handler"] += 1
                 continue
             if any(v == target and d.get("relation") == "HTTP_CALLS"
                    for _, v, d in workspace.graph.out_edges(caller, data=True)):
+                outcomes["duplicate_confirmed"] += 1
                 continue
             # A source-level environment default is an alternate runtime
             # branch, not proof that this destination was selected.
@@ -557,7 +574,11 @@ def resolve_workspace_http(workspace):
                 http_method=verb, http_url=url,
                 runtime_configuration_conditional=conditional,
             )
-            resolved += 1
+            if conditional:
+                outcomes["possible_due_to_runtime_configuration"] += 1
+            else:
+                outcomes["confirmed"] += 1
+                resolved += 1
 
         # Relative/path-only requests cannot prove a cross-service connection.
         # Retain candidates as POSSIBLE_HTTP_TARGET rather than confirmed
@@ -608,6 +629,12 @@ def resolve_workspace_http(workspace):
                 )
                 if relation == "HTTP_CALLS":
                     resolved += 1
+                    outcomes["confirmed"] += 1
+                else:
+                    outcomes["possible_path_only"] += 1
+        diagnostics[source_repo] = {"counts": dict(sorted(outcomes.items())),
+                                    "request_samples": samples}
+    workspace.graph.graph["http_resolution_diagnostics"] = diagnostics
     if resolved:
         print(f"[*] Cross-Repository HTTP Resolution: {resolved} verified/unique HTTP bindings created.")
     return resolved
