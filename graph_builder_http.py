@@ -482,6 +482,11 @@ def source_requests(builder, environment):
     out.extend(extended_requests(builder, environment))
     from node_request_calls import extract_node_request_calls
     out.extend(extract_node_request_calls(builder, builder.graph))
+    from java_jaxrs_requests import extract_jaxrs_requests
+    for javafile, lines in sorted(builder.raw_file_lines.items()):
+        if javafile.endswith(".java"):
+            out.extend(extract_jaxrs_requests(
+                builder, javafile, "\n".join(lines), environment))
     from python_service_requests import extract_requests
     for pyfile, lines in sorted(builder.raw_file_lines.items()):
         if pyfile.endswith(".py"):
@@ -560,7 +565,8 @@ def resolve_workspace_http(workspace):
             # A source-level environment default is an alternate runtime
             # branch, not proof that this destination was selected.
             conditional = kind in {"python_conditional_default",
-                                   "js_request_conditional_default"}
+                                   "js_request_conditional_default",
+                                   "java_jaxrs_conditional_default"}
             relation = "POSSIBLE_HTTP_TARGET" if conditional else "HTTP_CALLS"
             layer = "Lcontract" if conditional else "Ldep"
             meta = HyperEdgeMetadata(d_scope=0, f_call=1,
