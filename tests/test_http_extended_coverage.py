@@ -137,7 +137,7 @@ func CheckStock() {
         target = root / file
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content.strip() + "\n", encoding="utf-8")
-    names = ("orders", "billing", "web", "ui", "django", "go_api", "go_client")
+    names = ("orders", "billing", "web", "ui", "django", "go_api", "go_client", "chi_api")
     (root / "workspace.yaml").write_text(
         "name: extended_http\nversion: '1.0'\nrepositories:\n"
         + "".join("  - id: " + name + "\n    path: ./" + name + "\n" for name in names),
