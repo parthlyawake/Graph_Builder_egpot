@@ -833,9 +833,12 @@ class WorkspaceCKGBuilder:
             "graphql_issues": [],
         }
         self.graph.graph["contract_spec_diagnostics"] = diagnostics
-        for root, _, files in os.walk(base_dir):
-            if any(p in root for p in ("node_modules", ".git", ".pytest_cache", "tmp")):
-                continue
+        for root, dirs, files in os.walk(base_dir):
+            # Exclude only actual build/cache subdirectories, never source roots
+            # merely containing a substring such as '/tmp' or 'template'.
+            dirs[:] = sorted(d for d in dirs if d not in {
+                "node_modules", ".git", ".pytest_cache", "tmp",
+                "vendor", "target", "dist", "build"})
             for f in files:
                 f_path = os.path.join(root, f)
                 rel_f = os.path.relpath(f_path, base_dir).replace("\\", "/")
