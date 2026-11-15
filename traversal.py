@@ -44,6 +44,23 @@ class SCKGTraversal:
     """Graph traversal and context grafting engine over a built CKG."""
 
     def __init__(self, builder_or_path):
+        if isinstance(builder_or_path, nx.MultiDiGraph):
+            # Exported graphs can be traversed without running the builder
+            # or re-cloning the original source repositories.
+            from types import SimpleNamespace
+            self.builder = SimpleNamespace(graph=builder_or_path,
+                                           proto_services={},
+                                           http_endpoints={})
+            self.graph = builder_or_path
+            return
+        if isinstance(builder_or_path, str) and builder_or_path.endswith(".graph.json"):
+            from graph_io import load_graph_json
+            from types import SimpleNamespace
+            graph = load_graph_json(builder_or_path)
+            self.builder = SimpleNamespace(graph=graph, proto_services={},
+                                           http_endpoints={})
+            self.graph = graph
+            return
         if isinstance(builder_or_path, str):
             if builder_or_path.endswith((".yaml", ".yml", ".json")) or (os.path.isfile(builder_or_path) and "workspace" in builder_or_path):
                 from multi_repo import WorkspaceCKGBuilder

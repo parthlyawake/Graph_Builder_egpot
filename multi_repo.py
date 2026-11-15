@@ -1089,7 +1089,12 @@ class WorkspaceCKGBuilder:
                 item["key"] = k
                 edges.append(item)
             with open(output_path, "w", encoding="utf-8") as f:
-                json.dump({"nodes": nodes, "edges": edges}, f, indent=2)
+                json.dump({
+                    "format_version": "1.1",
+                    "graph_metadata": json.loads(json.dumps(self.graph.graph, default=str)),
+                    "nodes": nodes,
+                    "edges": edges,
+                }, f, indent=2)
         elif format == "graphml":
             clean_g = nx.MultiDiGraph()
             for n, d in self.graph.nodes(data=True):
