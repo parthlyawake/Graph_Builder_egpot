@@ -1,0 +1,29 @@
+name: Prepare ICML LaTeX Style Bundle
+on:
+  push:
+    branches: [icml-paper-prep-2026-11-15]
+  workflow_dispatch:
+jobs:
+  style-kit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download official ICML 2026 author style
+        run: |
+          mkdir -p /tmp/style-kit
+          cd /tmp/style-kit
+          curl -fLsS --retry 2 -o kit.zip https://media.icml.cc/Conferences/ICML2026/Styles/icml2026.zip || true
+          if [ -s kit.zip ]; then unzip -oq kit.zip; fi
+          if ! find . -name icml2026.sty | grep -q .; then
+            curl -fLsS --retry 3 -o icml2026.sty https://raw.githubusercontent.com/davila7/claude-code-templates/main/cli-tool/components/skills/ai-research/ml-paper-writing/templates/icml2026/icml2026.sty
+            curl -fLsS --retry 3 -o icml2026.bst https://raw.githubusercontent.com/davila7/claude-code-templates/main/cli-tool/components/skills/ai-research/ml-paper-writing/templates/icml2026/icml2026.bst
+            echo 'Source: mirrored ICML 2026 author kit; verify official kit at submission' > SOURCE.txt
+          else
+            echo 'Source: official ICML 2026 author kit' > SOURCE.txt
+          fi
+          find . -name icml2026.sty -o -name icml2026.bst -o -name example_paper.tex | head
+          sha256sum $(find . -name icml2026.sty | head -1) > style_hash.txt
+      - name: Upload style bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: icml2026-style
+          path: /tmp/style-kit/
