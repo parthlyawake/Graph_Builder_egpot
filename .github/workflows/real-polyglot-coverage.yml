@@ -289,7 +289,8 @@ jobs:
           python bench/build_workspace.py \
             --manifest _bookinfo/samples/bookinfo/workspace.json \
             --report bench/results/bookinfo_workspace.json \
-            --graph bench/results/bookinfo_graph.json
+            --graph bench/results/bookinfo_graph.json \
+            --strict-coverage --min-possible-http 4
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -322,7 +323,8 @@ jobs:
           python bench/build_workspace.py \
             --manifest _train/graph-workspace.json \
             --report bench/results/train_ticket_workspace.json \
-            --min-http 1
+            --graph bench/results/train_ticket_graph.json \
+            --strict-coverage --min-http 100
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -330,6 +332,7 @@ jobs:
           path: |
             bench/results/train_ticket_discovery.json
             bench/results/train_ticket_workspace.json
+            bench/results/train_ticket_graph.json
 
   sockshop_composed:
     runs-on: ubuntu-latest
@@ -396,7 +399,8 @@ jobs:
           python bench/build_workspace.py \
             --manifest _sock/graph-workspace.json \
             --report bench/results/sockshop_workspace.json \
-            --min-possible-http 1 --min-event-paths 1
+            --graph bench/results/sockshop_graph.json \
+            --strict-coverage --min-possible-http 3 --min-event-paths 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -404,6 +408,7 @@ jobs:
           path: |
             bench/results/sockshop_discovery.json
             bench/results/sockshop_workspace.json
+            bench/results/sockshop_graph.json
 
   deathstar_graph:
     runs-on: ubuntu-latest
@@ -434,11 +439,24 @@ jobs:
             --expect-schema thrift \
             --min-thrift-implements 1 --min-thrift-consumes 1 \
             --output bench/results/deathstar_social_graph.json
+          cat > _deathstar/socialNetwork/workspace.json <<'EOF'
+          {
+            "name": "deathstar-source-graph",
+            "repositories": [{"id": "socialNetwork", "path": "."}]
+          }
+          EOF
+          python bench/build_workspace.py \
+            --manifest _deathstar/socialNetwork/workspace.json \
+            --report bench/results/deathstar_workspace.json \
+            --graph bench/results/deathstar_exported_graph.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: deathstar-source-graph
-          path: bench/results/deathstar_social_graph.json
+          path: |
+            bench/results/deathstar_social_graph.json
+            bench/results/deathstar_workspace.json
+            bench/results/deathstar_exported_graph.json
 
   datahub_graphql_contract:
     runs-on: ubuntu-latest
@@ -473,10 +491,13 @@ jobs:
           python bench/build_workspace.py \
             --manifest _datahub/graphql-workspace.json \
             --report bench/results/datahub_graphql_contracts.json \
-            --strict-coverage --min-graphql-fields 1 \
-            --min-graphql-ops 1 --min-graphql-links 1
+            --strict-coverage --min-graphql-fields 3000 \
+            --min-graphql-ops 100 --min-graphql-links 1000 \
+            --graph bench/results/datahub_graphql_graph.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: datahub-graphql-contract-graph
-          path: bench/results/datahub_graphql_contracts.json
+          path: |
+            bench/results/datahub_graphql_contracts.json
+            bench/results/datahub_graphql_graph.json
