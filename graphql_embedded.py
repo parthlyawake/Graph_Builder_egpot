@@ -106,7 +106,7 @@ def cross_document_fragments(root):
 
 def literal_templates(source):
     """Extract gql/ graphql tags while avoiding runtime substitutions."""
-    for m in re.finditer(r"\b(?:gql|graphql)\s*" + chr(96), source):
+    for m in re.finditer(r"\b(?:gql|graphql)\s*(?:\(\s*)?" + chr(96), source):
         start, pos, escaped = m.end(), m.end(), False
         while pos < len(source):
             ch = source[pos]

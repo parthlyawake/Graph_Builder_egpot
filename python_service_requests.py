@@ -144,6 +144,13 @@ def extract_requests(builder, file, source, configuration):
     except SyntaxError:
         return []
     wrappers = _http_wrappers(tree)
+    # Resolve module aliases before classifying direct client calls.
+    imports = {}
+    for top in tree.body:
+        if isinstance(top, ast.Import):
+            for alias in top.names:
+                if alias.name in {"requests", "httpx"}:
+                    imports[alias.asname or alias.name] = alias.name
     globals_ = {}
     for item in tree.body:
         if isinstance(item, ast.Assign):
@@ -174,7 +181,23 @@ def extract_requests(builder, file, source, configuration):
                         scan_statements(branch, dict(values), caller)
                 continue
             for node in ast.walk(statement):
-                if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+                if not isinstance(node, ast.Call):
+                    continue
+                if isinstance(node.func, ast.Attribute):
+                    receiver = node.func.value
+                    if isinstance(receiver, ast.Name) and receiver.id in imports:
+                        method = node.func.attr.lower()
+                        if method in {"get", "post", "put", "patch", "delete", "head", "options"}:
+                            url_arg = node.args[0] if node.args else next(
+                                (k.value for k in node.keywords if k.arg == "url"), None)
+                            url = _evaluate(url_arg, values, configuration)
+                            if isinstance(url.data, str) and url.data.startswith(
+                                    ("http://", "https://")):
+                                results.append((
+                                    caller, url.data, method.upper(), file,
+                                    node.lineno, "python_conditional_default"
+                                    if url.conditional else "python_source_direct"))
+                if not isinstance(node.func, ast.Name):
                     continue
                 binding = wrappers.get(node.func.id)
                 if binding is None:

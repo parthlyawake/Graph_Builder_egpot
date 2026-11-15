@@ -23,30 +23,48 @@ def _schemas(graph):
 
 
 def _topics(text):
-    for match in re.finditer(
-        r"@\s*KafkaListener\s*\(\s*(?:topics\s*=\s*)?\"([^\"]+)\"",
-        text
-    ):
-        suffix = text[match.end():]
+    """Extract literal Java listener topic arrays and typed KafkaTemplate sends."""
+    listener = re.compile(
+        r'@\s*KafkaListener\s*\(\s*(?:topics\s*=\s*)?(\{[^{}]*\}|"[^"]+")',
+        re.DOTALL,
+    )
+    for match in listener.finditer(text):
+        raw = match.group(1)
+        if raw.startswith("{"):
+            topics = re.findall(r'"([^"]+)"', raw)
+            if re.sub(r'"[^"]+"|[\s{},]', "", raw):
+                continue
+        else:
+            topics = [raw[1:-1]]
+        suffix = text[match.end():match.end() + 700]
         method = re.search(
-            r"(?:public|protected|private)\s+(?:\w+\s+)*\w+\s+\w+\s*"
-            r"\(\s*(?:final\s+)?(?:ConsumerRecord\s*<[^,]+,\s*)?"
-            r"([\w.]+)(?:\s*>)?\s+\w+", suffix[:400]
+            r'(?:public|protected|private)\s+(?:(?:static|final|synchronized)\s+)*'
+            r'[\w.<>\[\], ?]+\s+\w+\s*\(([^)]*)\)',
+            suffix,
         )
-        if method:
-            yield match.group(1), method.group(1).split(".")[-1], match.start(), "java_kafka_listener"
+        if not method:
+            continue
+        params = method.group(1).strip()
+        record = re.search(
+            r'\bConsumerRecord\s*<\s*[\w.?]+\s*,\s*([\w.]+)\s*>\s+\w+', params
+        )
+        ordinary = re.match(r'(?:final\s+)?([\w.]+)\s+\w+\b', params)
+        value_type = record.group(1) if record else ordinary.group(1) if ordinary else None
+        if value_type:
+            for topic in topics:
+                if topic and ("$"+"{") not in topic and ("#"+"{") not in topic:
+                    yield topic, value_type.split(".")[-1], match.start(), "java_kafka_listener"
 
     generic = re.compile(
-        r"\bKafkaTemplate\s*<\s*[\w.?]+\s*,\s*([\w.]+)\s*>\s*"
-        r"([A-Za-z_]\w*)"
+        r'\bKafkaTemplate\s*<\s*[\w.?]+\s*,\s*([\w.]+)\s*>\s*([A-Za-z_]\w*)'
     )
     typed = {m.group(2): m.group(1).split(".")[-1] for m in generic.finditer(text)}
     for match in re.finditer(
-        r"\b([A-Za-z_]\w*)\s*\.\s*send\s*\(\s*\"([^\"]+)\"", text
+        r'\b([A-Za-z_]\w*)\s*\.\s*send\s*\(\s*"([^"]+)"', text
     ):
-        if match.group(1) in typed:
+        if (match.group(1) in typed and ("$"+"{") not in match.group(2)
+                and ("#"+"{") not in match.group(2)):
             yield match.group(2), typed[match.group(1)], match.start(), "java_kafka_template"
-
 
 def bind_kafka_payload_schemas(graph, builders):
     types = _schemas(graph)

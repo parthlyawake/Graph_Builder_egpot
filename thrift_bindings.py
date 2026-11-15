@@ -95,6 +95,20 @@ def _typed_local_clients(text):
     )
     for match in pattern.finditer(text):
         clients[match.group(2)].add(match.group(1))
+    # Generated Thrift clients are also held behind typed smart pointers.
+    smart = re.compile(
+        r"\b(?:std::)?(?:shared_ptr|unique_ptr)\s*<\s*"
+        r"(?:\w+::)*([A-Za-z_]\w*)Client\s*>\s*([A-Za-z_]\w*)\b"
+    )
+    for match in smart.finditer(text):
+        clients[match.group(2)].add(match.group(1))
+    factory = re.compile(
+        r"\b(?:auto|[A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*=\s*"
+        r"(?:std::)?make_(?:shared|unique)\s*<\s*"
+        r"(?:\w+::)*([A-Za-z_]\w*)Client\s*>\s*\("
+    )
+    for match in factory.finditer(text):
+        clients[match.group(1)].add(match.group(2))
     return clients
 
 

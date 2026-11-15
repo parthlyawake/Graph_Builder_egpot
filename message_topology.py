@@ -140,6 +140,28 @@ def bind_amqp_topology(graph, builders):
             for queue, exchange, key, line, source in _bindings(text, ext):
                 bindings.append((queue, exchange, key, file, line, source))
     created = 0
+    # The RabbitMQ default exchange routes to queues by exact queue name.
+    # Only assert delivery when a source-declared queue consumer is indexed.
+    for node in sorted(graph.nodes):
+        prefix = "topic::amqp::/"
+        if not node.startswith(prefix):
+            continue
+        queue_name = node[len(prefix):]
+        destination = "queue::amqp::" + queue_name
+        if destination not in graph or not any(
+            data.get("relation") == "CONSUMES_EVENT"
+            for _, _, data in graph.in_edges(destination, data=True)
+        ):
+            continue
+        edge_key = f"amqp_default::{node}::{destination}"
+        if not graph.has_edge(node, destination, key=edge_key):
+            graph.add_edge(
+                node, destination, key=edge_key, relation="ROUTES_TO",
+                layer="Lcontract", c_type=1.0, exchange="",
+                exchange_type="direct", routing_key=queue_name,
+                binding_kind="rabbitmq_implicit_default_exchange",
+                source_evidence="rabbitmq_default_exchange_semantics")
+            created += 1
     for queue, exchange, key, file, line, how in bindings:
         dest = "queue::amqp::" + queue
         if dest not in graph:
