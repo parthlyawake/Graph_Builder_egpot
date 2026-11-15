@@ -439,6 +439,8 @@ class CKGBuilder(ast.NodeVisitor):
             "languages": {},
             "unsupported_files": {},
             "schema_contracts": {"discovered": 0, "parsed": 0, "failed": 0, "declarations": 0},
+            "proto_contracts": {"discovered": 0, "parsed": 0, "failed": 0,
+                                "parse_modes": {}},
             "parse_errors": [],
             "coverage_note": "Features describe implemented extraction paths, not verified completeness.",
         }
@@ -469,6 +471,7 @@ class CKGBuilder(ast.NodeVisitor):
                     source_files.append((rel_path, full_path))
                 elif ext == ".proto":
                     proto_files.append((rel_path, full_path))
+                    self.language_report["proto_contracts"]["discovered"] += 1
                 elif ext in {".thrift", ".pdl", ".avsc"}:
                     schema_files.append((rel_path, full_path))
                     self.language_report["schema_contracts"]["discovered"] += 1
@@ -512,8 +515,16 @@ class CKGBuilder(ast.NodeVisitor):
         for rel_path, full_path in proto_files:
             try:
                 self._parse_proto_file(rel_path, full_path)
-            except Exception as e:
-                print(f"[!] Warning: Error parsing proto {rel_path}: {e}")
+                self.language_report["proto_contracts"]["parsed"] += 1
+                mode = self.graph.graph.get("proto_parse_modes", {}).get(rel_path, "unknown")
+                self.language_report["proto_contracts"]["parse_modes"][rel_path] = mode
+            except Exception as exc:
+                self.language_report["proto_contracts"]["failed"] += 1
+                entry = {"file": rel_path, "language": "protobuf", "error": str(exc)}
+                self.language_report["parse_errors"].append(entry)
+                self.skipped_files.append({"repo": self.repo_id or "", "file": rel_path,
+                                           "language": "protobuf", "reason": str(exc)})
+                print(f"[!] Warning: Error parsing proto {rel_path}: {exc}")
 
         # Pass 0b: General IDL/schema indexing, independent of repository names.
         from schema_contracts_extended import parse_schema
@@ -1552,6 +1563,9 @@ class CKGBuilder(ast.NodeVisitor):
 
             from proto_parser import ProtoParser
             text = raw_bytes.decode("utf-8", errors="replace")
+            # The compiler can fall back when imports are unavailable. Reject
+            # malformed brace structure instead of silently indexing partial IDL.
+            ProtoParser.validate_structure(text)
             from proto_compiler import compile_proto_file
             pf, parser_mode = compile_proto_file(full_path, self.repo_path)
             if pf is None:

@@ -119,6 +119,37 @@ class ProtoParser:
         return "".join(output)
 
     @classmethod
+    def validate_structure(cls, raw_text: str) -> None:
+        """Reject unmatched Protobuf braces when protoc cannot resolve imports.
+
+        This is a structural check, not a complete grammar or type validator.
+        """
+        cleaned = cls.strip_comments(raw_text)
+        depth = 0
+        quoted = None
+        escape_next = False
+        for char in cleaned:
+            if quoted is not None:
+                if escape_next:
+                    escape_next = False
+                elif char == "\\":
+                    escape_next = True
+                elif char == quoted:
+                    quoted = None
+            elif char in ("'", '"'):
+                quoted = char
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth < 0:
+                    raise ValueError("unexpected closing brace in protobuf schema")
+        if depth:
+            raise ValueError("unclosed brace in protobuf schema")
+        if quoted is not None:
+            raise ValueError("unterminated string in protobuf schema")
+
+    @classmethod
     def parse_text(cls, raw_text: str) -> ProtoFile:
         cleaned = cls.strip_comments(raw_text)
         pf = ProtoFile()
