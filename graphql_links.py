@@ -256,7 +256,9 @@ def link_graphql_operations(workspace, base_dir):
                         source_evidence=rel)
                     linked += 1
     # Follow typed nested selections and literal JS/TS tagged GraphQL documents.
-    from graphql_embedded import bind_selections, link_embedded
+    from graphql_embedded import (
+        bind_selections, cross_document_fragments, link_embedded)
+    fragment_registry = cross_document_fragments(root)
     for file in sorted(root.rglob("*")):
         if file.suffix.lower() not in {".graphql", ".gql"} or not file.is_file():
             continue
@@ -268,6 +270,8 @@ def link_graphql_operations(workspace, base_dir):
         for op in parse_graphql_operations(document):
             node = f"graphqlop::{rel}:{op.kind}:{op.name}"
             if node in workspace.graph:
-                linked += bind_selections(workspace.graph, node, document)
-    workspace.graph.graph["graphql_embedded"] = link_embedded(workspace, root)
+                linked += bind_selections(
+                    workspace.graph, node, document, fragment_registry)
+    workspace.graph.graph["graphql_embedded"] = link_embedded(
+        workspace, root, fragment_registry)
     return linked + workspace.graph.graph["graphql_embedded"]["typed_edges"]

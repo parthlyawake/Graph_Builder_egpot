@@ -13,7 +13,7 @@ def _type_name(field_type):
     return re.sub(r"[\[\]!\s]", "", str(field_type or ""))
 
 
-def bind_selections(graph, operation_id, source):
+def bind_selections(graph, operation_id, source, external_fragments=None):
     try:
         from graphql import parse
         definitions = parse(source).definitions
@@ -27,7 +27,9 @@ def bind_selections(graph, operation_id, source):
              (d.name.value if d.name else "anonymous") == name]
     if len(found) != 1:
         return 0
-    fragments = {d.name.value: d for d in definitions if d.kind == "fragment_definition"}
+    fragments = dict(external_fragments or {})
+    fragments.update({d.name.value: d for d in definitions
+                      if d.kind == "fragment_definition"})
     root = graph.graph.get("graphql_root_types", {}).get(
         root_kind, {"query": "Query", "mutation": "Mutation",
                     "subscription": "Subscription"}.get(root_kind))
@@ -72,6 +74,36 @@ def bind_selections(graph, operation_id, source):
     return count
 
 
+def cross_document_fragments(root):
+    """Return uniquely named GraphQL fragment ASTs over the source workspace."""
+    try:
+        from graphql import parse
+    except ImportError:
+        return {}
+    root = Path(root)
+    candidates = {}
+    for file in sorted(root.rglob("*")):
+        if not file.is_file() or file.suffix.lower() not in {".graphql", ".gql"}:
+            continue
+        if set(file.relative_to(root).parts) & {
+                "node_modules", ".git", "vendor", "dist", "build", "target"}:
+            continue
+        if file.stat().st_size > 5_000_000:
+            continue
+        try:
+            definitions = parse(file.read_text(
+                encoding="utf8", errors="replace")).definitions
+        except Exception:
+            continue
+        for fragment in definitions:
+            if fragment.kind == "fragment_definition":
+                candidates.setdefault(fragment.name.value, []).append(fragment)
+    # Duplicate names can refer to distinct modules. Abstain rather than
+    # silently choosing whichever file was traversed first.
+    return {name: items[0] for name, items in candidates.items()
+            if len(items) == 1}
+
+
 def literal_templates(source):
     """Extract gql/ graphql tags while avoiding runtime substitutions."""
     for m in re.finditer(r"\b(?:gql|graphql)\s*" + chr(96), source):
@@ -93,7 +125,7 @@ def literal_templates(source):
         yield snippet, source.count("\n", 0, m.start()) + 1
 
 
-def link_embedded(workspace, root):
+def link_embedded(workspace, root, external_fragments=None):
     try:
         from graphql import parse
     except ImportError:
@@ -139,5 +171,5 @@ def link_embedded(workspace, root):
                     relation="CONTAINS", layer="Lsyn")
                 counter["documents"] += 1
                 counter["typed_edges"] += bind_selections(
-                    workspace.graph, node, document)
+                    workspace.graph, node, document, external_fragments)
     return counter
