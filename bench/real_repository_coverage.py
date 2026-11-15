@@ -155,6 +155,9 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
         report["graph"] = {
             "nodes": graph.number_of_nodes(),
             "edges": graph.number_of_edges(),
+            "relations": dict(Counter(d.get("relation", "unknown")
+                                      for _, _, d in graph.edges(data=True))),
+            "thrift_bindings": getattr(builder, "thrift_bindings", {}),
             "language_report": builder.get_language_report(),
             "source_coverage_complete": builder.get_language_report()["full_source_coverage"],
         }

@@ -396,7 +396,7 @@ jobs:
           python bench/build_workspace.py \
             --manifest _sock/graph-workspace.json \
             --report bench/results/sockshop_workspace.json \
-            --min-http 1
+            --min-possible-http 1 --min-event-paths 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
