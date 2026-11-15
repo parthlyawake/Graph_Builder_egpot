@@ -415,6 +415,8 @@ def source_requests(builder, environment):
             out.extend(_python_requests(builder, path, text, environment))
         elif path.endswith(".java"):
             out.extend(_java_requests(builder, path, text))
+    from http_extended import extended_requests
+    out.extend(extended_requests(builder, environment))
     for caller, url, method, file, line in getattr(builder, "http_literal_urls", []):
         if isinstance(url, str) and url.startswith(("http://", "https://")):
             out.append((caller, url, method, file, line, "literal_host"))
@@ -424,6 +426,8 @@ def source_requests(builder, environment):
 def resolve_workspace_http(workspace):
     """Create only unambiguous, source-evidenced HTTP_CALLS in workspace graph."""
     from graft_ckg import HyperEdgeMetadata
+    from http_extended import register_routes
+    register_routes(workspace)
     aliases, environments = deployment_context(workspace)
     resolved = 0
     for source_repo, builder in workspace.repo_builders.items():
