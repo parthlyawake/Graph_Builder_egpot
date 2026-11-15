@@ -2,7 +2,7 @@ name: Graph Builder Integration
 
 on:
   push:
-    branches: [krishna]
+    branches: [krishna, research-evaluation-2026-11-15, fix-sop-review-defects-2026-11-15]
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,92 @@ jobs:
           python -m pip install -r requirements.txt
       - name: Compile graph-builder source and tests
         run: |
-          python -m compileall -q graft_ckg.py polyglot.py multi_repo.py graph_builder_bindings.py graph_builder_http.py language_adapters.py tests
-      - name: Run graph-builder integration tests
+          python -m compileall -q graft_ckg.py polyglot.py multi_repo.py graph_builder_bindings.py graph_builder_http.py contracts/sckg_provider.py contracts/graph_types.py language_adapters.py incremental_builder.py workspace_incremental.py semantic_neighbors.py proto_parser.py openapi_graphql_parser.py graphql_ast_support.py graphql_links.py graphql_java_bindings.py standalone_contract_specs.py static_dispatch.py interprocedural_flow.py compiler_resolution.py token_grafting.py proto_compiler.py proto_field_graph.py contract_schema_graph.py openapi_schema.py tests
+      - name: Run full graph-builder regression suite three times
         run: |
-          python -m pytest -q tests
+          set -e
+          for round in 1 2 3; do
+            echo "Full verification pass ${round}/3"
+            python -m pytest -q tests
+          done
+      - name: Checkout pinned DataHub Python subtree
+        uses: actions/checkout@v4
+        with:
+          repository: datahub-project/datahub
+          ref: 051fb78fe6a6395043d272218b035cb00fe27321
+          path: _datahub
+          sparse-checkout: |
+            datahub-actions/src
+          filter: blob:none
+          persist-credentials: false
+      - name: Run real DataHub graph equivalence smoke test three times
+        run: |
+          python bench/smoke_datahub_graph.py \
+            --repo _datahub/datahub-actions/src \
+            --repetitions 3 \
+            --output bench/results/datahub_smoke_ci.json
+      - name: Upload real-repository construction results
+        uses: actions/upload-artifact@v4
+        with:
+          name: datahub-graph-smoke
+          path: bench/results/datahub_smoke_ci.json
+
+      - name: Checkout pinned Online Boutique for evaluation
+        uses: actions/checkout@v4
+        with:
+          repository: GoogleCloudPlatform/microservices-demo
+          ref: 38e7348eb289eb5b87c0c6e8cb19ced0449dc389
+          path: _boutique
+          filter: blob:none
+          persist-credentials: false
+      - name: Inspect fixture relations for independent annotation
+        run: |
+          python bench/probe_paper_fixture.py
+      - name: Run source-grounded accuracy fixture
+        run: |
+          python bench/run_paper_accuracy.py \
+            --repo benchmarks/polyglot_api \
+            --labels bench/labels/polyglot_api_closed_scopes.json \
+            --output bench/results/paper_closed_scope_ci.json
+      - name: Run seven-relation closed-scope accuracy fixture
+        run: |
+          python bench/run_paper_accuracy.py \
+            --repo benchmarks/paper_relations \
+            --labels bench/labels/paper_relations_closed_scopes.json \
+            --output bench/results/paper_relations_accuracy_ci.json
+      - name: Run source-annotated token evidence comparison
+        run: |
+          python bench/run_paper_study.py \
+            --repo benchmarks/polyglot_api \
+            --labels bench/labels/polyglot_api_evidence_spans.json \
+            --configs R0 R1 R3 R5 R9 \
+            --token-budget 2048 \
+            --output bench/results/paper_token_evidence_ci.json
+      - name: Run labelled retrieval and ranking ablations
+        run: |
+          python bench/run_paper_study.py \
+            --repo _boutique \
+            --labels bench/labels/online_boutique_27_source_tasks.json \
+            --configs R0 R1 R3 R5 R9 \
+            --ablations \
+            --token-budget 2048 \
+            --output bench/results/paper_retrieval_ci.json
+      - name: Run strict incremental equivalence performance trials
+        run: |
+          python bench/paper_performance.py \
+            --manifest bench/manifests/paper_ci_pinned.json \
+            --repetitions 3 \
+            --output bench/results/paper_performance_ci.json
+      - name: Upload paper evaluation raw artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-study-raw
+          if-no-files-found: warn
+          path: |
+            bench/results/paper_closed_scope_ci.json
+            bench/results/paper_fixture_probe_ci.json
+            bench/results/paper_relations_accuracy_ci.json
+            bench/results/paper_retrieval_ci.json
+            bench/results/paper_token_evidence_ci.json
+            bench/results/paper_performance_ci.json
