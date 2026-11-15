@@ -17,7 +17,7 @@ from multi_repo import WorkspaceCKGBuilder
 
 
 def run(manifest, report, graph_path=None, *, strict=False, min_http=0,
-        min_possible_http=0, min_event_paths=0):
+        min_possible_http=0, min_event_paths=0, min_graphql_fields=0):
     builder = WorkspaceCKGBuilder(str(manifest))
     graph = builder.build()
     verification = builder.verify_graph()
@@ -26,6 +26,10 @@ def run(manifest, report, graph_path=None, *, strict=False, min_http=0,
     possible = relationships.get("POSSIBLE_HTTP_TARGET", 0)
     from traversal import SCKGTraversal
     traversal = SCKGTraversal(builder)
+    graphql_fields = sum(
+        1 for node, data in graph.nodes(data=True)
+        if node.startswith("contract::graphql::") and data.get("spec") == "graphql"
+    )
     event_paths = 0
     for src, data in graph.nodes(data=True):
         if graph.out_degree(src) == 0:
@@ -48,6 +52,8 @@ def run(manifest, report, graph_path=None, *, strict=False, min_http=0,
         failures.append("insufficient_source_evidenced_possible_http_edges")
     if event_paths < min_event_paths:
         failures.append("insufficient_confirmed_event_delivery_paths")
+    if graphql_fields < min_graphql_fields:
+        failures.append("insufficient_source_evidenced_graphql_contract_fields")
     if not verification["total_nodes"] or not verification["total_edges"]:
         failures.append("empty_graph")
     result = {
@@ -57,12 +63,14 @@ def run(manifest, report, graph_path=None, *, strict=False, min_http=0,
         "relations": dict(sorted(relationships.items())),
         "unresolved_http_candidates": possible,
         "source_evidenced_event_delivery_paths": event_paths,
+        "graphql_contract_fields": graphql_fields,
         "http_resolution_diagnostics": graph.graph.get("http_resolution_diagnostics", {}),
         "runtime_bindings": runtime,
         "gate": {"passed": not failures, "failed_checks": failures,
                  "strict_coverage": strict, "minimum_confirmed_http": min_http,
                  "minimum_possible_http": min_possible_http,
-                 "minimum_event_paths": min_event_paths},
+                 "minimum_event_paths": min_event_paths,
+                 "minimum_graphql_fields": min_graphql_fields},
     }
     if graph_path:
         builder.export_graph(str(graph_path), "json")
@@ -82,17 +90,20 @@ def main():
     p.add_argument("--min-http", type=int, default=0)
     p.add_argument("--min-possible-http", type=int, default=0)
     p.add_argument("--min-event-paths", type=int, default=0)
+    p.add_argument("--min-graphql-fields", type=int, default=0)
     options = p.parse_args()
     report = run(options.manifest, options.report, options.graph,
                  strict=options.strict_coverage, min_http=options.min_http,
                  min_possible_http=options.min_possible_http,
-                 min_event_paths=options.min_event_paths)
+                 min_event_paths=options.min_event_paths,
+                 min_graphql_fields=options.min_graphql_fields)
     print(json.dumps({"nodes": report["verification"]["total_nodes"],
                       "edges": report["verification"]["total_edges"],
                       "services": report["verification"]["total_repositories"],
                       "confirmed_http": report["relations"].get("HTTP_CALLS", 0),
                       "possible_http": report["unresolved_http_candidates"],
                       "confirmed_event_delivery_paths": report["source_evidenced_event_delivery_paths"],
+                      "graphql_contract_fields": report["graphql_contract_fields"],
                       "source_request_outcomes": {
                           repo: values["counts"]
                           for repo, values in report["http_resolution_diagnostics"].items()

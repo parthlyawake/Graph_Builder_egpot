@@ -438,3 +438,39 @@ jobs:
         with:
           name: deathstar-source-graph
           path: bench/results/deathstar_social_graph.json
+
+  datahub_graphql_contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: datahub-project/datahub
+          ref: 2ddcacb8ef00387d3959c15feab1b4194fb5d661
+          path: _datahub
+          sparse-checkout: |
+            datahub-graphql-core/src/main/resources
+          filter: blob:none
+          persist-credentials: false
+      - name: Construct GraphQL SDL contract graph and check syntax/coverage
+        run: |
+          cat > _datahub/datahub-graphql-core/src/main/resources/workspace.json <<'EOF'
+          {
+            "name": "graphql-schema-source",
+            "repositories": [{"id": "graphql-schema", "path": "."}]
+          }
+          EOF
+          python bench/build_workspace.py \
+            --manifest _datahub/datahub-graphql-core/src/main/resources/workspace.json \
+            --report bench/results/datahub_graphql_contracts.json \
+            --strict-coverage --min-graphql-fields 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: datahub-graphql-contract-graph
+          path: bench/results/datahub_graphql_contracts.json
