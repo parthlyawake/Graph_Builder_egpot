@@ -455,20 +455,25 @@ jobs:
           path: _datahub
           sparse-checkout: |
             datahub-graphql-core/src/main/resources
+            datahub-web-react/src/graphql
           filter: blob:none
           persist-credentials: false
-      - name: Construct GraphQL SDL contract graph and check syntax/coverage
+      - name: Index GraphQL SDL and client operation documents
         run: |
-          cat > _datahub/datahub-graphql-core/src/main/resources/workspace.json <<'EOF'
+          cat > _datahub/graphql-workspace.json <<'EOF'
           {
-            "name": "graphql-schema-source",
-            "repositories": [{"id": "graphql-schema", "path": "."}]
+            "name": "graphql-schema-and-client-source",
+            "repositories": [
+              {"id": "graphql-schema", "path": "./datahub-graphql-core/src/main/resources"},
+              {"id": "graphql-client", "path": "./datahub-web-react/src/graphql"}
+            ]
           }
           EOF
           python bench/build_workspace.py \
-            --manifest _datahub/datahub-graphql-core/src/main/resources/workspace.json \
+            --manifest _datahub/graphql-workspace.json \
             --report bench/results/datahub_graphql_contracts.json \
-            --strict-coverage --min-graphql-fields 1
+            --strict-coverage --min-graphql-fields 1 \
+            --min-graphql-ops 1 --min-graphql-links 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
