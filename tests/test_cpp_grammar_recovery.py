@@ -12,7 +12,8 @@ def test_generated_member_pointer_projection_offsets():
     projected, mask, reasons = projected_cpp_source(original)
     assert len(projected) == len(original)
     assert projected.count(b"\n") == original.count(b"\n")
-    assert b"(*ProcessFunction)" in projected
+    import re
+    assert re.search(rb"\(\s*\*ProcessFunction\)", projected)
     assert "member_pointer_typedef" in reasons
     assert "member_pointer_dispatch" in reasons
 
