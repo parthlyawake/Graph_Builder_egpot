@@ -163,6 +163,7 @@ def main():
         "parse_issue_count": report["parse_issue_count"],
         "unsupported_extensions": report["unsupported_extensions"],
         "missing_expected": missing,
+        "issues_sample": report["issues"][:20],
         "full_coverage": report["source_coverage_complete"],
     }, indent=2))
     if missing or (args.fail_on_incomplete and not report["source_coverage_complete"]):

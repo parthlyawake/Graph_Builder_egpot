@@ -148,8 +148,8 @@ def _tree_sitter(builder, file, text):
         import tree_sitter_go as grammar
     else:
         return
-    language = (grammar.language_typescript()
-                if suffix in {".ts", ".tsx"} else grammar.language())
+    language = (grammar.language_tsx() if suffix == ".tsx" else
+                grammar.language_typescript() if suffix == ".ts" else grammar.language())
     source = text.encode("utf-8")
     root = Parser(Language(language)).parse(source).root_node
     java_rabbit = bool(re.search(r"\b(?:RabbitTemplate|RabbitListener)\b", text))

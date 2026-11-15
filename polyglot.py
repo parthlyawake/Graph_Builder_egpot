@@ -74,7 +74,9 @@ class TreeSitterExtractor:
             if not _KOTLIN_AVAILABLE:
                 raise RuntimeError("tree-sitter-kotlin is not installed. Run: pip install tree-sitter-kotlin")
             grammar = tree_sitter_kotlin.language()
-        elif extension in {".ts", ".tsx"}:
+        elif extension == ".tsx":
+            grammar = tree_sitter_typescript.language_tsx()
+        elif extension == ".ts":
             grammar = tree_sitter_typescript.language_typescript()
         else:
             grammar = tree_sitter_javascript.language()
