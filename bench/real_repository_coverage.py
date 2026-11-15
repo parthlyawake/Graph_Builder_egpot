@@ -95,8 +95,30 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
                     tree = parser.parse(raw)
                     if tree.root_node.has_error:
                         counts["partial"] += 1
-                        failures.append({"path": rel_path, "language": spec.name,
-                                         "reason": "tree-sitter syntax error"})
+                        # Diagnostics point to parser-error syntax, not merely
+                        # the file name, for repeatable root-cause analysis.
+                        stack = [tree.root_node]
+                        first_error = None
+                        while stack:
+                            item = stack.pop()
+                            if item.type == "ERROR" or item.is_missing:
+                                first_error = item
+                                break
+                            stack.extend(reversed(item.children))
+                        diagnostic = {
+                            "path": rel_path, "language": spec.name,
+                            "reason": "tree-sitter syntax error",
+                        }
+                        if first_error is not None:
+                            diagnostic.update({
+                                "error_line": first_error.start_point.row + 1,
+                                "error_column": first_error.start_point.column + 1,
+                                "error_kind": first_error.type,
+                                "source_excerpt": raw[first_error.start_byte:
+                                                      min(first_error.start_byte + 150, len(raw))]
+                                                  .decode("utf-8", "replace"),
+                            })
+                        failures.append(diagnostic)
                         continue
                 counts["parsed"] += 1
             except Exception as exc:
