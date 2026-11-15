@@ -264,6 +264,26 @@ def _js_routes(workspace, builder, sources):
             handler = _function_node(builder, file, handler_name)
             if handler:
                 routes.append((file, receiver, verb.upper(), path, handler))
+        # Fastify's object-form registration and Express route chaining.
+        for match in re.finditer(
+                r"\b(?:fastify|server)\.route\(\s*\{([^{}]+)\}\s*\)", text, re.S):
+            body = match.group(1)
+            verb = re.search(r"\bmethod\s*:\s*['\"]([A-Za-z]+)['\"]", body)
+            path = re.search(r"\b(?:url|path)\s*:\s*['\"](/[^'\"]+)['\"]", body)
+            handler = re.search(r"\bhandler\s*:\s*([A-Za-z_$][\w$]*)", body)
+            if verb and path and handler:
+                nid = _function_node(builder, file, handler.group(1))
+                if nid and verb.group(1).upper() in VERBS:
+                    routes.append((file, "fastify", verb.group(1).upper(),
+                                   path.group(1), nid))
+        for match in re.finditer(
+                r"\b(app|router)\.route\(\s*['\"](/[^'\"]+)['\"]\s*\)"
+                r"\.(get|post|put|patch|delete|head|options)\(\s*(\w+)\s*\)",
+                text, re.I):
+            receiver, path, verb, name = match.groups()
+            nid = _function_node(builder, file, name)
+            if nid:
+                routes.append((file, receiver, verb.upper(), path, nid))
     mounts = {}
     for file, text in sources.items():
         if file not in imports:
@@ -322,6 +342,31 @@ def _go_routes(workspace, builder, sources):
             handler = _function_node(builder, file, handler_name)
             if handler:
                 _register(workspace, builder, method, path, handler)
+
+        # Chi route blocks have lexical prefixes, not receiver-variable groups.
+        for m in re.finditer(
+                r"\b(\w+)\.Route\(\s*['\"](/[^'\"]+)['\"]\s*,\s*"
+                r"func\(\s*(\w+)\s+chi\.Router\s*\)\s*\{", text):
+            outer, prefix, inner = m.groups()
+            if not re.search(r"\b" + re.escape(outer)
+                             + r"\s*:?=\s*chi\.NewRouter\(", text):
+                continue
+            start, depth, index = m.end(), 1, m.end()
+            while index < len(text) and depth:
+                depth += (text[index] == "{") - (text[index] == "}")
+                index += 1
+            if depth:
+                continue
+            body = text[start:index - 1]
+            for route in re.finditer(
+                    r"\b" + re.escape(inner)
+                    + r"\.(Get|Post|Put|Patch|Delete|Head|Options)"
+                    + r"\(\s*['\"](/[^'\"]+)['\"]\s*,\s*(\w+)\b", body):
+                method, path, handler_name = route.groups()
+                handler = _function_node(builder, file, handler_name)
+                if handler:
+                    _register(workspace, builder, method.upper(),
+                              join_path(prefix, path), handler, raw_path=path)
 
 
 def register_routes(workspace):
