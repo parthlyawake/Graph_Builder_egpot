@@ -171,7 +171,7 @@ def _python_requests(builder, file, text, environment):
             return a + b if isinstance(a, str) and isinstance(b, str) else None
         if isinstance(node, ast.Call):
             name = ast.unparse(node.func)
-            if name.endswith(".Request") and node.args:
+            if (name == "Request" or name.endswith(".Request")) and node.args:
                 return literal(node.args[0], values)
             if name in ("os.getenv", "os.environ.get") and node.args:
                 key = literal(node.args[0], values)
