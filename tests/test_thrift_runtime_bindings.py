@@ -27,8 +27,7 @@ def test_thrift_cpp_handler_and_client_bind_to_idl(tmp_path):
     builder = CKGBuilder(str(tmp_path))
     builder.build()
     graph = builder.graph
-    result = bind_thrift_runtime(graph, [builder])
-    assert result["implements"] >= 1
+    # CKGBuilder already invokes the binder during build().
     target = "contract::thrift::demo.InventoryService.Reserve"
     assert any(v == target and d.get("relation") == "IMPLEMENTS"
                for _, v, d in graph.edges(data=True))
