@@ -1,4 +1,4 @@
-"""Common entry point and capability contract for all seven source languages.
+"""Common entry point and capability contract for registered source languages.
 
 Capabilities are extraction features implemented in source, not accuracy claims.
 Every adapter receives the same builder and must produce the shared node/edge
@@ -40,12 +40,20 @@ SPECS = (
                  BASE + ("classes", "interfaces", "dataflow", "aspnet_http", "grpc")),
     LanguageSpec("kotlin", (".kt", ".kts"), "tree_sitter", "tree-sitter-kotlin",
                  BASE + ("classes", "dataflow", "spring_http", "grpc", "messaging")),
+    LanguageSpec("ruby", (".rb",), "tree_sitter_legacy", "tree-sitter-ruby",
+                 BASE + ("classes", "literal_imports")),
+    LanguageSpec("lua", (".lua",), "tree_sitter_legacy", "tree-sitter-lua",
+                 BASE + ("literal_imports",)),
+    LanguageSpec("cpp", (".cc", ".cpp", ".cxx", ".hpp", ".hh", ".hxx", ".h"),
+                 "tree_sitter_legacy", "tree-sitter-cpp",
+                 BASE + ("classes", "namespaces", "literal_imports")),
+    LanguageSpec("c", (".c",), "tree_sitter_legacy", "tree-sitter-c",
+                 BASE + ("structs", "literal_imports")),
 )
 BY_EXTENSION = {ext: spec for spec in SPECS for ext in spec.extensions}
 # Other known application languages are reported, never treated as parsed.
 KNOWN_UNSUPPORTED = frozenset({
-    ".c", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".hh",
-    ".rs", ".rb", ".php", ".lua", ".ex", ".exs", ".erl",
+    ".rs", ".php", ".ex", ".exs", ".erl",
     ".swift", ".scala", ".sc", ".dart", ".pl", ".r",
 })
 
@@ -57,6 +65,9 @@ def spec_for(path: str) -> LanguageSpec | None:
 def parser_available(spec: LanguageSpec) -> bool:
     if spec.parser == "ast":
         return True
+    if spec.parser == "tree_sitter_legacy":
+        from extended_language_adapters import grammar_available
+        return grammar_available(spec.name)
     # The Go extension is always declared by the legacy visitor, even when
     # its optional grammar import failed. Use actual import availability.
     import polyglot
@@ -95,6 +106,9 @@ class LanguageAdapter:
             ast.parse(source, filename=rel_path)
             builder._parse_python_file(rel_path, full_path)
             return {"syntax_errors": False}
+        if self.spec.parser == "tree_sitter_legacy":
+            from extended_language_adapters import extract_legacy
+            return extract_legacy(builder, rel_path, full_path, self.spec.name)
         extractor = TreeSitterExtractor(Path(full_path).suffix.lower())
         return extractor.extract(builder, rel_path, full_path) or {"syntax_errors": False}
 

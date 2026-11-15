@@ -9,7 +9,7 @@ from graft_ckg import CKGBuilder
 
 class AdapterContractTests(unittest.TestCase):
     def test_all_seven_have_one_common_entry_point(self):
-        self.assertEqual(len(SPECS), 7)
+        self.assertGreaterEqual(len(SPECS), 11)
         for spec in SPECS:
             for extension in spec.extensions:
                 adapter = adapter_for("sample" + extension)
@@ -20,7 +20,8 @@ class AdapterContractTests(unittest.TestCase):
     def test_capability_declarations_are_explicit_and_not_accuracy_claims(self):
         report = advertised_capabilities()
         self.assertEqual(set(report), {
-            "python", "javascript", "typescript", "go", "java", "csharp", "kotlin"
+            "python", "javascript", "typescript", "go", "java", "csharp", "kotlin",
+            "ruby", "lua", "cpp", "c"
         })
         self.assertTrue(all(v["verified_accuracy"] is None for v in report.values()))
 

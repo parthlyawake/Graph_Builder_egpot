@@ -18,6 +18,10 @@ FIXTURES = {
     "java": (".java", "class Service { int helper() { return 1; } int run() { return helper(); } }\n", {"helper", "run"}),
     "csharp": (".cs", "class Service { int helper() { return 1; } int run() { return helper(); } }\n", {"helper", "run"}),
     "kotlin": (".kt", "class Service {\n fun helper(): Int { return 1 }\n fun run(): Int { return helper() }\n}\n", {"helper", "run"}),
+    "ruby": (".rb", "def helper\n  1\nend\ndef run\n  helper()\nend\n", {"helper", "run"}),
+    "lua": (".lua", "function helper() return 1 end\nfunction run() return helper() end\n", {"helper", "run"}),
+    "cpp": (".cpp", "int helper() { return 1; }\nint run() { return helper(); }\n", {"helper", "run"}),
+    "c": (".c", "int helper() { return 1; }\nint run() { return helper(); }\n", {"helper", "run"}),
 }
 
 
