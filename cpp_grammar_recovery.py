@@ -46,6 +46,32 @@ def projected_cpp_source(original):
         for match in re.finditer(pat, original):
             blank(match.start(1), match.end(1), "adjacent_string_macro")
 
+    # A preprocessor macro may sit between two string literals. The parser
+    # does not expand that macro, although the C/C++ compiler does. Replace the
+    # entire sequence with one placeholder literal and equal-length spaces;
+    # never alter names, signatures or executable call targets.
+    for name in macros:
+        pattern = (rb'"(?:[^"\\\n]|\\.)*"[ \t]*' +
+                   re.escape(name) +
+                   rb'[ \t]*"(?:[^"\\\n]|\\.)*"')
+        for match in re.finditer(pattern, original):
+            start, end = match.span()
+            if end - start < 2:
+                continue
+            out[start:end] = b'""' + b" " * (end - start - 2)
+            spans.append((start, end))
+            reasons.append("expanded_adjacent_string_macro")
+
+    # A C ABI declaration may use a compile-time visibility macro just before
+    # a real primitive return type: LUALIB_API int foo(...). This is syntax
+    # scaffolding, not an independently resolved type. Bound the rewrite to
+    # uppercase *_API / *_EXPORT prefixes preceding an explicit C return type.
+    abi_pattern = (rb"(?m)(?:^|[;{}]\s*)[ \t]*"
+                   rb"([A-Z][A-Z0-9_]*(?:_API|_EXPORT))[ \t]+"
+                   rb"(?=(?:int|void|char|long|short|double|float|size_t|bool)\b)")
+    for match in re.finditer(abi_pattern, original):
+        blank(match.start(1), match.end(1), "visibility_macro_prefix")
+
     return bytes(out), spans, sorted(set(reasons))
 
 

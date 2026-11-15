@@ -25,3 +25,17 @@ def test_projection_does_not_recover_genuinely_invalid_cpp():
     assert tree.root_node.has_error
     assert recovery is None
     assert not mask
+
+
+def test_c_visibility_and_local_string_macros_preserve_offsets():
+    original = (
+        b'#define METATABLE "value"\n'
+        b'void f() { lua_argcheck(1, "before" METATABLE "after"); }\n'
+        b'LUALIB_API int luaopen_lib(lua_State *L) { return 0; }\n'
+    )
+    projected, spans, reasons = projected_cpp_source(original)
+    assert len(projected) == len(original)
+    assert projected.count(b"\n") == original.count(b"\n")
+    assert "expanded_adjacent_string_macro" in reasons
+    assert "visibility_macro_prefix" in reasons
+    assert spans
