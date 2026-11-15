@@ -238,15 +238,19 @@ repositories:
         ws_builder = WorkspaceCKGBuilder(ws_path)
         ws_builder.build()
 
+        # The relative frontend URL has no host or deployment routing
+        # evidence; it must remain an unresolved candidate, not HTTP_CALLS.
         http_edges = [
             (u, v) for u, v, d in ws_builder.graph.edges(data=True)
-            if d.get("relation") == "HTTP_CALLS"
+            if d.get("relation") == "HTTP_CALLS" and "ts_ui" in u
         ]
-        self.assertGreaterEqual(len(http_edges), 1)
-        caller, target = http_edges[0]
-        self.assertIn("ts_ui", caller)
-        self.assertIn("py_api", target)
-        self.assertIn("authenticate", target)
+        self.assertEqual(http_edges, [])
+        candidates = [
+            (u, v) for u, v, d in ws_builder.graph.edges(data=True)
+            if d.get("relation") == "POSSIBLE_HTTP_TARGET"
+        ]
+        self.assertTrue(any("ts_ui" in u and "py_api" in v and
+                            "authenticate" in v for u, v in candidates))
 
 
     def test_cross_repo_http_resolution_keeps_multiple_calls(self):
@@ -278,11 +282,19 @@ repositories:
 """)
         ws_builder = WorkspaceCKGBuilder(ws_path)
         ws_builder.build()
+        # Requests with relative paths must not claim cross-repo calls
+        # without host evidence; preserve both as weak candidates instead.
         outgoing = [
             v for u, v, d in ws_builder.graph.edges(data=True)
             if u.endswith("client/client.py:sync") and d.get("relation") == "HTTP_CALLS"
         ]
-        self.assertEqual(set(outgoing), {"api/server.py:health", "api/server.py:orders"})
+        self.assertEqual(outgoing, [])
+        candidates = [
+            v for u, v, d in ws_builder.graph.edges(data=True)
+            if u.endswith("client/client.py:sync")
+            and d.get("relation") == "POSSIBLE_HTTP_TARGET"
+        ]
+        self.assertEqual(set(candidates), {"api/server.py:health", "api/server.py:orders"})
     def test_cross_repo_traversal_blast_radius(self):
         """Requirement C3: Blast radius traverses across service boundaries."""
         ws_path = os.path.join(

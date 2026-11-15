@@ -379,59 +379,11 @@ class SCKGTraversal:
                         visited_in_queue.add(src)
                         queue.append((src, depth + 1))
 
-        # 3. Assemble and budget context snippets
-        approx_token_count = 0
-        context_blocks: List[str] = []
-
-        # Prioritize root node first
-        root_data = self.graph.nodes.get(root, {})
-        root_code = root_data.get("code") or self._format_node_fallback(root)
-        root_block = (
-            f"=== TARGET FOCUS [{root_data.get('type', 'entity').upper()}] {root} ===\n"
-            f"File: {root_data.get('file', 'unknown')}:{root_data.get('line_no', '?')}\n"
-            f"Docstring: {root_data.get('docstring', 'None')}\n"
-            f"{root_code}"
-        )
-        context_blocks.append(root_block)
-        approx_token_count += len(root_block.split()) * 1.3
-
-        # Add neighbor nodes under token budget
-        for nid in sorted(selected_nodes):
-            if nid == root:
-                continue
-
-            ndata = self.graph.nodes.get(nid, {})
-            ntype = ndata.get("type", "node")
-            code = ndata.get("code", "")
-            if not code and ntype.endswith("_contract"):
-                code = f"rpc {ndata.get('name')}({ndata.get('request_type', '')}) returns ({ndata.get('response_type', '')})"
-
-            snippet = code[:400] if len(code) > 400 else code
-            block = f"--- [{ntype.upper()}] {nid} ---\n{snippet}"
-            block_tokens = len(block.split()) * 1.3
-
-            if approx_token_count + block_tokens > max_tokens:
-                break
-
-            context_blocks.append(block)
-            approx_token_count += block_tokens
-
-        formatted_context = "\n\n".join(context_blocks)
-
-        # Accurate BPE token count using tiktoken (paper Table II metric)
-        bpe_tokens = count_tokens(formatted_context)
-
-        return {
-            "root": root,
-            "selected_nodes": list(selected_nodes),
-            "node_count": len(selected_nodes),
-            "edge_count": len(selected_edges),
-            "approx_tokens": int(approx_token_count),  # kept for backward compat
-            "bpe_tokens": bpe_tokens,                  # accurate BPE count (cl100k_base)
-            "token_budget": max_tokens,
-            "relations": selected_edges,
-            "grafted_context": formatted_context,
-        }
+        # Exact token budget and stable candidate ordering. Unlike the old
+        # whitespace approximation, the final encoded prompt cannot exceed
+        # the caller's BPE budget, including the root snippet.
+        from token_grafting import pack_context
+        return pack_context(self.graph, root, selected_nodes, selected_edges, max_tokens)
 
     # -------------------------------------------------------------------------
     # INTERNAL HELPERS
