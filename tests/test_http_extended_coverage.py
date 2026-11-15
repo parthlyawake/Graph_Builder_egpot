@@ -84,6 +84,46 @@ func main() {
     api.GET("/stock", Stock)
 }
 ''',
+        "orders/api.py": '''
+from fastapi import APIRouter
+router = APIRouter(prefix="/v3")
+@router.get("/check")
+def external_status():
+    return "OK"
+''',
+        "orders/main.py": '''
+from fastapi import FastAPI
+from api import router as imported_router
+app = FastAPI()
+app.include_router(imported_router, prefix="/external")
+''',
+        "web/external_client.py": '''
+import httpx
+def external():
+    return httpx.get("http://orders:8000/external/v3/check")
+''',
+        "ui/fastify.js": '''
+const fastify = require("fastify")();
+function fastHandler(request, reply) { return "fast"; }
+fastify.route({ method: "GET", url: "/fastify", handler: fastHandler });
+''',
+        "ui/chained.js": '''
+const express = require("express");
+const app = express();
+function chainedHandler(req, res) { return "ok"; }
+app.route("/chain").get(chainedHandler);
+''',
+        "chi_api/main.go": '''
+package main
+import "github.com/go-chi/chi/v5"
+func Read(w interface{}, r interface{}) {}
+func main() {
+    r := chi.NewRouter()
+    r.Route("/api", func(r chi.Router) {
+        r.Get("/items", Read)
+    })
+}
+''',
         "go_client/client.go": '''
 package client
 import "net/http"
@@ -142,3 +182,27 @@ def test_django_nested_include_and_view_binding(system):
 def test_static_path_parameters_do_not_match_other_routes():
     assert path_matches("/users/{id}", "/users/42")
     assert not path_matches("/users/{id}", "/users/42/delete")
+
+
+def test_cross_file_fastapi_router_and_imported_prefix(system):
+    assert "orders/api.py:external_status" in edges(
+        system, "web/external_client.py:external")
+    assert "orders/api.py:external_status" in system.http_endpoints[
+        ("GET", "/external/v3/check")
+    ]
+    assert "orders/api.py:external_status" not in system.http_endpoints.get(
+        ("GET", "/check"), [])
+
+
+def test_fastify_object_routes_and_express_chain(system):
+    assert "ui/fastify.js:fastHandler" in system.http_endpoints[
+        ("GET", "/fastify")
+    ]
+    assert "ui/chained.js:chainedHandler" in system.http_endpoints[
+        ("GET", "/chain")
+    ]
+
+
+def test_chi_lexical_router_prefix(system):
+    assert "chi_api/main.go:Read" in system.http_endpoints[("GET", "/api/items")]
+    assert "chi_api/main.go:Read" not in system.http_endpoints.get(("GET", "/items"), [])
