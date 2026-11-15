@@ -480,6 +480,8 @@ def source_requests(builder, environment):
             out.extend(_java_requests(builder, path, text))
     from http_extended import extended_requests
     out.extend(extended_requests(builder, environment))
+    from node_request_calls import extract_node_request_calls
+    out.extend(extract_node_request_calls(builder, builder.graph))
     from python_service_requests import extract_requests
     for pyfile, lines in sorted(builder.raw_file_lines.items()):
         if pyfile.endswith(".py"):
@@ -503,6 +505,14 @@ def resolve_workspace_http(workspace):
         for caller, url, verb, file, line, kind in requests:
             # Java overloaded methods can currently share one graph node ID.
             # That node is not a trustworthy source of a confirmed HTTP call.
+            if caller not in workspace.graph and caller in builder.graph:
+                # Anonymous Node callback sites are source-located entities
+                # created during outbound-request extraction.
+                workspace.graph.add_node(caller, **builder.graph.nodes[caller])
+                file_id = f"file::{builder.repo_prefix}{file}"
+                if file_id in workspace.graph:
+                    workspace.graph.add_edge(
+                        file_id, caller, relation="CONTAINS", layer="Lsyn")
             if (caller not in workspace.graph
                     or workspace.graph.nodes[caller].get("http_ambiguous_definition")):
                 continue
@@ -532,7 +542,8 @@ def resolve_workspace_http(workspace):
                 continue
             # A source-level environment default is an alternate runtime
             # branch, not proof that this destination was selected.
-            conditional = kind == "python_conditional_default"
+            conditional = kind in {"python_conditional_default",
+                                   "js_request_conditional_default"}
             relation = "POSSIBLE_HTTP_TARGET" if conditional else "HTTP_CALLS"
             layer = "Lcontract" if conditional else "Ldep"
             meta = HyperEdgeMetadata(d_scope=0, f_call=1,
