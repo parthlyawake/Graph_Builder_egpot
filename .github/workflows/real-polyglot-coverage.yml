@@ -1,0 +1,230 @@
+name: Real Polyglot Repository Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [krishna]
+    paths:
+      - language_adapters.py
+      - extended_language_adapters.py
+      - schema_contracts_extended.py
+      - message_contracts.py
+      - graft_ckg.py
+      - polyglot.py
+      - bench/real_repository_coverage.py
+      - .github/workflows/real-polyglot-coverage.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bookinfo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: istio/istio
+          ref: 027bfe16c39f472b57bb6c54761c602126ff4411
+          path: _upstream
+          sparse-checkout: |
+            samples/bookinfo
+          filter: blob:none
+          persist-credentials: false
+      - name: Audit and construct Bookinfo graph
+        run: |
+          python bench/real_repository_coverage.py --root _upstream/samples/bookinfo \
+            --expect-languages python,java,javascript,ruby --build-graph \
+            --output bench/results/real_bookinfo.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-bookinfo-audit
+          path: bench/results/real_bookinfo.json
+
+  train_ticket:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: FudanSELab/train-ticket
+          ref: 313886e99befb94be6cd45f085c98e0019f59829
+          path: _upstream
+          sparse-checkout: |
+            ts-order-service/src
+            ts-payment-service/src
+            ts-gateway-service/src
+            ts-news-service
+            ts-notification-service/src
+            ts-ticket-office-service/routes
+            ts-ticket-office-service/app
+            ts-ticket-office-service/package.json
+          filter: blob:none
+          persist-credentials: false
+      - name: Audit Train-Ticket representative service sources
+        run: |
+          python bench/real_repository_coverage.py --root _upstream \
+            --expect-languages java --output bench/results/real_train_ticket.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-train-ticket-audit
+          path: bench/results/real_train_ticket.json
+
+  deathstarbench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: delimitrou/DeathStarBench
+          ref: 6ecb09706140f8730b5385c08f1386c654c3c526
+          path: _upstream
+          sparse-checkout: |
+            socialNetwork
+            mediaMicroservices
+            hotelReservation
+          filter: blob:none
+          persist-credentials: false
+      - name: Audit real C++/Lua/Go/Python and Thrift syntax
+        run: |
+          python bench/real_repository_coverage.py --root _upstream \
+            --expect-languages cpp,lua,go,python --expect-schema thrift \
+            --output bench/results/real_deathstar.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-deathstar-audit
+          path: bench/results/real_deathstar.json
+
+  datahub:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: datahub-project/datahub
+          ref: 2ddcacb8ef00387d3959c15feab1b4194fb5d661
+          path: _upstream
+          sparse-checkout: |
+            datahub-actions/src
+            datahub-frontend/app
+            datahub-web-react/src
+            buildSrc/src/main/java
+            li-utils/src/main/pegasus
+            metadata-events/mxe-utils-avro/src/main/resources
+            datahub-graphql-core/src/main/resources
+          filter: blob:none
+          persist-credentials: false
+      - name: Audit real Scala/Java/Python/TS/PDL/Avro samples
+        run: |
+          python bench/real_repository_coverage.py --root _upstream \
+            --expect-languages scala,java,python,typescript \
+            --expect-schema pdl,avsc --output bench/results/real_datahub.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-datahub-audit
+          path: bench/results/real_datahub.json
+
+  sockshop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: carts
+            ref: f4e80051668c6a83359c41b03a27baefa590adc8
+            language: java
+          - name: orders
+            ref: 546a10c92d1ff9998c21f3849f5b95a0f14430a0
+            language: java
+          - name: shipping
+            ref: 9c0fbfa31895dd029d44d3434de93f64cd71f87b
+            language: java
+          - name: queue-master
+            ref: 7dc33721c765e5af415c9d244d84637ff2d510cd
+            language: java
+          - name: catalogue
+            ref: 925e08ee17c28b94b87160e1ae5e03da7f61cf84
+            language: go
+          - name: payment
+            ref: 384e33447dda5334187517dda09566c9a17fd6af
+            language: go
+          - name: user
+            ref: e1a79e77860734cacc3f64cabff1487e22a442a4
+            language: go
+          - name: front-end
+            ref: 52dee656f4423be041619bbb090205f912e00113
+            language: javascript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: microservices-demo/${{ matrix.name }}
+          ref: ${{ matrix.ref }}
+          path: _upstream
+          filter: blob:none
+          persist-credentials: false
+      - name: Audit real Sock Shop service language
+        run: |
+          python bench/real_repository_coverage.py --root _upstream \
+            --expect-languages ${{ matrix.language }} \
+            --output bench/results/real_sockshop_${{ matrix.name }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-sockshop-${{ matrix.name }}
+          path: bench/results/real_sockshop_${{ matrix.name }}.json
+
+  sockshop_deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: microservices-demo/microservices-demo
+          ref: 9dff06fae4981921caec6a62393a6ebfce4b3e3f
+          path: _upstream
+          filter: blob:none
+          persist-credentials: false
+      - name: Audit deployment repository separately from source repos
+        run: |
+          python bench/real_repository_coverage.py --root _upstream \
+            --output bench/results/real_sockshop_deployment.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-sockshop-deployment
+          path: bench/results/real_sockshop_deployment.json
