@@ -549,6 +549,11 @@ class CKGBuilder(ast.NodeVisitor):
             before = set(self.graph.nodes)
             try:
                 outcome = adapter_for(rel_path).extract(self, rel_path, full_path)
+                if outcome.get("parser_projection"):
+                    counters["recovered_projection"] = counters.get(
+                        "recovered_projection", 0) + 1
+                    self.language_report.setdefault(
+                        "parser_projections", {})[rel_path] = outcome["parser_projection"]
                 if outcome.get("syntax_errors"):
                     counters["partial"] += 1
                     entry = {"file": rel_path, "language": spec.name,
@@ -617,7 +622,9 @@ class CKGBuilder(ast.NodeVisitor):
         self._print_layer_statistics()
         self.language_report["complete"] = not self.language_report["parse_errors"]
         self.language_report["full_source_coverage"] = (
-            self.language_report["complete"] and not self.language_report["unsupported_files"]
+            self.language_report["complete"] and
+            not self.language_report["unsupported_files"] and
+            not self.language_report.get("parser_projections")
         )
         if self.language_report["unsupported_files"]:
             print("[!] Unsupported application files by extension: " +

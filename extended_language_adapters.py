@@ -163,7 +163,10 @@ def extract_legacy(builder, rel_path, full_path, language=None):
     module = importlib.import_module(GRAMMAR_MODULES[lang])
     parser = Parser(Language(module.language()))
     raw = Path(full_path).read_bytes()
-    parsed = parser.parse(raw)
+    from cpp_grammar_recovery import recover_cpp_tree
+    parsed, projection, masked_spans = recover_cpp_tree(parser, raw, lang)
+    if projection:
+        builder.graph.graph.setdefault("grammar_projections", {})[rel_path] = projection
     builder.current_file = rel_path
     builder.current_scope = []
     builder.scope_depth = 0
@@ -211,7 +214,9 @@ def extract_legacy(builder, rel_path, full_path, language=None):
                 if kind == "function":
                     active = target
 
-        if node.type in CALLS[lang] and active is not None:
+        if (node.type in CALLS[lang] and active is not None and
+                not (projection and any(node.start_byte < b and node.end_byte > a
+                                        for a, b in masked_spans))):
             called = _call_name(node, raw, lang)
             if called:
                 builder.calls_to_resolve.append(
@@ -234,4 +239,5 @@ def extract_legacy(builder, rel_path, full_path, language=None):
             walk(child, current_id, nested_symbols, active)
 
     walk(parsed.root_node, root_id, [])
-    return {"syntax_errors": bool(parsed.root_node.has_error)}
+    return {"syntax_errors": bool(parsed.root_node.has_error),
+            "parser_projection": projection}
