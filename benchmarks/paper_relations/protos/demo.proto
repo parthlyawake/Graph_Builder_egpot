@@ -1,0 +1,7 @@
+syntax = "proto3";
+package paper;
+message Empty {}
+message Reply { string value = 1; }
+service Greeting {
+  rpc SayHello(Empty) returns (Reply);
+}
