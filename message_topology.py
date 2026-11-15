@@ -98,6 +98,9 @@ def _bindings(text, extension):
             queue, exchange = beans.get(m[1]), beans.get(m[2])
             if queue and exchange and queue[1] == "Queue":
                 yield queue[0], exchange[0], m[3] or "", clean.count("\n", 0, m.start())+1, "spring_builder"
+        # @Bean factories and method-parameter wiring (Spring AMQP).
+        from spring_amqp_bindings import spring_bindings
+        yield from spring_bindings(clean)
     elif extension in (".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".hxx"):
         pat = r"(?:->|\.)\s*(?:BindQueue|bindQueue)\s*\(\s*" + lit + r"\s*,\s*" + lit + r"\s*,\s*" + lit
         for m in re.finditer(pat, clean):
