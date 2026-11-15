@@ -24,7 +24,11 @@ on:
       - python_service_requests.py
       - node_request_calls.py
       - go_kit_routes.py
-      - spring_amqp_bindings.py
+      - cpp_grammar_recovery.py
+      - framework_http_routes.py
+      - java_jaxrs_requests.py
+      - graphql_links.py
+      - graph_io.py
       - traversal.py
       - contracts/graph_types.py
       - contracts/sckg_provider.py
