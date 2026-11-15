@@ -15,6 +15,10 @@ import os
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
+import sys
+
+# Executed as `python bench/real_repository_coverage.py` in CI.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from language_adapters import KNOWN_UNSUPPORTED, parser_available, spec_for
 from extended_language_adapters import GRAMMAR_MODULES
