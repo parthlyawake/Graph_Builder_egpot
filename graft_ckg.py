@@ -594,6 +594,11 @@ class CKGBuilder(ast.NodeVisitor):
         from message_contracts import index_message_contracts
         index_message_contracts(self)
 
+        # Typed Thrift runtime edges for single-repository C++ graphs.
+        # Multi-repository graphs bind again after canonical composition.
+        from thrift_bindings import bind_thrift_runtime
+        self.thrift_bindings = bind_thrift_runtime(self.graph, [self])
+
         # Pass 3: Construct Semantic Layer (Lsem)
         self._build_semantic_layer()
 

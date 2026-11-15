@@ -332,6 +332,12 @@ class WorkspaceCKGBuilder:
         # Step 8: Resolve cross-repository proto type identity (P8)
         self._resolve_cross_repo_proto_types()
 
+        # Step 8b: Bind typed Thrift C++ clients and interface handlers.
+        # This is source-evidenced and independent of any example repository.
+        from thrift_bindings import bind_thrift_runtime
+        self.thrift_bindings = bind_thrift_runtime(
+            self.graph, self.repo_builders.values())
+
         # Step 9: Resolve inter-service dataflow through contract RPCs (P4)
         self._resolve_inter_service_dataflow()
 
