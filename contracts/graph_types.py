@@ -50,7 +50,9 @@ class EdgeType(str, Enum):
     FLOWS_TO = "flows_to"        # propagated request/response values
     RETURNS = "returns"          # returned values
     MUTATES = "mutates"          # state mutation
-    PRODUCES_EVENT = "produces_event"  # service publishes to a topic
+    PRODUCES_EVENT = "produces_event"
+    ROUTES_TO = "routes_to"
+    PAYLOAD_SCHEMA = "payload_schema"  # service publishes to a topic
     CONSUMES_EVENT = "consumes_event"  # service listens to a topic
     HTTP_CALLS = "http_calls"    # service calls a REST endpoint
     HTTP_REQUEST = "http_request"  # function makes an unresolved-host request

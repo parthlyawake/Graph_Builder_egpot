@@ -234,6 +234,10 @@ class SCKGGraphProvider(GraphProvider):
             return EdgeType.PRODUCES
         if r == "PRODUCES_EVENT":
             return EdgeType.PRODUCES_EVENT
+        if r == "ROUTES_TO":
+            return EdgeType.ROUTES_TO
+        if r == "PAYLOAD_SCHEMA":
+            return EdgeType.PAYLOAD_SCHEMA
         if r == "CONSUMES_EVENT":
             return EdgeType.CONSUMES_EVENT
         if r == "HTTP_CALLS":

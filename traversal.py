@@ -185,6 +185,49 @@ class SCKGTraversal:
             "edges": traversed_edges,
         }
 
+    def event_delivery_paths(self, producer_or_node: str, max_paths: int = 100):
+        """Trace only proven producer -> [exchange route] -> queue -> consumer paths.
+
+        No message delivery link is inferred solely from matching topic names.
+        Conditional broker configuration and unknown bindings stay excluded.
+        """
+        source = self._resolve_node_id(producer_or_node)
+        if not source:
+            return {"error": f"Producer '{producer_or_node}' not found."}
+        paths = []
+        for _, first, produced in self.graph.out_edges(source, data=True):
+            if produced.get("relation") != "PRODUCES_EVENT":
+                continue
+            queue_paths = []
+            if first.startswith("queue::amqp::") or first.startswith("topic::kafka::"):
+                queue_paths.append((first, None))
+            if first.startswith("topic::amqp::"):
+                for _, queue, routed in self.graph.out_edges(first, data=True):
+                    if routed.get("relation") == "ROUTES_TO":
+                        queue_paths.append((queue, routed))
+            for queue, routed in queue_paths:
+                consumers = sorted({
+                    consumer for consumer, _, edge in
+                    self.graph.in_edges(queue, data=True)
+                    if edge.get("relation") == "CONSUMES_EVENT"
+                })
+                schemas = sorted({
+                    schema for _, schema, edge in self.graph.out_edges(first, data=True)
+                    if edge.get("relation") == "PAYLOAD_SCHEMA"
+                })
+                for consumer in consumers:
+                    paths.append({
+                        "producer": source, "published_contract": first,
+                        "queue_or_topic": queue, "consumer": consumer,
+                        "payload_schemas": schemas,
+                        "routing_evidence": routed.get("source_evidence") if routed else None,
+                        "routing_kind": routed.get("binding_kind") if routed else "direct",
+                        "confirmed": True,
+                    })
+        return {"producer": source, "path_count": min(len(paths), max_paths),
+                "truncated": len(paths) > max_paths,
+                "paths": paths[:max_paths]}
+
     # -------------------------------------------------------------------------
     # 2. DOWNSTREAM CONSUMERS
     # -------------------------------------------------------------------------
@@ -339,7 +382,9 @@ class SCKGTraversal:
                 rel = data.get("relation")
                 if l in allowed_layers and rel in (
                     "CALLS", "POLYMORPHIC_CALL", "CONSUMES", "IMPLEMENTS",
-                    "EXTENDS", "MUTATES", "RETURNS", "HTTP_CALLS", "SEMANTIC_SIMILAR", "DEFINES_RPC"
+                    "EXTENDS", "MUTATES", "RETURNS", "HTTP_CALLS", "SEMANTIC_SIMILAR",
+                    "DEFINES_RPC", "PRODUCES_EVENT", "CONSUMES_EVENT",
+                    "ROUTES_TO", "PAYLOAD_SCHEMA"
                 ):
                     selected_nodes.add(tgt)
                     selected_edges.append({
@@ -366,7 +411,9 @@ class SCKGTraversal:
                     continue
 
                 if l in allowed_layers and rel in (
-                    "IMPLEMENTS", "CONSUMES", "CONTAINS", "DEFINES_RPC", "SEMANTIC_SIMILAR", "CALLS"
+                    "IMPLEMENTS", "CONSUMES", "CONTAINS", "DEFINES_RPC",
+                    "SEMANTIC_SIMILAR", "CALLS", "CONSUMES_EVENT",
+                    "PRODUCES_EVENT", "ROUTES_TO", "PAYLOAD_SCHEMA"
                 ):
                     selected_nodes.add(src)
                     selected_edges.append({
