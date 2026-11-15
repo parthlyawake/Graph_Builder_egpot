@@ -244,8 +244,10 @@ def _django_routes(workspace, builder):
 
 
 def _js_routes(workspace, builder, sources):
+    from polyglot import TreeSitterExtractor
     routes = []
     imports = {}
+    authored_calls = {}
     for file, text in sources.items():
         if not file.endswith((".js", ".jsx", ".ts", ".tsx")):
             continue
@@ -258,11 +260,27 @@ def _js_routes(workspace, builder, sources):
                 r"\bimport\s+(\w+)\s+from\s+['\"](\.[^'\"]+)['\"]", text):
             imported[variable] = module
         imports[file] = imported
+        root = TreeSitterExtractor(PurePosixPath(file).suffix).parser.parse(
+            text.encode("utf-8")).root_node
+        authored = set()
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            if node.type == "call_expression":
+                authored.add(node.start_byte)
+            stack.extend(node.named_children)
+        authored_calls[file] = authored
+
+        def is_source_call(match):
+            return len(text[:match.start()].encode("utf-8")) in authored
+
         pattern = (r"\b([A-Za-z_$][\w$]*)\."
                    r"(get|post|put|patch|delete|head|options)\(\s*"
                    r"(['\"])(/[^'\"\r\n]*)\3\s*,\s*"
                    r"([A-Za-z_$][\w$]*)\b")
         for match in re.finditer(pattern, text, re.I):
+            if not is_source_call(match):
+                continue
             receiver, verb, _, path, handler_name = match.groups()
             if receiver not in {"app", "router", "fastify", "server"} and not re.search(
                     r"\b(?:const|let)\s+" + re.escape(receiver)
@@ -274,6 +292,8 @@ def _js_routes(workspace, builder, sources):
         # Fastify's object-form registration and Express route chaining.
         for match in re.finditer(
                 r"\b(?:fastify|server)\.route\(\s*\{([^{}]+)\}\s*\)", text, re.S):
+            if not is_source_call(match):
+                continue
             body = match.group(1)
             verb = re.search(r"\bmethod\s*:\s*['\"]([A-Za-z]+)['\"]", body)
             path = re.search(r"\b(?:url|path)\s*:\s*['\"](/[^'\"]+)['\"]", body)
@@ -287,6 +307,8 @@ def _js_routes(workspace, builder, sources):
                 r"\b(app|router)\.route\(\s*['\"](/[^'\"]+)['\"]\s*\)"
                 r"\.(get|post|put|patch|delete|head|options)\(\s*(\w+)\s*\)",
                 text, re.I):
+            if not is_source_call(match):
+                continue
             receiver, path, verb, name = match.groups()
             nid = _function_node(builder, file, name)
             if nid:
@@ -297,6 +319,8 @@ def _js_routes(workspace, builder, sources):
             continue
         for match in re.finditer(
                 r"\b[A-Za-z_$][\w$]*\.use\(\s*['\"](/[^'\"]*)['\"]\s*,\s*(\w+)\s*\)", text):
+            if len(text[:match.start()].encode("utf-8")) not in authored_calls[file]:
+                continue
             prefix, receiver = match.groups()
             target = file
             if receiver in imports[file]:
@@ -317,9 +341,22 @@ def _js_routes(workspace, builder, sources):
 
 
 def _go_routes(workspace, builder, sources):
+    from polyglot import TreeSitterExtractor
     for file, text in sources.items():
         if not file.endswith(".go"):
             continue
+        root = TreeSitterExtractor(".go").parser.parse(text.encode("utf-8")).root_node
+        authored = set()
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            if node.type == "call_expression":
+                authored.add(node.start_byte)
+            stack.extend(node.named_children)
+
+        def is_source_call(match):
+            return len(text[:match.start()].encode("utf-8")) in authored
+
         groups = {}
         for match in re.finditer(
                 r"\b(\w+)\s*:?=\s*\w+\.Group\(\s*['\"`](/[^'\"`]*)['\"`]\s*\)",
@@ -329,6 +366,8 @@ def _go_routes(workspace, builder, sources):
                    r"\(\s*['\"`](/[^'\"`]*)['\"`]\s*,\s*"
                    r"(\w+)\b")
         for m in re.finditer(pattern, text):
+            if not is_source_call(m):
+                continue
             receiver, method, path, handler_name = m.groups()
             if receiver not in groups and not re.search(
                     r"\b" + re.escape(receiver)
@@ -343,6 +382,8 @@ def _go_routes(workspace, builder, sources):
         for m in re.finditer(
                 r"\b(\w+)\.HandleFunc\(\s*['\"`](/[^'\"`]*)['\"`]\s*,\s*(\w+)\s*\)"
                 r"\.Methods\(\s*['\"`]([A-Z]+)['\"`]\s*\)", text):
+            if not is_source_call(m):
+                continue
             receiver, path, handler_name, method = m.groups()
             if not re.search(re.escape(receiver) + r"\s*:?=\s*mux\.NewRouter", text):
                 continue
@@ -354,6 +395,8 @@ def _go_routes(workspace, builder, sources):
         for m in re.finditer(
                 r"\b(\w+)\.Route\(\s*['\"](/[^'\"]+)['\"]\s*,\s*"
                 r"func\(\s*(\w+)\s+chi\.Router\s*\)\s*\{", text):
+            if not is_source_call(m):
+                continue
             outer, prefix, inner = m.groups()
             if not re.search(r"\b" + re.escape(outer)
                              + r"\s*:?=\s*chi\.NewRouter\(", text):
