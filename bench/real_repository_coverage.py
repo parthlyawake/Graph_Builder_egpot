@@ -79,7 +79,9 @@ def run_audit(root: Path, *, max_bytes=5_000_000, build_graph=False):
                 else:
                     if not parser_available(spec):
                         raise RuntimeError(f"missing grammar: {spec.package}")
-                    key = spec.extensions[0] if spec.parser == "tree_sitter" else spec.name
+                    # .ts and .tsx require different grammars. Cache by the
+                    # actual extension rather than the language's first suffix.
+                    key = ext if spec.parser == "tree_sitter" else spec.name
                     parser = parser_cache.get(key)
                     if parser is None:
                         if spec.parser == "tree_sitter_legacy":
