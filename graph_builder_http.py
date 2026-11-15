@@ -480,6 +480,11 @@ def source_requests(builder, environment):
             out.extend(_java_requests(builder, path, text))
     from http_extended import extended_requests
     out.extend(extended_requests(builder, environment))
+    from python_service_requests import extract_requests
+    for pyfile, lines in sorted(builder.raw_file_lines.items()):
+        if pyfile.endswith(".py"):
+            out.extend(extract_requests(
+                builder, pyfile, "\n".join(lines), environment))
     for caller, url, method, file, line in getattr(builder, "http_literal_urls", []):
         if isinstance(url, str) and url.startswith(("http://", "https://")):
             out.append((caller, url, method, file, line, "literal_host"))
@@ -525,13 +530,21 @@ def resolve_workspace_http(workspace):
             if any(v == target and d.get("relation") == "HTTP_CALLS"
                    for _, v, d in workspace.graph.out_edges(caller, data=True)):
                 continue
-            meta = HyperEdgeMetadata(d_scope=0, f_call=1, c_type=1.0, id_ctx=file)
+            # A source-level environment default is an alternate runtime
+            # branch, not proof that this destination was selected.
+            conditional = kind == "python_conditional_default"
+            relation = "POSSIBLE_HTTP_TARGET" if conditional else "HTTP_CALLS"
+            layer = "Lcontract" if conditional else "Ldep"
+            meta = HyperEdgeMetadata(d_scope=0, f_call=1,
+                                     c_type=0.5 if conditional else 1.0,
+                                     id_ctx=file)
             workspace.graph.add_edge(
                 caller, target, key=f"w_http_source_{caller}_{target}_{file}_{line}",
-                relation="HTTP_CALLS", layer="Ldep", metadata=meta.to_dict(),
-                d_scope=0, f_call=1.0, c_type=1.0, id_ctx=file,
+                relation=relation, layer=layer, metadata=meta.to_dict(),
+                d_scope=0, f_call=1.0, c_type=meta.c_type, id_ctx=file,
                 match_kind=kind, source_evidence=f"{file}:{line}",
                 http_method=verb, http_url=url,
+                runtime_configuration_conditional=conditional,
             )
             resolved += 1
 
