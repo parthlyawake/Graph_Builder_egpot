@@ -91,4 +91,4 @@ def test_python_kafka_literal_topic_and_unknown_omission(tmp_path):
         )
     })
     assert ("pub.py:emit", "topic::kafka::metadata-change") in _relations(graph, "PRODUCES_EVENT")
-    assert not any(u == "pub.py:dynamic" for u, v in _relations(graph, "PRODUCES_EVENT")
+    assert not any(u == "pub.py:dynamic" for u, v in _relations(graph, "PRODUCES_EVENT"))
