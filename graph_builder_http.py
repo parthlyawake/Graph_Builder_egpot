@@ -21,9 +21,13 @@ def path_matches(template, request):
         return False
     for part, value in zip(left, right):
         if re.fullmatch(r"\{[^{}]+\}|<[^<>]+>|:[A-Za-z_][\w]*", part):
-            if not value or "/" in value:
+            # An abstract request segment can match a declared route variable,
+            # but must never prove a match against a concrete literal route.
+            if not value or "/" in value or (
+                any(c in value for c in "{}<>") and value not in {"{*}", "*"}
+            ):
                 return False
-        elif part != value or any(c in value for c in "{}<>"):
+        elif part != value or any(c in value for c in "{}<>*"):
             return False
     return True
 

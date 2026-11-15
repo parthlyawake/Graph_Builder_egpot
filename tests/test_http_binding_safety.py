@@ -173,3 +173,11 @@ def test_self_session_instantiated_in_constructor(tmp_path):
     workspace, caller, handler = _workspace(tmp_path, source=source, strict=True)
     assert resolve_workspace_http(workspace) == 1
     assert {(u, v) for u, v, _ in _http_edges(workspace)} == {(caller, handler)}
+
+
+def test_abstract_path_segments_only_match_declared_variables():
+    from graph_builder_http import path_matches
+    assert path_matches("/orders/{orderId}", "/orders/{*}")
+    assert path_matches("/users/:id", "/users/*")
+    assert not path_matches("/orders/latest", "/orders/{*}")
+    assert not path_matches("/orders/{orderId}/status", "/orders/{*}")
