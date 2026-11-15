@@ -255,4 +255,19 @@ def link_graphql_operations(workspace, base_dir):
                         relation="CONSUMES", layer="Lcontract",
                         source_evidence=rel)
                     linked += 1
-    return linked
+    # Follow typed nested selections and literal JS/TS tagged GraphQL documents.
+    from graphql_embedded import bind_selections, link_embedded
+    for file in sorted(root.rglob("*")):
+        if file.suffix.lower() not in {".graphql", ".gql"} or not file.is_file():
+            continue
+        if set(file.relative_to(root).parts) & {
+                "node_modules", ".git", "vendor", "dist", "build"}:
+            continue
+        rel = file.relative_to(root).as_posix()
+        document = file.read_text(encoding="utf8", errors="replace")
+        for op in parse_graphql_operations(document):
+            node = f"graphqlop::{rel}:{op.kind}:{op.name}"
+            if node in workspace.graph:
+                linked += bind_selections(workspace.graph, node, document)
+    workspace.graph.graph["graphql_embedded"] = link_embedded(workspace, root)
+    return linked + workspace.graph.graph["graphql_embedded"]["typed_edges"]
