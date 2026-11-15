@@ -474,6 +474,9 @@ def register_routes(workspace):
         from go_kit_routes import register_go_kit_routes
         register_go_kit_routes(workspace, builder, sources)
         _ruby_routes(workspace, builder, sources)
+        from framework_http_routes import jaxrs_routes, httpdispatcher_routes
+        jaxrs_routes(workspace, builder, sources)
+        httpdispatcher_routes(workspace, builder, sources)
 
 
 def _raw(node, source):
