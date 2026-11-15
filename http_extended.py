@@ -232,7 +232,14 @@ def _django_routes(workspace, builder):
             child = module_file(module)
             if child:
                 visit(child, join_path(prefix, "/" + path), seen | {file})
-    for file in sorted(urls):
+    included_files = {
+        target for _, includes in urls.values()
+        for _, module in includes
+        for target in [module_file(module)] if target is not None
+    }
+    # The included module is mounted under its parent URLconf; indexing it
+    # as an independent root would assert non-existent unprefixed endpoints.
+    for file in sorted(set(urls) - included_files):
         visit(file, "", set())
 
 
