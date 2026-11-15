@@ -828,6 +828,11 @@ class WorkspaceCKGBuilder:
         """P5: Extends Lcontract with OpenAPI REST endpoints and GraphQL schemas."""
         from openapi_graphql_parser import OpenAPIContractParser, GraphQLContractParser
         base_dir = self.config.base_dir if hasattr(self.config, "base_dir") else "."
+        diagnostics = {
+            "graphql": {"discovered": 0, "parsed": 0, "failed": 0},
+            "graphql_issues": [],
+        }
+        self.graph.graph["contract_spec_diagnostics"] = diagnostics
         for root, _, files in os.walk(base_dir):
             if any(p in root for p in ("node_modules", ".git", ".pytest_cache", "tmp")):
                 continue
@@ -864,10 +869,14 @@ class WorkspaceCKGBuilder:
 
                 # GraphQL
                 elif f.endswith((".graphql", ".gql")):
+                    diagnostics["graphql"]["discovered"] += 1
                     try:
                         with open(f_path, "r", encoding="utf-8", errors="replace") as gfile:
                             g_text = gfile.read()
                         g_spec = GraphQLContractParser.parse_text(g_text)
+                        if not g_spec or g_spec.invalid:
+                            raise ValueError("GraphQL syntax or schema parser rejected document")
+                        diagnostics["graphql"]["parsed"] += 1
                         if g_spec and g_spec.root_types:
                             self.graph.graph.setdefault("graphql_root_types", {}).update(
                                 g_spec.root_types)
@@ -885,8 +894,11 @@ class WorkspaceCKGBuilder:
                                             field=fname, return_type=fobj.type_name, spec="graphql"
                                         )
                                         self.graph.add_edge(file_id, gql_id, key=f"e_gql_{file_id}_{gql_id}", relation="CONTAINS", layer="Lsyn")
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        diagnostics["graphql"]["failed"] += 1
+                        if len(diagnostics["graphql_issues"]) < 200:
+                            diagnostics["graphql_issues"].append({
+                                "file": rel_f, "reason": str(exc)[:300]})
 
     def _resolve_graphql_java_bindings(self):
         """Link explicit Java RuntimeWiring DataFetchers to known schema fields."""
@@ -1001,9 +1013,13 @@ class WorkspaceCKGBuilder:
             "http_calls_edges": http_calls_count,
             "produces_event_edges": produces_event_count,
             "consumes_event_edges": consumes_event_count,
-            "source_coverage_complete": all(
-                r["source_coverage_complete"] for r in repos_summary.values()
+            "source_coverage_complete": (
+                all(r["source_coverage_complete"] for r in repos_summary.values())
+                and self.graph.graph.get("contract_spec_diagnostics", {}).get(
+                    "graphql", {}).get("failed", 0) == 0
             ) if repos_summary else False,
+            "contract_spec_diagnostics": self.graph.graph.get(
+                "contract_spec_diagnostics", {}),
             "skipped_file_count": sum(len(r["skipped_files"]) for r in repos_summary.values()),
             "contract_skews": self.contract_skews,
             "skew_count": len(self.contract_skews),
