@@ -57,20 +57,22 @@ def discover_modules(root):
         raise FileNotFoundError(str(root))
     modules = []
     occupied = set()
-    for path in sorted([root, *root.rglob("*")]):
-        if not path.is_dir() or set(path.relative_to(root).parts) & SKIP:
-            continue
+    import os
+    for base, directories, _ in os.walk(root):
+        directories[:] = sorted(d for d in directories if d not in SKIP)
+        path = Path(base)
         if not _module_marker(path):
             continue
-        if any(parent in occupied for parent in path.parents):
-            continue
         rel = path.relative_to(root).as_posix()
-        name = _spring_name(path) or path.name
+        declared = _spring_name(path)
+        name = declared or path.name
         if not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
             continue
         modules.append({"id": name, "path": "." if rel == "." else rel,
-                        "identity_source": "spring.application.name" if _spring_name(path) else "build_manifest_directory"})
+                        "identity_source": "spring.application.name" if declared
+                        else "build_manifest_directory"})
         occupied.add(path)
+        directories[:] = []  # A discovered build root owns its nested packages.
     # Duplicate declared service names make ownership ambiguous. Fail rather
     # than merge different service sources into one namespace.
     names = [m["id"] for m in modules]
