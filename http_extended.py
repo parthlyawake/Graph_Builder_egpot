@@ -528,10 +528,23 @@ def _js_calls(builder, file, text, environment):
         for declaration in walk(root):
             if declaration.type != "variable_declarator" or declaration.start_byte >= call.start_byte:
                 continue
-            # Ignore assignments inside unrelated functions.
-            ancestor = declaration.parent
+            # Ignore values from other functions and conditional/loop blocks.
+            # A branch-local constant is not a confirmed value at a later call.
             function_name = parent_fn(declaration)
             if function_name and function_name != name:
+                continue
+            ancestor = declaration.parent
+            conditional = False
+            while ancestor:
+                if ancestor.type in {
+                    "if_statement", "for_statement", "for_in_statement",
+                    "while_statement", "do_statement", "switch_statement",
+                    "switch_case", "try_statement", "catch_clause",
+                }:
+                    conditional = True
+                    break
+                ancestor = ancestor.parent
+            if conditional:
                 continue
             var = declaration.child_by_field_name("name")
             val = declaration.child_by_field_name("value")
@@ -617,22 +630,50 @@ def _go_calls(builder, file, text, environment):
         if not caller:
             continue
         values = {}
-        # Values from unconditionally executed simple assignments, preceding call.
-        for m in re.finditer(
-                r'(?m)^\s*(?:const\s+|var\s+)?(\w+)\s*(?::=|=)\s*'
-                r'("https?://[^"\r\n]+"|os\.Getenv\("[^"]+"\)|\w+\s*\+\s*"[^"]+")', text):
-            if m.start() >= call.start_byte:
+
+        def assign_value(expression):
+            expression = expression.strip().rstrip(";")
+            if expression.startswith('"') and expression.endswith('"'):
+                try:
+                    return json.loads(expression)
+                except ValueError:
+                    return None
+            if expression.startswith(chr(96)) and expression.endswith(chr(96)):
+                return expression[1:-1]
+            getenv = re.fullmatch(r'os\.Getenv\(\s*"([^"]+)"\s*\)', expression)
+            if getenv:
+                return environment.get(getenv.group(1))
+            concat = re.fullmatch(r'(\w+)\s*\+\s*"([^"]+)"', expression)
+            if concat and isinstance(values.get(concat.group(1)), str):
+                return values[concat.group(1)] + concat.group(2)
+            if expression in values:
+                return values[expression]
+            return None
+
+        # Go locals are function-scoped. Only top-level, unconditional
+        # declarations in the enclosing function are used as proof; unknown
+        # reassignments and control flow invalidate prior assumptions.
+        body = outer.child_by_field_name("body")
+        statements = body.named_children if body is not None else ()
+        for statement in statements:
+            if statement.start_byte >= call.start_byte:
                 break
-            var, expr = m.groups()
-            if expr.startswith('"'):
-                values[var] = expr[1:-1]
-            elif expr.startswith("os.Getenv"):
-                envname = re.search(r'"([^"]+)"', expr)
-                values[var] = environment.get(envname.group(1)) if envname else None
-            else:
-                part = re.fullmatch(r'(\w+)\s*\+\s*"([^"]+)"', expr)
-                if part and isinstance(values.get(part.group(1)), str):
-                    values[var] = values[part.group(1)] + part.group(2)
+            if statement.type in {
+                "if_statement", "for_statement", "expression_switch_statement",
+                "type_switch_statement", "select_statement", "range_clause",
+            }:
+                values.clear()
+                continue
+            if statement.type not in {
+                "short_var_declaration", "assignment_statement",
+                "var_declaration", "const_declaration",
+            }:
+                continue
+            declaration = raw(statement).strip()
+            pair = re.match(r'^(?:(?:var|const)\s+)?(\w+)\s*(?::=|=)\s*(.+)$',
+                            declaration, re.S)
+            if pair:
+                values[pair.group(1)] = assign_value(pair.group(2))
         positional = [raw(a) for a in args.named_children]
 
         def eval_arg(expr):
