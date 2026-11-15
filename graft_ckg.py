@@ -563,6 +563,10 @@ class CKGBuilder(ast.NodeVisitor):
                                            "language": spec.name, "reason": str(exc)})
                 print(f"[!] Warning: Error parsing {self.repo_prefix}{rel_path}: {exc}")
 
+        # Bind local file imports for languages with path-based module loading.
+        from local_language_imports import bind_literal_imports
+        bind_literal_imports(self)
+
         # Pass 2: Resolve inheritance before method calls, then dependencies.
         from compiler_resolution import configure_compiler_provider
         configure_compiler_provider(self)
