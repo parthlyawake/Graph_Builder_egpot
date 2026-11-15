@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Google Online Boutique Go",
+    "repo": "_boutique",
+    "relative_file": "src/shippingservice/main.go",
+    "mode": "append_comment",
+    "expected_commit": "38e7348eb289eb5b87c0c6e8cb19ced0449dc389"
+  },
+  {
+    "name": "DataHub Python subtree",
+    "repo": "_datahub/datahub-actions/src",
+    "relative_file": "datahub_actions/action/action_stats.py",
+    "mode": "append_python_function",
+    "expected_commit": "051fb78fe6a6395043d272218b035cb00fe27321"
+  }
+]

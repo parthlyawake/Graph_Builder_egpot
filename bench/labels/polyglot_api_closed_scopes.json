@@ -1,0 +1,180 @@
+{
+  "dataset": "polyglot_api_fixture_source_audited_2026_11_15",
+  "source_revision": "55ffb70fc0f7f75b8e5fc9620fa721f27ee6f2c2",
+  "status": "source_inspected_pending_independent_human_signoff",
+  "description": "All TypeScript caller declarations in both fixture frontend files were individually inspected against exact request paths/methods and backend Python handler decorators. The closed source scopes cover all outgoing HTTP_CALLS from these eight functions. This is a curated fixture, not an independent real-world accuracy estimate.",
+  "nodes": [
+    {
+      "id": "frontend/fetch_client.ts:listUsers",
+      "type": "function",
+      "file": "frontend/fetch_client.ts",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "export function listUsers()"
+      }
+    },
+    {
+      "id": "frontend/fetch_client.ts:createUser",
+      "type": "function",
+      "file": "frontend/fetch_client.ts",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "export function createUser()"
+      }
+    },
+    {
+      "id": "frontend/fetch_client.ts:updateOrder",
+      "type": "function",
+      "file": "frontend/fetch_client.ts",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "export function updateOrder()"
+      }
+    },
+    {
+      "id": "frontend/fetch_client.ts:patchSearch",
+      "type": "function",
+      "file": "frontend/fetch_client.ts",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "export function patchSearch()"
+      }
+    },
+    {
+      "id": "frontend/fetch_client.ts:dynamicLookup",
+      "type": "function",
+      "file": "frontend/fetch_client.ts",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "export function dynamicLookup(userId: string)"
+      }
+    },
+    {
+      "id": "frontend/fetch_client.ts:wrongMethod",
+      "type": "function",
+      "file": "frontend/fetch_client.ts",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "export function wrongMethod()"
+      }
+    },
+    {
+      "id": "frontend/axios_client.ts:loadProducts",
+      "type": "function",
+      "file": "frontend/axios_client.ts",
+      "evidence": {
+        "file": "frontend/axios_client.ts",
+        "contains": "export function loadProducts()"
+      }
+    },
+    {
+      "id": "frontend/axios_client.ts:removeProduct",
+      "type": "function",
+      "file": "frontend/axios_client.ts",
+      "evidence": {
+        "file": "frontend/axios_client.ts",
+        "contains": "export function removeProduct()"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "frontend/fetch_client.ts:listUsers",
+      "relation": "HTTP_CALLS",
+      "target": "backend/flask_routes.py:list_users",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "fetch(\"/api/users\")"
+      }
+    },
+    {
+      "source": "frontend/fetch_client.ts:createUser",
+      "relation": "HTTP_CALLS",
+      "target": "backend/flask_routes.py:create_user",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "fetch(\"/api/users\", { method: \"POST\""
+      }
+    },
+    {
+      "source": "frontend/fetch_client.ts:updateOrder",
+      "relation": "HTTP_CALLS",
+      "target": "backend/flask_routes.py:update_order",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "fetch(\"/api/orders\", { method: \"PUT\""
+      }
+    },
+    {
+      "source": "frontend/fetch_client.ts:patchSearch",
+      "relation": "HTTP_CALLS",
+      "target": "backend/flask_routes.py:patch_search",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/fetch_client.ts",
+        "contains": "fetch(\"/api/search\", { method: \"PATCH\""
+      }
+    },
+    {
+      "source": "frontend/axios_client.ts:loadProducts",
+      "relation": "HTTP_CALLS",
+      "target": "backend/fastapi_routes.py:list_products",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/axios_client.ts",
+        "contains": "axios.get(\"/v1/products\")"
+      }
+    },
+    {
+      "source": "frontend/axios_client.ts:removeProduct",
+      "relation": "HTTP_CALLS",
+      "target": "backend/fastapi_routes.py:delete_product",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/axios_client.ts",
+        "contains": "axios.delete(\"/v1/products/sku-1\")"
+      }
+    }
+  ],
+  "negatives": [
+    {
+      "source": "frontend/fetch_client.ts:dynamicLookup",
+      "relation": "HTTP_CALLS",
+      "target": "backend/flask_routes.py:list_users"
+    },
+    {
+      "source": "frontend/fetch_client.ts:wrongMethod",
+      "relation": "HTTP_CALLS",
+      "target": "backend/fastapi_routes.py:list_products"
+    }
+  ],
+  "closed_scopes": [
+    {
+      "relation": "HTTP_CALLS",
+      "sources": [
+        "frontend/fetch_client.ts:listUsers",
+        "frontend/fetch_client.ts:createUser",
+        "frontend/fetch_client.ts:updateOrder",
+        "frontend/fetch_client.ts:patchSearch",
+        "frontend/fetch_client.ts:dynamicLookup",
+        "frontend/fetch_client.ts:wrongMethod",
+        "frontend/axios_client.ts:loadProducts",
+        "frontend/axios_client.ts:removeProduct"
+      ],
+      "language": "typescript"
+    }
+  ],
+  "closed_node_scopes": [
+    {
+      "type": "function",
+      "files": [
+        "frontend/fetch_client.ts",
+        "frontend/axios_client.ts"
+      ],
+      "language": "typescript"
+    }
+  ]
+}

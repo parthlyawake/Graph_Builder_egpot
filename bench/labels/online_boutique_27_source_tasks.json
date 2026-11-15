@@ -1,0 +1,218 @@
+[
+  {
+    "id": "ob01",
+    "query": "Which component computes a shipping price from quantities in the request?",
+    "relevant": [
+      "src/shippingservice/main.go:server.GetQuote"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob02",
+    "query": "Where does the shipping RPC generate a delivery tracking identifier?",
+    "relevant": [
+      "src/shippingservice/main.go:server.ShipOrder"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob03",
+    "query": "Which order processing RPC coordinates payment and shipping after receiving a cart?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.PlaceOrder"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob04",
+    "query": "Where does checkout query an external delivery quote before charging?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.quoteShipping"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob05",
+    "query": "Which checkout helper obtains items saved in a shopper's cart?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.getUserCart"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob06",
+    "query": "Which checkout helper clears an existing cart after a successful purchase?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.emptyUserCart"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob07",
+    "query": "Where are cart items translated into order items and localized prices?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.prepOrderItems"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob08",
+    "query": "Which checkout helper sends money to the currency conversion RPC?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.convertCurrency"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob09",
+    "query": "Which checkout helper calls the credit card charging service?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.chargeCard"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob10",
+    "query": "Where does checkout send the post-purchase email notification?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.sendOrderConfirmation"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob11",
+    "query": "Which checkout helper asks shipping to fulfill an order?",
+    "relevant": [
+      "src/checkoutservice/main.go:checkoutService.shipOrder"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob12",
+    "query": "Which frontend function collects the currencies for the menu?",
+    "relevant": [
+      "src/frontend/rpc.go:frontendServer.getCurrencies"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob13",
+    "query": "Which frontend RPC helper retrieves the products in the catalogue?",
+    "relevant": [
+      "src/frontend/rpc.go:frontendServer.getProducts"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob14",
+    "query": "Which frontend RPC helper loads a particular product by its identifier?",
+    "relevant": [
+      "src/frontend/rpc.go:frontendServer.getProduct"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob15",
+    "query": "Which frontend method requests shopping cart entries?",
+    "relevant": [
+      "src/frontend/rpc.go:frontendServer.getCart"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob16",
+    "query": "Which frontend method requests a quote on the selected cart items?",
+    "relevant": [
+      "src/frontend/rpc.go:frontendServer.getShippingQuote"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob17",
+    "query": "Which frontend method asks for product recommendations?",
+    "relevant": [
+      "src/frontend/rpc.go:frontendServer.getRecommendations"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob18",
+    "query": "Which HTTP handler posts an order from the web cart?",
+    "relevant": [
+      "src/frontend/handlers.go:frontendServer.placeOrderHandler"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob19",
+    "query": "Which handler adds a selected product to the shopping cart?",
+    "relevant": [
+      "src/frontend/handlers.go:frontendServer.addToCartHandler"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob20",
+    "query": "Which handler displays the contents of the shopper's cart?",
+    "relevant": [
+      "src/frontend/handlers.go:frontendServer.viewCartHandler"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob21",
+    "query": "Where does the product catalog return the complete list of items?",
+    "relevant": [
+      "src/productcatalogservice/product_catalog.go:productCatalog.ListProducts"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob22",
+    "query": "Which catalog RPC looks up a product by its unique ID?",
+    "relevant": [
+      "src/productcatalogservice/product_catalog.go:productCatalog.GetProduct"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob23",
+    "query": "Which catalog RPC searches for matching catalog products?",
+    "relevant": [
+      "src/productcatalogservice/product_catalog.go:productCatalog.SearchProducts"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob24",
+    "query": "Where does the Python recommendation service construct a list of suggested products?",
+    "relevant": [
+      "src/recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob25",
+    "query": "Which Node.js currency service method lists supported currency codes?",
+    "relevant": [
+      "src/currencyservice/server.js:getSupportedCurrencies"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob26",
+    "query": "Which Node.js currency service method converts a monetary amount between currencies?",
+    "relevant": [
+      "src/currencyservice/server.js:convert"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "ob27",
+    "query": "Which Python helper dispatches email confirmation messages?",
+    "relevant": [
+      "src/emailservice/email_client.py:send_confirmation_email"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  }
+]

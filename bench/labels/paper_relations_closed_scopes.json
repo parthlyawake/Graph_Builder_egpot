@@ -1,0 +1,425 @@
+{
+  "dataset": "paper_relations_source_audited_v1",
+  "status": "source_inspected_pending_independent_human_signoff",
+  "description": "Compact hand-authored source fixture. Each edge is a source-observable fact or a conservative overapproximation for ambiguity. Labels were constructed from direct source inspection, using exact graph IDs for identity, and are pending independent human adjudication. Closed scopes enumerate all relevant predicted outgoing relations only for listed source/relation pairs. This is NOT a real-repository generalization benchmark.",
+  "nodes": [
+    {
+      "id": "logic.py:triple",
+      "type": "function",
+      "file": "logic.py",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def triple(n):"
+      }
+    },
+    {
+      "id": "logic.py:compute",
+      "type": "function",
+      "file": "logic.py",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def compute(x):"
+      }
+    },
+    {
+      "id": "logic.py:plus_one",
+      "type": "function",
+      "file": "logic.py",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def plus_one(n):"
+      }
+    },
+    {
+      "id": "logic.py:run",
+      "type": "function",
+      "file": "logic.py",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def run(y):"
+      }
+    },
+    {
+      "id": "Dispatch.java:Dispatch.invokeUnknown",
+      "type": "function",
+      "file": "Dispatch.java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "void invokeUnknown(Object x)"
+      }
+    },
+    {
+      "id": "Dispatch.java:Dispatch.invokeKnown",
+      "type": "function",
+      "file": "Dispatch.java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "void invokeKnown()"
+      }
+    },
+    {
+      "id": "Dispatch.java:Dispatch.send",
+      "type": "function",
+      "file": "Dispatch.java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "void send(String value)"
+      }
+    },
+    {
+      "id": "Dispatch.java:Dispatch.send@overload:45f3fc80d7b6",
+      "type": "function",
+      "file": "Dispatch.java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "void send(int count)"
+      }
+    },
+    {
+      "id": "frontend/client.ts:requestStatus",
+      "type": "function",
+      "file": "frontend/client.ts",
+      "evidence": {
+        "file": "frontend/client.ts",
+        "contains": "export function requestStatus()"
+      }
+    },
+    {
+      "id": "frontend/client.ts:unknownStatus",
+      "type": "function",
+      "file": "frontend/client.ts",
+      "evidence": {
+        "file": "frontend/client.ts",
+        "contains": "export function unknownStatus(id: string)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "logic.py:compute",
+      "relation": "CALLS",
+      "target": "logic.py:triple",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "result = triple(x)"
+      }
+    },
+    {
+      "source": "logic.py:run",
+      "relation": "CALLS",
+      "target": "logic.py:plus_one",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "answer = plus_one(y)"
+      }
+    },
+    {
+      "source": "Dispatch.java:Dispatch.invokeKnown",
+      "relation": "CALLS",
+      "target": "Dispatch.java:Dispatch.send",
+      "language": "java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "send(\"literal\")"
+      }
+    },
+    {
+      "source": "Dispatch.java:Dispatch.invokeUnknown",
+      "relation": "POLYMORPHIC_CALL",
+      "target": "Dispatch.java:Dispatch.send",
+      "language": "java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "send(x)"
+      }
+    },
+    {
+      "source": "Dispatch.java:Dispatch.invokeUnknown",
+      "relation": "POLYMORPHIC_CALL",
+      "target": "Dispatch.java:Dispatch.send@overload:45f3fc80d7b6",
+      "language": "java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "send(x)"
+      }
+    },
+    {
+      "source": "logic.py:compute",
+      "relation": "PASSES_ARG",
+      "target": "logic.py:compute.var::x",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def compute(x):"
+      }
+    },
+    {
+      "source": "logic.py:run",
+      "relation": "PASSES_ARG",
+      "target": "logic.py:run.var::y",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def run(y):"
+      }
+    },
+    {
+      "source": "logic.py:triple",
+      "relation": "PASSES_ARG",
+      "target": "logic.py:triple.var::n",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def triple(n):"
+      }
+    },
+    {
+      "source": "logic.py:plus_one",
+      "relation": "PASSES_ARG",
+      "target": "logic.py:plus_one.var::n",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "def plus_one(n):"
+      }
+    },
+    {
+      "source": "Dispatch.java:Dispatch.invokeUnknown",
+      "relation": "PASSES_ARG",
+      "target": "Dispatch.java:Dispatch.invokeUnknown.var::x",
+      "language": "java",
+      "evidence": {
+        "file": "Dispatch.java",
+        "contains": "void invokeUnknown(Object x)"
+      }
+    },
+    {
+      "source": "logic.py:compute.var::x",
+      "relation": "FLOWS_TO",
+      "target": "logic.py:compute.var::result",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "result = triple(x)"
+      }
+    },
+    {
+      "source": "logic.py:compute.var::x",
+      "relation": "FLOWS_TO",
+      "target": "logic.py:triple.var::n",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "result = triple(x)"
+      }
+    },
+    {
+      "source": "logic.py:triple.return::4",
+      "relation": "FLOWS_TO",
+      "target": "logic.py:compute.var::result",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "return n * 3"
+      }
+    },
+    {
+      "source": "logic.py:run.var::y",
+      "relation": "FLOWS_TO",
+      "target": "logic.py:run.var::answer",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "answer = plus_one(y)"
+      }
+    },
+    {
+      "source": "logic.py:run.var::y",
+      "relation": "FLOWS_TO",
+      "target": "logic.py:plus_one.var::n",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "answer = plus_one(y)"
+      }
+    },
+    {
+      "source": "logic.py:plus_one.return::13",
+      "relation": "FLOWS_TO",
+      "target": "logic.py:run.var::answer",
+      "language": "python",
+      "evidence": {
+        "file": "logic.py",
+        "contains": "return n + 1"
+      }
+    },
+    {
+      "source": "grpc/client.py:notify",
+      "relation": "CONSUMES",
+      "target": "contract::Greeting.SayHello",
+      "language": "python",
+      "evidence": {
+        "file": "grpc/client.py",
+        "contains": "stub.SayHello(None)"
+      }
+    },
+    {
+      "source": "frontend/client.ts:requestStatus",
+      "relation": "CONSUMES",
+      "target": "http::GET:/paper/status",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/client.ts",
+        "contains": "fetch(\"/paper/status\", { method: \"GET\" })"
+      }
+    },
+    {
+      "source": "grpc/server.py:Greeting",
+      "relation": "IMPLEMENTS",
+      "target": "contract::Greeting",
+      "language": "python",
+      "evidence": {
+        "file": "grpc/server.py",
+        "contains": "class Greeting(demo_pb2_grpc.GreetingServicer):"
+      }
+    },
+    {
+      "source": "grpc/server.py:Greeting.SayHello",
+      "relation": "IMPLEMENTS",
+      "target": "contract::Greeting.SayHello",
+      "language": "python",
+      "evidence": {
+        "file": "grpc/server.py",
+        "contains": "def SayHello(self, request, context):"
+      }
+    },
+    {
+      "source": "frontend/client.ts:requestStatus",
+      "relation": "HTTP_CALLS",
+      "target": "backend/routes.py:status",
+      "language": "typescript",
+      "evidence": {
+        "file": "frontend/client.ts",
+        "contains": "fetch(\"/paper/status\", { method: \"GET\" })"
+      }
+    }
+  ],
+  "negatives": [
+    {
+      "source": "Dispatch.java:Dispatch.invokeUnknown",
+      "relation": "CALLS",
+      "target": "Dispatch.java:Dispatch.send"
+    },
+    {
+      "source": "Dispatch.java:Dispatch.invokeUnknown",
+      "relation": "CALLS",
+      "target": "Dispatch.java:Dispatch.send@overload:45f3fc80d7b6"
+    },
+    {
+      "source": "frontend/client.ts:unknownStatus",
+      "relation": "HTTP_CALLS",
+      "target": "backend/routes.py:status"
+    },
+    {
+      "source": "frontend/client.ts:unknownStatus",
+      "relation": "CONSUMES",
+      "target": "http::GET:/paper/status"
+    }
+  ],
+  "closed_scopes": [
+    {
+      "relation": "CALLS",
+      "language": "python",
+      "sources": [
+        "logic.py:compute",
+        "logic.py:run"
+      ]
+    },
+    {
+      "relation": "CALLS",
+      "language": "java",
+      "sources": [
+        "Dispatch.java:Dispatch.invokeKnown",
+        "Dispatch.java:Dispatch.invokeUnknown"
+      ]
+    },
+    {
+      "relation": "POLYMORPHIC_CALL",
+      "language": "java",
+      "sources": [
+        "Dispatch.java:Dispatch.invokeUnknown"
+      ]
+    },
+    {
+      "relation": "PASSES_ARG",
+      "language": "python",
+      "sources": [
+        "logic.py:compute",
+        "logic.py:run",
+        "logic.py:triple",
+        "logic.py:plus_one"
+      ]
+    },
+    {
+      "relation": "PASSES_ARG",
+      "language": "java",
+      "sources": [
+        "Dispatch.java:Dispatch.invokeUnknown"
+      ]
+    },
+    {
+      "relation": "FLOWS_TO",
+      "language": "python",
+      "sources": [
+        "logic.py:compute.var::x",
+        "logic.py:triple.return::4",
+        "logic.py:run.var::y",
+        "logic.py:plus_one.return::13"
+      ]
+    },
+    {
+      "relation": "CONSUMES",
+      "language": "python",
+      "sources": [
+        "grpc/client.py:notify"
+      ]
+    },
+    {
+      "relation": "CONSUMES",
+      "language": "typescript",
+      "sources": [
+        "frontend/client.ts:requestStatus",
+        "frontend/client.ts:unknownStatus"
+      ]
+    },
+    {
+      "relation": "IMPLEMENTS",
+      "language": "python",
+      "sources": [
+        "grpc/server.py:Greeting",
+        "grpc/server.py:Greeting.SayHello"
+      ]
+    },
+    {
+      "relation": "HTTP_CALLS",
+      "language": "typescript",
+      "sources": [
+        "frontend/client.ts:requestStatus",
+        "frontend/client.ts:unknownStatus"
+      ]
+    }
+  ],
+  "closed_node_scopes": [
+    {
+      "type": "function",
+      "files": [
+        "logic.py",
+        "Dispatch.java",
+        "frontend/client.ts"
+      ],
+      "language": "mixed"
+    }
+  ]
+}

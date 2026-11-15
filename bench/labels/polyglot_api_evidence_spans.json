@@ -1,0 +1,68 @@
+[
+  {
+    "id": "list-users",
+    "query": "Which Python backend handler serves the TypeScript fetch request that lists users?",
+    "relevant": [
+      "backend/flask_routes.py:list_users"
+    ],
+    "evidence": [
+      "return {\"users\": []}"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "create-user",
+    "query": "Which Python API handler receives the frontend POST request that creates a user?",
+    "relevant": [
+      "backend/flask_routes.py:create_user"
+    ],
+    "evidence": [
+      "return {\"created\": True}"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "update-order",
+    "query": "Which backend handler processes the TypeScript PUT request that updates an order?",
+    "relevant": [
+      "backend/flask_routes.py:update_order"
+    ],
+    "evidence": [
+      "return {\"updated\": True}"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "patch-search",
+    "query": "Which backend handler handles the PATCH search request from the frontend?",
+    "relevant": [
+      "backend/flask_routes.py:patch_search"
+    ],
+    "evidence": [
+      "return {\"patched\": True}"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "list-products",
+    "query": "Which FastAPI backend handler serves the Axios request that loads products?",
+    "relevant": [
+      "backend/fastapi_routes.py:list_products"
+    ],
+    "evidence": [
+      "return {\"products\": []}"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  },
+  {
+    "id": "delete-product",
+    "query": "Which FastAPI backend handler receives the Axios DELETE product request?",
+    "relevant": [
+      "backend/fastapi_routes.py:delete_product"
+    ],
+    "evidence": [
+      "return {\"deleted\": True}"
+    ],
+    "label_status": "source_inspected_pending_independent_human_review"
+  }
+]
