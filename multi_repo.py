@@ -351,6 +351,11 @@ class WorkspaceCKGBuilder:
         self._resolve_graphql_java_bindings()
         self._index_graphql_operations()
 
+        # Typed Kafka payload links require unique Avro/PDL schema identities.
+        from kafka_schema_links import bind_kafka_payload_schemas
+        self.kafka_schema_links = bind_kafka_payload_schemas(
+            self.graph, self.repo_builders.values())
+
         # Step 11: Build workspace-level Semantic Layer (Lsem)
         self._build_semantic_layer()
 
