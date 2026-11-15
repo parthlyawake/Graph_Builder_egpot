@@ -98,6 +98,9 @@ class TreeSitterExtractor:
 
     def parse_source(self, source):
         """Return (Tree, grammar_name), favoring a fully valid source AST."""
+        # Parser instances are cached across files in coverage audits. Never
+        # propagate one file's lossy recovery provenance to the next file.
+        self.last_projection = None
         primary = self.parser.parse(source)
         if not primary.root_node.has_error or self._alternate is None:
             return primary, self.extension.lstrip(".")
