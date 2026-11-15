@@ -159,3 +159,17 @@ def test_unresolved_python_runtime_host_not_promoted(tmp_path):
     workspace, _, _ = _workspace(tmp_path, source=source, strict=True)
     assert resolve_workspace_http(workspace) == 0
     assert not _http_edges(workspace)
+
+
+def test_self_session_instantiated_in_constructor(tmp_path):
+    source = (
+        "import httpx\n"
+        "class Gateway:\n"
+        "    def __init__(self):\n"
+        "        self.session = httpx.Client()\n"
+        "    def fetch(self):\n"
+        '        return self.session.get("http://orders/api/items")\n'
+    )
+    workspace, caller, handler = _workspace(tmp_path, source=source, strict=True)
+    assert resolve_workspace_http(workspace) == 1
+    assert {(u, v) for u, v, _ in _http_edges(workspace)} == {(caller, handler)}
