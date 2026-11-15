@@ -341,6 +341,11 @@ class WorkspaceCKGBuilder:
         # Step 9: Resolve inter-service dataflow through contract RPCs (P4)
         self._resolve_inter_service_dataflow()
 
+        # Source-evidenced AMQP broker topology connects publish contracts to queues.
+        from message_topology import bind_amqp_topology
+        self.amqp_topology = bind_amqp_topology(
+            self.graph, self.repo_builders.values())
+
         # Step 10: Index OpenAPI and GraphQL contract specs (P5)
         self._index_openapi_and_graphql()
         self._resolve_graphql_java_bindings()
