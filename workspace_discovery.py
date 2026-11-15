@@ -45,10 +45,15 @@ def _spring_name(root):
 
 
 def _module_marker(path):
-    return (path.joinpath("src", "main").is_dir() and
-            any((path / n).is_file() for n in ("pom.xml", "build.gradle", "build.gradle.kts"))) or any(
-        (path / n).is_file() for n in ("go.mod", "package.json")
-    )
+    java = (path.joinpath("src", "main").is_dir() and
+            any((path / n).is_file() for n in
+                ("pom.xml", "build.gradle", "build.gradle.kts")))
+    manifest = any((path / n).is_file() for n in ("go.mod", "package.json"))
+    # Pre-module Go projects can use dep/glide/Godeps or a Makefile instead
+    # of go.mod. An actual Go source file plus a build manifest is required.
+    old_go = ((path / "Makefile").is_file() and
+              any(path.glob("*.go")))
+    return java or manifest or old_go
 
 
 def discover_modules(root):
