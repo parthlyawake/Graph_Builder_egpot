@@ -28,6 +28,7 @@ import networkx as nx
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from polyglot import TreeSitterExtractor
+from semantic_neighbors import sparse_semantic_pairs
 from language_adapters import BY_EXTENSION, KNOWN_UNSUPPORTED, adapter_for, advertised_capabilities, parser_available, spec_for
 
 
@@ -67,8 +68,12 @@ class CKGBuilder(ast.NodeVisitor):
         self.symbols_by_name = {}   # simple_name -> list of node_ids
         self.file_symbols = {}      # file_rel_path -> list of node_ids
         self.calls_to_resolve = []  # (caller_id, callee_name, scope_depth, id_ctx)
+        self.callsite_evidence = []  # source-grounded arguments / locations per call
+        self._assigned_call_results = {}
+        self._returning_calls = {}
         self.http_endpoints = {}    # (HTTP method, literal path) -> [handler node IDs]
         self.http_calls_to_resolve = []
+        self.http_literal_urls = []  # absolute URL client evidence
         self.proto_messages = {}
         self.type_signatures = {}
         self.lsp_provider = None  # (caller_id, literal path, method, id_ctx)
@@ -88,6 +93,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.total_loc = 0
         self.language_report = {}
         self.language_diagnostics = []
+        self.skipped_files = []  # {repo, file, language, reason}
         self.ignore_patterns = []   # patterns from .ckgignore and default policies
 
         # Contract Layer (Lcontract): protobuf/gRPC service contracts and
@@ -352,7 +358,9 @@ class CKGBuilder(ast.NodeVisitor):
                             patterns.append(line)
             except Exception as e:
                 print(f"[!] Warning reading .ckgignore: {e}")
-        self.ignore_patterns = patterns
+        supplied = list(getattr(self, "ignore_patterns", []))
+        self._loaded_ignore_patterns = set(patterns)
+        self.ignore_patterns = list(dict.fromkeys([*patterns, *supplied]))
 
     def _is_ignored(self, rel_path):
         import fnmatch
@@ -364,11 +372,14 @@ class CKGBuilder(ast.NodeVisitor):
                 return True
             if pat_norm.endswith("/*") and (norm == pat_norm[:-2] or norm.startswith(pat_norm[:-1])):
                 return True
-            if "/" in pat_norm and fnmatch.fnmatch(norm, f"*{pat_norm}*"):
-                return True
         return False
 
     def _parse_python_file(self, rel_path, full_path):
+        # AST objects are ephemeral. Storing only id(node) across files causes
+        # recycled Python object IDs to associate an unrelated call with a
+        # previous assignment/return, fabricating false interprocedural flow.
+        self._assigned_call_results.clear()
+        self._returning_calls.clear()
         self.current_file = rel_path
         self.current_scope = []
         self.scope_depth = 0
@@ -405,6 +416,14 @@ class CKGBuilder(ast.NodeVisitor):
     # PHASE 1 & 2: SYNTACTIC & IN-FILE PARSING (AST)
     # -------------------------------------------------------------
     def build(self):
+        if getattr(self, "_built_once", False):
+            explicit = [p for p in self.ignore_patterns
+                        if p not in getattr(self, "_loaded_ignore_patterns", set())]
+            lsp = self.lsp_provider
+            path, ident = self.repo_path, self.repo_id
+            self.__init__(path, ident)
+            self.ignore_patterns = explicit
+            self.lsp_provider = lsp
         print(f"[*] Starting GRAFT-CKG 4-Layer Construction on: {self.repo_path}")
         self._load_ignore_patterns()
         
@@ -413,6 +432,7 @@ class CKGBuilder(ast.NodeVisitor):
         proto_files = []
         missing_grammars = set()
         self.language_diagnostics = []
+        self.skipped_files = []
         self.language_report = {
             "capabilities": advertised_capabilities(),
             "languages": {},
@@ -440,6 +460,9 @@ class CKGBuilder(ast.NodeVisitor):
                     if not parser_available(spec):
                         missing_grammars.add(spec.name)
                         counts["failed"] += 1
+                        self.skipped_files.append({
+                            "repo": self.repo_id or "", "file": rel_path,
+                            "language": spec.name, "reason": "missing grammar: " + str(spec.package)})
                         continue
                     source_files.append((rel_path, full_path))
                 elif ext == ".proto":
@@ -447,6 +470,9 @@ class CKGBuilder(ast.NodeVisitor):
                 elif ext in KNOWN_UNSUPPORTED:
                     counts = self.language_report["unsupported_files"]
                     counts[ext] = counts.get(ext, 0) + 1
+                    self.skipped_files.append({
+                        "repo": self.repo_id or "", "file": rel_path,
+                        "language": ext, "reason": "unsupported source extension"})
 
         if missing_grammars:
             missing = sorted(missing_grammars)
@@ -462,13 +488,18 @@ class CKGBuilder(ast.NodeVisitor):
 
         print(f"[*] Found {len(source_files)} supported source files, {len(proto_files)} proto files.")
         self.module_to_file = {}
+        basename_candidates = {}
         for rel_path, _ in source_files:
             m_name = self._module_name_for_file(rel_path)
             if m_name:
                 self.module_to_file[m_name] = rel_path
             base_name = os.path.splitext(os.path.basename(rel_path))[0]
-            if base_name and base_name not in self.module_to_file:
-                self.module_to_file[base_name] = rel_path
+            if base_name:
+                basename_candidates.setdefault(base_name, []).append(rel_path)
+        # Do not associate a bare import with an arbitrary package's same-named module.
+        for base_name, candidates in sorted(basename_candidates.items()):
+            if len(candidates) == 1 and base_name not in self.module_to_file:
+                self.module_to_file[base_name] = candidates[0]
         self._load_module_configuration()
 
         # Pass 0: parse protobuf contracts into the Contract Layer (Lcontract).
@@ -487,16 +518,18 @@ class CKGBuilder(ast.NodeVisitor):
                 outcome = adapter_for(rel_path).extract(self, rel_path, full_path)
                 if outcome.get("syntax_errors"):
                     counters["partial"] += 1
-                    self.language_report["parse_errors"].append(
-                        {"file": rel_path, "language": spec.name,
-                         "error": "tree-sitter syntax error; graph may be partial"}
-                    )
+                    entry = {"file": rel_path, "language": spec.name,
+                             "error": "tree-sitter syntax error; graph may be partial"}
+                    self.language_report["parse_errors"].append(entry)
+                    self.skipped_files.append({"repo": self.repo_id or "", "file": rel_path,
+                                               "language": spec.name, "reason": entry["error"]})
                 elif not (set(self.graph.nodes) - before):
                     counters["partial"] += 1
-                    self.language_report["parse_errors"].append(
-                        {"file": rel_path, "language": spec.name,
-                         "error": "no graph nodes emitted"}
-                    )
+                    entry = {"file": rel_path, "language": spec.name,
+                             "error": "no graph nodes emitted"}
+                    self.language_report["parse_errors"].append(entry)
+                    self.skipped_files.append({"repo": self.repo_id or "", "file": rel_path,
+                                               "language": spec.name, "reason": entry["error"]})
                 else:
                     counters["parsed"] += 1
             except Exception as exc:
@@ -504,12 +537,18 @@ class CKGBuilder(ast.NodeVisitor):
                 self.language_report["parse_errors"].append(
                     {"file": rel_path, "language": spec.name, "error": str(exc)}
                 )
-                print(f"[!] Warning: Error parsing {rel_path}: {exc}")
+                self.skipped_files.append({"repo": self.repo_id or "", "file": rel_path,
+                                           "language": spec.name, "reason": str(exc)})
+                print(f"[!] Warning: Error parsing {self.repo_prefix}{rel_path}: {exc}")
 
         # Pass 2: Resolve inheritance before method calls, then dependencies.
+        from compiler_resolution import configure_compiler_provider
+        configure_compiler_provider(self)
         self._resolve_inheritance()
         self._resolve_interface_contracts()
         self._resolve_dependency_layer()
+        from interprocedural_flow import connect_interprocedural_flow
+        connect_interprocedural_flow(self)
         self._build_http_contracts()
         self._build_dynamic_http_calls()
         self._resolve_http_calls()
@@ -517,6 +556,12 @@ class CKGBuilder(ast.NodeVisitor):
 
         # Pass 3: Construct Semantic Layer (Lsem)
         self._build_semantic_layer()
+
+        # Parse standalone GraphQL/OpenAPI documents as first-class contracts.
+        # Workspace builds index these centrally after composing repositories.
+        if self.repo_id is None:
+            from standalone_contract_specs import index_standalone_specs
+            self.contract_spec_counts = index_standalone_specs(self)
 
         print(f"[*] Construction Complete:")
         print(f"    - Total LOC:       {self.total_loc}")
@@ -530,8 +575,12 @@ class CKGBuilder(ast.NodeVisitor):
         if self.language_report["unsupported_files"]:
             print("[!] Unsupported application files by extension: " +
                   str(self.language_report["unsupported_files"]))
+        if self.skipped_files:
+            print(f"[!] Source coverage incomplete: {len(self.skipped_files)} skipped/partial files; "
+                  "see builder.skipped_files and verify_graph() source_coverage.")
         print("[*] Language extraction coverage: " +
               str(self.language_report["languages"]))
+        self._built_once = True
         return self.graph
 
     def get_language_report(self):
@@ -539,110 +588,9 @@ class CKGBuilder(ast.NodeVisitor):
         return self.language_report
 
     def update_files(self, changed_rel_paths, deleted_rel_paths=()):
-        """
-        Incremental streaming construction (HR-Build) updating the graph for changed files.
-        Avoids full batch rebuilds by surgically updating only modified/deleted ASTs and resolving relations.
-        """
-        all_affected = set(changed_rel_paths) | set(deleted_rel_paths)
-        if not all_affected:
-            return
-
-        for rel_path in all_affected:
-            norm = rel_path.replace("\\", "/")
-            nodes_to_remove = [
-                n for n, d in list(self.graph.nodes(data=True))
-                if d.get("file") == norm or n.startswith(f"{norm}:") or n == f"file::{norm}"
-            ]
-
-            # Invalidate associated Protobuf contract nodes
-            if norm.endswith(".proto") or norm in self.proto_nodes_by_file:
-                associated = list(self.proto_nodes_by_file.get(norm, []))
-                for c_node in associated:
-                    if not self.graph.has_node(c_node):
-                        continue
-                    defs = self.graph.nodes[c_node].get("definitions", [])
-                    remaining_defs = [d for d in defs if d.get("file") != norm]
-                    if not remaining_defs:
-                        nodes_to_remove.append(c_node)
-                    else:
-                        self.graph.nodes[c_node]["definitions"] = remaining_defs
-                self.proto_nodes_by_file.pop(norm, None)
-                self.proto_file_hashes.pop(norm, None)
-                for s_name, s_info in list(self.proto_services.items()):
-                    if s_info.get("file") == norm:
-                        self.proto_services.pop(s_name, None)
-
-            for n in nodes_to_remove:
-                if self.graph.has_node(n):
-                    self.graph.remove_node(n)
-            self.raw_file_lines.pop(norm, None)
-            self.imports_by_file.pop(norm, None)
-            self.file_symbols.pop(norm, None)
-            self.grpc_client_vars.pop(norm, None)
-            self.go_type_vars.pop(norm, None)
-            for node_id in nodes_to_remove:
-                self.go_struct_fields.pop(node_id, None)
-
-        edges_to_remove = []
-        for u, v, k, d in list(self.graph.edges(keys=True, data=True)):
-            rel = d.get("relation")
-            if rel in {"CALLS", "POLYMORPHIC_CALL", "EXTENDS", "HTTP_CALLS", "IMPLEMENTS", "PRODUCES", "CONSUMES", "SEMANTIC_SIMILAR"}:
-                edges_to_remove.append((u, v, k))
-        for u, v, k in edges_to_remove:
-            if self.graph.has_edge(u, v, key=k):
-                self.graph.remove_edge(u, v, key=k)
-
-        self.calls_to_resolve = []
-        self.http_calls_to_resolve = []
-        self.dynamic_http_calls = []
-        self.grpc_calls_to_resolve = []
-        self.managed_grpc_registrations = [
-            record for record in self.managed_grpc_registrations if record[2] not in all_affected
-        ]
-        self.grpc_servicer_records = [
-            record for record in self.grpc_servicer_records if record[2] not in all_affected
-        ]
-        self.grpc_server_registrations = [
-            record for record in self.grpc_server_registrations if record[2] not in all_affected
-        ]
-        self.js_add_service_records = [
-            record for record in self.js_add_service_records if record[2] not in all_affected
-        ]
-        self.class_base_records = []
-        self.interface_implementation_records = []
-        self.interface_extension_records = []
-        self.symbols_by_name = {}
-        for nid, data in self.graph.nodes(data=True):
-            sname = data.get("name")
-            if sname:
-                self.symbols_by_name.setdefault(sname, []).append(nid)
-
-        for rel_path in changed_rel_paths:
-            norm = rel_path.replace("\\", "/")
-            full_path = os.path.join(self.repo_path, norm)
-            if not os.path.isfile(full_path):
-                continue
-            ext = os.path.splitext(norm)[1]
-            if ext == ".proto":
-                self._parse_proto_file(norm, full_path)
-            elif spec_for(norm):
-                adapter_for(norm).extract(self, norm, full_path)
-
-        self._resolve_inheritance()
-        self._resolve_interface_contracts()
-        self._resolve_dependency_layer()
-        self._build_http_contracts()
-        self._build_dynamic_http_calls()
-        self._resolve_http_calls()
-        self._resolve_contract_layer()
-        self._build_semantic_layer()
-
-        print(f"[*] Construction Complete:")
-        print(f"    - Total LOC:       {self.total_loc}")
-        print(f"    - Graph Nodes:     {self.graph.number_of_nodes()}")
-        print(f"    - Hyper-Edges:     {self.graph.number_of_edges()}")
-        self._print_layer_statistics()
-        return self.graph
+        """Apply source-file deltas, re-resolving dependencies from persisted facts."""
+        from incremental_builder import incremental_update
+        return incremental_update(self, changed_rel_paths, deleted_rel_paths)
 
     def visit_Import(self, node):
         for alias in node.names:
@@ -748,6 +696,31 @@ class CKGBuilder(ast.NodeVisitor):
         if getattr(node.args, "kwarg", None):
             all_params.append(node.args.kwarg)
 
+        self.graph.nodes[func_id]["param_names"] = [arg.arg for arg in all_params]
+        self.graph.nodes[func_id]["param_types"] = [
+            self._node_to_name(arg.annotation) if getattr(arg, "annotation", None) else ""
+            for arg in all_params
+        ]
+        self.graph.nodes[func_id]["arity"] = len(all_params)
+        # Preserve default/keyword metadata for source-grounded argument flow.
+        positional = [*node.args.posonlyargs, *node.args.args]
+        required_positional = positional[:len(positional) - len(node.args.defaults)]
+        required_keyword_only = [
+            arg for arg, default in zip(node.args.kwonlyargs, node.args.kw_defaults)
+            if default is None
+        ]
+        self.graph.nodes[func_id]["required_params"] = [
+            arg.arg for arg in [*required_positional, *required_keyword_only]
+        ]
+        self.graph.nodes[func_id]["posonly_params"] = [
+            arg.arg for arg in node.args.posonlyargs
+        ]
+        self.graph.nodes[func_id]["vararg_name"] = (
+            node.args.vararg.arg if node.args.vararg else None
+        )
+        self.graph.nodes[func_id]["kwarg_name"] = (
+            node.args.kwarg.arg if node.args.kwarg else None
+        )
         for arg in all_params:
             arg_name = arg.arg
             var_id = f"{func_id}.var::{arg_name}"
@@ -847,6 +820,32 @@ class CKGBuilder(ast.NodeVisitor):
                 var, _, method = callee_name.partition(".")
                 self.pending_attr_calls.append((caller_id, var, method, self.current_file_ctx))
                 self.recorded_attr_calls.append((caller_id, var, method, self.current_file_ctx))
+            from static_dispatch import literal_kind
+            arguments = [ast.unparse(item) for item in node.args]
+            target_nodes = [*self._assigned_call_results.get(id(node), []),
+                            *self._returning_calls.get(id(node), [])]
+            self.callsite_evidence.append({
+                "caller": caller_id, "callee": callee_name,
+                "file": self.current_file_ctx,
+                "line": node.func.lineno,
+                "column": node.func.col_offset + max(
+                    0,
+                    self.raw_file_lines[self.current_file][
+                        node.func.lineno - 1
+                    ][node.func.col_offset:getattr(node.func, "end_col_offset",
+                                                   node.func.col_offset)].rfind(
+                        callee_name.rsplit(".", 1)[-1]
+                    ),
+                ),
+                "arguments": arguments,
+                "argument_kinds": [literal_kind(arg) for arg in arguments],
+                # Static keyword expressions and explicit **kwargs uncertainty.
+                "keywords": [(kw.arg, ast.unparse(kw.value)) for kw in node.keywords],
+                "starred_arguments": any(
+                    isinstance(item, ast.Starred) for item in node.args
+                ),
+                "result_nodes": target_nodes,
+            })
             self.calls_to_resolve.append((caller_id, callee_name, self.scope_depth, self.current_file_ctx))
         self.generic_visit(node)
 
@@ -864,6 +863,11 @@ class CKGBuilder(ast.NodeVisitor):
         return None
 
     def visit_Assign(self, node):
+        if isinstance(node.value, ast.Call) and self.current_scope:
+            self._assigned_call_results[id(node.value)] = [
+                f"{self.get_current_scope_id()}.var::{name}"
+                for target in node.targets for name, _ in self._extract_target_names(target)
+            ]
         # gRPC stub binding: var = pb2_grpc.<Service>Stub(channel)  (any scope,
         # including module level / __main__ blocks)
         if isinstance(node.value, ast.Call):
@@ -897,9 +901,26 @@ class CKGBuilder(ast.NodeVisitor):
                     
                     meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file_ctx)
                     self.add_ckg_edge(scope_id, var_id, relation="DEFINES", layer="Lflow", metadata=meta)
+                    # Explicit local expression reads create variable-level
+                    # data dependencies. This is syntactic may-flow, not SSA.
+                    for read in ast.walk(node.value):
+                        if not isinstance(read, ast.Name) or not isinstance(
+                                read.ctx, ast.Load):
+                            continue
+                        source_id = self.var_defs.get(scope_id, {}).get(read.id)
+                        if source_id and source_id != var_id and (
+                                read.id != var_name):
+                            self.add_ckg_edge(
+                                source_id, var_id, relation="FLOWS_TO",
+                                layer="Lflow", metadata=meta)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node):
+        if isinstance(node.value, ast.Call) and self.current_scope:
+            self._assigned_call_results[id(node.value)] = [
+                f"{self.get_current_scope_id()}.var::{name}"
+                for name, _ in self._extract_target_names(node.target)
+            ]
         if self.current_scope:
             scope_id = self.get_current_scope_id()
             if scope_id not in self.var_defs:
@@ -952,11 +973,21 @@ class CKGBuilder(ast.NodeVisitor):
                 self.add_ckg_node(return_id, node_type="return", layer="Lflow", name="return", line_no=node.lineno)
             meta = HyperEdgeMetadata(d_scope=self.scope_depth, c_type=1.0, id_ctx=self.current_file_ctx)
             self.add_ckg_edge(scope_id, return_id, relation="RETURNS", layer="Lflow", metadata=meta)
-            if node.value and isinstance(node.value, ast.Name):
-                var_name = node.value.id
-                if scope_id in self.var_defs and var_name in self.var_defs[scope_id]:
-                    var_id = self.var_defs[scope_id][var_name]
-                    self.add_ckg_edge(var_id, return_id, relation="FLOWS_TO", layer="Lflow", metadata=meta)
+            if isinstance(node.value, ast.Call):
+                self._returning_calls[id(node.value)] = [return_id]
+            if node.value:
+                # All statically referenced locals contribute to a return
+                # expression, including arithmetic and container expressions.
+                used = sorted({
+                    item.id for item in ast.walk(node.value)
+                    if isinstance(item, ast.Name) and isinstance(item.ctx, ast.Load)
+                })
+                for name in used:
+                    var_id = self.var_defs.get(scope_id, {}).get(name)
+                    if var_id:
+                        self.add_ckg_edge(
+                            var_id, return_id, relation="FLOWS_TO",
+                            layer="Lflow", metadata=meta)
         self.generic_visit(node)
 
     def visit_AugAssign(self, node):
@@ -1250,10 +1281,47 @@ class CKGBuilder(ast.NodeVisitor):
             key = (caller_id, callee_name, scope_depth, id_ctx)
             call_counts[key] = call_counts.get(key, 0) + 1
 
+        def emit_call(source, target, relation, metadata, spelling, file):
+            self.add_ckg_edge(source, target, relation, "Ldep", metadata)
+            edge_key = f"e{self.edge_counter - 1}"
+            self.graph.edges[source, target, edge_key].update(
+                callsite_spelling=spelling, callsite_file=file
+            )
+
         resolved_count = 0
         for (caller_id, callee_name, scope_depth, id_ctx), count in call_counts.items():
             caller_file = id_ctx
             target_ids = []
+            from static_dispatch import select_overloads
+            callsites = [
+                entry for entry in self.callsite_evidence
+                if entry.get("caller") == caller_id
+                and entry.get("callee") == callee_name
+                and entry.get("file") == caller_file
+            ]
+            resolved_overloads = [
+                select_overloads(self, caller_id, callee_name, caller_file,
+                                 records=[entry])
+                for entry in callsites
+            ]
+            if resolved_overloads and all(result is not None
+                                          for result in resolved_overloads):
+                for choices in resolved_overloads:
+                    if not choices:
+                        continue
+                    weights = (self._compute_polymorphic_confidences(
+                               caller_id, choices)
+                               if len(choices) > 1 else [1.0])
+                    for target, weight in zip(choices, weights):
+                        meta = HyperEdgeMetadata(
+                            d_scope=scope_depth, f_call=1.0,
+                            c_type=weight, id_ctx=caller_file)
+                        emit_call(
+                            caller_id, target,
+                            "POLYMORPHIC_CALL" if len(choices) > 1 else "CALLS",
+                            meta, callee_name, caller_file)
+                        resolved_count += 1
+                continue
 
             # Determine base and symbol name for qualified calls (e.g. operations.add or self.func)
             base_prefix = None
@@ -1297,16 +1365,41 @@ class CKGBuilder(ast.NodeVisitor):
                             confidences = self._compute_polymorphic_confidences(caller_id, impls, tau=0.2)
                             for impl_id, conf in zip(impls, confidences):
                                 meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=conf, id_ctx=caller_file)
-                                self.add_ckg_edge(caller_id, impl_id, relation="POLYMORPHIC_CALL", layer="Ldep", metadata=meta)
+                                emit_call(caller_id, impl_id, "POLYMORPHIC_CALL", meta, callee_name, caller_file)
                                 resolved_count += 1
                             continue
 
             if not target_ids and getattr(self, "lsp_provider", None):
-                lsp_target = self.lsp_provider.resolve(caller_file, callee_name)
-                if lsp_target and self.graph.has_node(lsp_target):
-                    meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=caller_file)
-                    self.add_ckg_edge(caller_id, lsp_target, relation="CALLS", layer="Ldep", metadata=meta)
-                    resolved_count += 1
+                callsites = [
+                    evidence for evidence in self.callsite_evidence
+                    if evidence.get("caller") == caller_id
+                    and evidence.get("callee") == callee_name
+                    and evidence.get("file") == caller_file
+                ]
+                resolved_locations = set()
+                if callsites:
+                    for evidence in callsites:
+                        target = self.lsp_provider.resolve(
+                            caller_file, callee_name, evidence.get("line"))
+                        if target in self.graph:
+                            resolved_locations.add(target)
+                        elif "." in callee_name:
+                            target = self.lsp_provider.resolve(
+                                caller_file, callee_name.rsplit(".", 1)[-1],
+                                evidence.get("line"))
+                            if target in self.graph:
+                                resolved_locations.add(target)
+                else:
+                    target = self.lsp_provider.resolve(caller_file, callee_name)
+                    if target in self.graph:
+                        resolved_locations.add(target)
+                if resolved_locations:
+                    for target in sorted(resolved_locations):
+                        meta = HyperEdgeMetadata(
+                            d_scope=scope_depth, f_call=float(count),
+                            c_type=1.0, id_ctx=caller_file)
+                        emit_call(caller_id, target, "CALLS", meta, callee_name, caller_file)
+                        resolved_count += 1
                     continue
 
             if not target_ids:
@@ -1317,20 +1410,20 @@ class CKGBuilder(ast.NodeVisitor):
                 if len(target_ids) == 1:
                     tid = target_ids[0]
                     meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=caller_file)
-                    self.add_ckg_edge(caller_id, tid, relation="CALLS", layer="Ldep", metadata=meta)
+                    emit_call(caller_id, tid, "CALLS", meta, callee_name, caller_file)
                     resolved_count += 1
                 else:
                     confidences = self._compute_polymorphic_confidences(caller_id, target_ids, tau=0.2)
                     for tid, conf in zip(target_ids, confidences):
                         meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=conf, id_ctx=caller_file)
-                        self.add_ckg_edge(caller_id, tid, relation="POLYMORPHIC_CALL", layer="Ldep", metadata=meta)
+                        emit_call(caller_id, tid, "POLYMORPHIC_CALL", meta, callee_name, caller_file)
                         resolved_count += 1
             else:
                 stub_id = f"external::{callee_name}"
                 if not self.graph.has_node(stub_id):
                     self.add_ckg_node(stub_id, node_type="external_func", layer="Ldep", name=callee_name)
                 meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=0.5, id_ctx=caller_file)
-                self.add_ckg_edge(caller_id, stub_id, relation="CALLS", layer="Ldep", metadata=meta)
+                emit_call(caller_id, stub_id, "CALLS", meta, callee_name, caller_file)
 
         # 6. Cross-file method calls through imported module aliases
         #    (e.g. `import helpers` then `helpers.transform(...)`).
@@ -1359,7 +1452,7 @@ class CKGBuilder(ast.NodeVisitor):
                 )
                 if not edge_exists:
                     meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=1.0, id_ctx=id_ctx)
-                    self.add_ckg_edge(caller_id, candidates[0], relation="CALLS", layer="Ldep", metadata=meta)
+                    emit_call(caller_id, candidates[0], "CALLS", meta, callee_name, id_ctx)
                     resolved_count += 1
             elif len(candidates) > 1:
                 confidences = self._compute_polymorphic_confidences(caller_id, candidates, tau=0.2)
@@ -1370,7 +1463,7 @@ class CKGBuilder(ast.NodeVisitor):
                     )
                     if not edge_exists:
                         meta = HyperEdgeMetadata(d_scope=scope_depth, f_call=float(count), c_type=conf, id_ctx=id_ctx)
-                        self.add_ckg_edge(caller_id, cand_id, relation="POLYMORPHIC_CALL", layer="Ldep", metadata=meta)
+                        emit_call(caller_id, cand_id, "POLYMORPHIC_CALL", meta, callee_name, id_ctx)
                         resolved_count += 1
 
         print(f"[*] Dependency Layer resolved: {resolved_count} internal call bindings created.")
@@ -1430,7 +1523,13 @@ class CKGBuilder(ast.NodeVisitor):
 
             from proto_parser import ProtoParser
             text = raw_bytes.decode("utf-8", errors="replace")
-            pf = ProtoParser.parse_text(text)
+            from proto_compiler import compile_proto_file
+            pf, parser_mode = compile_proto_file(full_path, self.repo_path)
+            if pf is None:
+                pf = ProtoParser.parse_text(text)
+            self.graph.graph.setdefault("proto_parse_modes", {})[norm] = (
+                parser_mode if parser_mode == "protoc" else "source_fallback"
+            )
 
             # Register messages as canonical type contracts (P8)
             for msg_name, msg_obj in pf.messages.items():
@@ -1442,6 +1541,8 @@ class CKGBuilder(ast.NodeVisitor):
                 self.proto_nodes_by_file[norm].add(msg_id)
                 self.proto_messages[msg_name] = msg_obj
                 self.add_ckg_edge(file_id, msg_id, "CONTAINS", "Lsyn")
+                from proto_field_graph import emit_message_fields
+                emit_message_fields(self.graph, msg_id, msg_obj, file_path=norm)
 
             for service_name, s_obj in pf.services.items():
                 service_id = f"contract::{service_name}"
@@ -1489,6 +1590,8 @@ class CKGBuilder(ast.NodeVisitor):
                     req_msg_id = f"contract::message::{req_type}"
                     if self.graph.has_node(req_msg_id):
                         self.add_ckg_edge(req_msg_id, rpc_id, "USES", "Ldep")
+                    from proto_field_graph import emit_rpc_message_types
+                    emit_rpc_message_types(self.graph, rpc_id, req_type, resp_type)
 
                     rpcs[rpc_name] = rpc_id
                     rpc_signatures[rpc_name] = {"request": req_type, "response": resp_type}
@@ -1651,19 +1754,13 @@ class CKGBuilder(ast.NodeVisitor):
             if len(nodes_with_docs) > 1:
                 doc_indices = [self.indexed_node_ids.index(nid) for nid in nodes_with_docs]
                 doc_submatrix = self.tfidf_matrix[doc_indices]
-                sim_matrix = cosine_similarity(doc_submatrix)
                 semantic_edge_count = 0
-                n = len(nodes_with_docs)
-                for i in range(n):
-                    for j in range(i + 1, n):
-                        score = float(sim_matrix[i, j])
-                        if score >= similarity_threshold:
-                            u = nodes_with_docs[i]
-                            v = nodes_with_docs[j]
-                            meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=score, id_ctx="corpus")
-                            self.add_ckg_edge(u, v, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
-                            self.add_ckg_edge(v, u, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
-                            semantic_edge_count += 2
+                for i, j, score in sparse_semantic_pairs(doc_submatrix, threshold=similarity_threshold):
+                    u, v = nodes_with_docs[i], nodes_with_docs[j]
+                    meta = HyperEdgeMetadata(d_scope=0, f_call=1.0, c_type=score, id_ctx="corpus")
+                    self.add_ckg_edge(u, v, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
+                    self.add_ckg_edge(v, u, relation="SEMANTIC_SIMILAR", layer="Lsem", metadata=meta)
+                    semantic_edge_count += 2
                 print(f"[*] Semantic Layer generated: {semantic_edge_count} cross-concept relational links.")
         except Exception as e:
             print(f"[!] Warning: Error building semantic layer: {e}")
@@ -2040,7 +2137,13 @@ class CKGBuilder(ast.NodeVisitor):
             "contract_services": len(self.proto_services),
             "contract_producer_edges": sum(1 for _, _, d in edges if d.get("relation") == "IMPLEMENTS"),
             "contract_consumer_edges": sum(1 for _, _, d in edges if d.get("relation") == "CONSUMES"),
-            "health_status": "PASS (All 4 Layers Populated)" if all(v > 0 for v in layer_dist.values()) else "PASS (Structure Verified)",
+            "health_status": "PASS (All 5 Layers Populated)" if all(v > 0 for v in layer_dist.values()) else "PASS (Structure Verified)",
+            "source_coverage": {
+                "complete": bool(self.language_report.get("full_source_coverage", False)),
+                "skipped_count": len(self.skipped_files),
+                "skipped_files": list(self.skipped_files),
+                "languages": self.language_report.get("languages", {}),
+            },
         }
         return report
 

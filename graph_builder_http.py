@@ -20,7 +20,7 @@ def path_matches(template, request):
     if len(left) != len(right):
         return False
     for part, value in zip(left, right):
-        if re.fullmatch(r"\{[^{}]+\}|<[^<>]+>", part):
+        if re.fullmatch(r"\{[^{}]+\}|<[^<>]+>|:[A-Za-z_][\w]*", part):
             if not value or "/" in value:
                 return False
         elif part != value or any(c in value for c in "{}<>"):
@@ -415,6 +415,9 @@ def source_requests(builder, environment):
             out.extend(_python_requests(builder, path, text, environment))
         elif path.endswith(".java"):
             out.extend(_java_requests(builder, path, text))
+    for caller, url, method, file, line in getattr(builder, "http_literal_urls", []):
+        if isinstance(url, str) and url.startswith(("http://", "https://")):
+            out.append((caller, url, method, file, line, "literal_host"))
     return list(dict.fromkeys(out))
 
 
@@ -437,8 +440,6 @@ def resolve_workspace_http(workspace):
             if not host or "{" in host or len(destinations) != 1:
                 continue
             dest = next(iter(destinations))
-            if source_repo == dest:
-                continue
             matches = set()
             for (method, path), handlers in workspace.http_endpoints.items():
                 if method not in {verb, "*"} or not path_matches(path, parsed.path):
@@ -464,39 +465,55 @@ def resolve_workspace_http(workspace):
             )
             resolved += 1
 
-        # Retain JS/TS/Go legacy path-only links only when there is exactly
-        # one destination. Java source paths are never guessed from a route.
+        # Relative/path-only requests cannot prove a cross-service connection.
+        # Retain candidates as POSSIBLE_HTTP_TARGET rather than confirmed
+        # HTTP_CALLS. Same-repository unique routes are safe to bind locally.
         for caller, path, method, file in builder.http_calls_to_resolve:
-            # Optional high-precision mode: a route-only match cannot establish
-            # which service owns a caller's HTTP request.
             if getattr(workspace.config, "strict_http_source_evidence", False):
                 continue
             if (caller not in workspace.graph
                     or workspace.graph.nodes[caller].get("http_ambiguous_definition")):
                 continue
-            if file.endswith(".java"):
+            if file.endswith(".java") or (file.endswith(".py") and
+                                           any(item[0] == caller for item in requests)):
                 continue
-            if file.endswith(".py") and any(r[0] == caller for r in requests):
+            # Source URLs with host evidence were processed above. Never
+            # override a host mismatch with a route-only fallback.
+            if any(item[0] == caller for item in requests):
                 continue
-            targets = list(dict.fromkeys(
-                workspace.http_endpoints.get((method.upper(), path), []) +
-                workspace.http_endpoints.get(("*", path), [])
-            ))
-            if len(targets) != 1:
+            matches = sorted({
+                handler for (verb, template), handlers in workspace.http_endpoints.items()
+                if verb in {method.upper(), "*"} and path_matches(template, path)
+                for handler in handlers if handler in workspace.graph and handler != caller
+            })
+            if not matches:
                 continue
-            target = targets[0]
-            if target == caller or target not in workspace.graph or caller not in workspace.graph:
-                continue
-            if any(v == target and d.get("relation") == "HTTP_CALLS"
-                   for _, v, d in workspace.graph.out_edges(caller, data=True)):
-                continue
-            meta = HyperEdgeMetadata(d_scope=0, f_call=1, c_type=1.0, id_ctx=file)
-            workspace.graph.add_edge(
-                caller, target, key=f"w_http_{caller}_{target}",
-                relation="HTTP_CALLS", layer="Ldep", metadata=meta.to_dict(),
-                d_scope=0, f_call=1.0, c_type=1.0, id_ctx=file,
-            )
-            resolved += 1
+            own_handlers = [nid for nid in matches
+                            if workspace.graph.nodes[nid].get("repo") == source_repo]
+            if len(own_handlers) == 1 and len(matches) == 1:
+                target = own_handlers[0]
+                relation, layer, kind = "HTTP_CALLS", "Ldep", "same_repo_route"
+            else:
+                relation, layer, kind = "POSSIBLE_HTTP_TARGET", "Lcontract", "path_only"
+            candidates = [own_handlers[0]] if relation == "HTTP_CALLS" else matches
+            for target in candidates:
+                if workspace.graph.nodes[target].get("http_ambiguous_definition"):
+                    continue
+                if any(v == target and d.get("relation") == relation
+                       for _, v, d in workspace.graph.out_edges(caller, data=True)):
+                    continue
+                meta = HyperEdgeMetadata(d_scope=0, f_call=1, c_type=0.5 if
+                                         relation == "POSSIBLE_HTTP_TARGET" else 1.0,
+                                         id_ctx=file)
+                workspace.graph.add_edge(
+                    caller, target, key=f"w_http_candidate_{caller}_{target}",
+                    relation=relation, layer=layer, metadata=meta.to_dict(),
+                    d_scope=0, f_call=1.0, c_type=meta.c_type, id_ctx=file,
+                    match_kind=kind, source_evidence=file,
+                    http_method=method.upper(), http_path=path,
+                )
+                if relation == "HTTP_CALLS":
+                    resolved += 1
     if resolved:
         print(f"[*] Cross-Repository HTTP Resolution: {resolved} verified/unique HTTP bindings created.")
     return resolved

@@ -109,6 +109,8 @@ class SCKGGraphProvider(GraphProvider):
             self.remediation = None
 
         self._version_str = "GRAFT-CKG/1.0.0"
+        self._defect_cache = None
+        self._defect_cache_stamp = None
 
     # -------------------------------------------------------------------------
     # Internal Type Mapping Helpers
@@ -128,6 +130,14 @@ class SCKGGraphProvider(GraphProvider):
             return NodeType.ENDPOINT
         if t == "http_callsite":
             return NodeType.HTTP_CALLSITE
+        if t == "callsite":
+            return NodeType.CALLSITE
+        if t == "argument_expression":
+            return NodeType.ARGUMENT_EXPRESSION
+        if t == "proto_field":
+            return NodeType.PROTO_FIELD
+        if t == "schema_contract":
+            return NodeType.SCHEMA_CONTRACT
         if t in ("service_contract", "rpc_contract", "contract") or "contract::" in node_id:
             return NodeType.CONTRACT
         if t == "commit":
@@ -202,6 +212,18 @@ class SCKGGraphProvider(GraphProvider):
             return EdgeType.CONSUMES
         if r == "PASSES_ARG":
             return EdgeType.PASSES_ARG
+        if r == "INVOKES":
+            return EdgeType.INVOKES
+        if r == "EVALUATES":
+            return EdgeType.EVALUATES
+        if r == "DECLARES_FIELD":
+            return EdgeType.DECLARES_FIELD
+        if r == "NESTED_MESSAGE":
+            return EdgeType.NESTED_MESSAGE
+        if r == "ACCEPTS_SCHEMA":
+            return EdgeType.ACCEPTS_SCHEMA
+        if r == "RETURNS_SCHEMA":
+            return EdgeType.RETURNS_SCHEMA
         if r == "FLOWS_TO":
             return EdgeType.FLOWS_TO
         if r == "RETURNS":
@@ -292,16 +314,75 @@ class SCKGGraphProvider(GraphProvider):
             metadata=meta,
         )
 
+    @staticmethod
+    def _path_suffix_score(node_file: str, frame_path: str) -> int:
+        """Number of matching *complete* trailing path components.
+
+        Absolute stack paths often contain deployment prefixes that are absent
+        from the indexed relative path. File-name-only matches are weak and
+        are accepted only when service/function evidence disambiguates them.
+        """
+        if not node_file or not frame_path:
+            return 0
+        left = [p.lower() for p in node_file.replace("\\", "/").split("/") if p]
+        right = [p.lower() for p in frame_path.replace("\\", "/").split("/") if p]
+        score = 0
+        for a, b in zip(reversed(left), reversed(right)):
+            if a != b:
+                break
+            score += 1
+        return score
+
     def _matches_file(self, n_file: str, frame_path: str) -> bool:
-        if not n_file or not frame_path:
+        return self._path_suffix_score(n_file, frame_path) > 0
+
+    @staticmethod
+    def _service_matches(requested: str, actual: str) -> bool:
+        """Exact service identity, allowing the conventional '-service' alias."""
+        a = (requested or "").strip().lower().replace("-", "_")
+        b = (actual or "").strip().lower().replace("-", "_")
+        if not a or not b:
             return False
-        f1 = n_file.replace("\\", "/").strip("/").lower()
-        f2 = frame_path.replace("\\", "/").strip("/").lower()
-        if f1 == f2:
-            return True
-        if f1.endswith("/" + f2) or f2.endswith("/" + f1):
-            return True
-        return False
+        return a == b or a + "_service" == b or b + "_service" == a
+
+    def _frame_nodes(self, path: str, line: int, function: str,
+                     service_name: str) -> list[str]:
+        candidates = []
+        for nid, data in self.graph.nodes(data=True):
+            if data.get("type") not in {"function", "method"} or self._is_test_node(nid, data):
+                continue
+            score = self._path_suffix_score(data.get("file", ""), path)
+            if not score:
+                continue
+            name = data.get("name", "")
+            if function:
+                if not (name == function or nid.endswith(":" + function)
+                        or nid.endswith("." + function)):
+                    continue
+            else:
+                start = data.get("line_no")
+                end = data.get("line_end", start)
+                try:
+                    if not (int(start) <= line <= int(end or start)):
+                        continue
+                except (ValueError, TypeError):
+                    continue
+            service = str(data.get("repo") or
+                          self.traversal._extract_service_name(data.get("file", ""), nid) or "")
+            candidates.append((self._service_matches(service_name, service), score, nid))
+        if not candidates:
+            return []
+        # Service evidence dominates path suffix when available. Otherwise
+        # a longer exact suffix wins. Stable node IDs break remaining ties.
+        if service_name and any(c[0] for c in candidates):
+            candidates = [c for c in candidates if c[0]]
+        strongest = max(c[1] for c in candidates)
+        candidates = [c for c in candidates if c[1] == strongest]
+        # If the stack frame cannot identify a service and the best match
+        # spans several repositories, do not invent a unique root cause.
+        if not service_name and len({self.graph.nodes[n].get("repo") for _, _, n in candidates}) > 1:
+            return []
+        return sorted(n for _, _, n in candidates)
 
     def _is_test_node(self, nid: str, ndata: Optional[dict] = None) -> bool:
         if ndata is None:
@@ -321,7 +402,7 @@ class SCKGGraphProvider(GraphProvider):
         if filename.endswith(".spec.js") or filename.endswith(".spec.ts") or filename.endswith(".spec.jsx") or filename.endswith(".spec.tsx"):
             return True
         name = ndata.get("name", "")
-        if name.startswith("test_") or name.startswith("Test"):
+        if name.startswith("test_") or name.startswith("test") and name.endswith("_test"):
             return True
         return False
 
@@ -345,99 +426,66 @@ class SCKGGraphProvider(GraphProvider):
     # -------------------------------------------------------------------------
 
     def resolve_symptom(self, symptom: TelemetryEvent) -> list[CodeNode]:
+        """Resolve frames using service identity, complete path components and symbols.
+
+        An unresolved *parseable* stack frame must not be converted into an
+        arbitrary service-wide function candidate with confidence 1.0.
         """
-        Map an unstructured telemetry event to concrete code nodes.
-        """
-        matched_node_ids: List[str] = []
+        matched: list[str] = []
         seen: Set[str] = set()
-
-        # Step 1: Parse stack trace if present
+        parsed_frames = []
         if symptom.stack_trace:
-            py_matches = re.findall(r'File "([^"]+)", line (\d+)(?:, in (\w+))?', symptom.stack_trace)
-            for file_path, line_no, func_name in py_matches:
-                line_int = int(line_no)
-                frame_candidates = []
-                for nid, ndata in self.graph.nodes(data=True):
-                    n_file = ndata.get("file", "")
-                    if n_file and self._matches_file(n_file, file_path):
-                        if func_name:
-                            name_matched = (ndata.get("name") == func_name or nid.endswith(":" + func_name) or nid.endswith("." + func_name))
-                            if name_matched and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
-                                frame_candidates.append(nid)
-                        else:
-                            n_line = int(ndata.get("line_no", 0)) if str(ndata.get("line_no", "")).isdigit() else 0
-                            n_line_end = int(ndata.get("line_end", n_line)) if str(ndata.get("line_end", "")).isdigit() else n_line
-                            if ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
-                                if n_line <= line_int <= n_line_end:
-                                    frame_candidates.append(nid)
-
-                for nid in frame_candidates:
+            for path, line, function in re.findall(
+                    r'File "([^"]+)", line (\d+)(?:, in ([\w.]+))?',
+                    symptom.stack_trace):
+                parsed_frames.append((path, int(line), function))
+            for path, line in re.findall(
+                    r'at (?:[\w.$]+)\(([\w./\\-]+\.java):(\d+)\)',
+                    symptom.stack_trace):
+                parsed_frames.append((path, int(line), ""))
+            for path, line in re.findall(
+                    r'([\w./\\-]+\.(?:go|js|ts|py|java)):(\d+)',
+                    symptom.stack_trace):
+                parsed_frames.append((path, int(line), ""))
+            for path, line, function in parsed_frames:
+                for nid in self._frame_nodes(path, line, function, symptom.service_name):
                     if nid not in seen:
                         seen.add(nid)
-                        matched_node_ids.append(nid)
-
-            java_matches = re.findall(r'at (?:[\w\.\$]+)\(([\w\.\-]+\.java):(\d+)\)', symptom.stack_trace)
-            for file_path, line_no in java_matches:
-                line_int = int(line_no)
-                for nid, ndata in self.graph.nodes(data=True):
-                    n_file = ndata.get("file", "")
-                    if n_file and self._matches_file(n_file, file_path) and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
-                        n_line = int(ndata.get("line_no", 0)) if str(ndata.get("line_no", "")).isdigit() else 0
-                        n_line_end = int(ndata.get("line_end", n_line)) if str(ndata.get("line_end", "")).isdigit() else n_line
-                        if n_line <= line_int <= n_line_end:
-                            if nid not in seen:
-                                seen.add(nid)
-                                matched_node_ids.append(nid)
-
-            go_matches = re.findall(r'([\w\/\.\-]+(?:\.go|\.js|\.ts|\.py|\.java)):(\d+)', symptom.stack_trace)
-            for file_path, line_no in go_matches:
-                line_int = int(line_no)
-                for nid, ndata in self.graph.nodes(data=True):
-                    n_file = ndata.get("file", "")
-                    if n_file and self._matches_file(n_file, file_path) and ndata.get("type") in ("function", "method") and not self._is_test_node(nid, ndata):
-                        n_line = int(ndata.get("line_no", 0)) if str(ndata.get("line_no", "")).isdigit() else 0
-                        n_line_end = int(ndata.get("line_end", n_line)) if str(ndata.get("line_end", "")).isdigit() else n_line
-                        if n_line <= line_int <= n_line_end:
-                            if nid not in seen:
-                                seen.add(nid)
-                                matched_node_ids.append(nid)
-
-        # Step 2: Extract keywords from error message & error type ONLY if stack trace produced no matches
-        if not matched_node_ids:
-            combined_text = f"{symptom.error_type} {symptom.message}"
-            tokens = set(re.findall(r'[A-Za-z0-9_]{3,}', combined_text))
-
+                        matched.append(nid)
+        # Only attempt message/service fallbacks if there are no parseable
+        # frames at all. A wrong-frame service fallback fabricates a location.
+        if not matched and not parsed_frames:
+            tokens = sorted(set(re.findall(
+                r"[A-Za-z0-9_]{3,}", f"{symptom.error_type} {symptom.message}"
+            )))
             for token in tokens:
-                resolved = self.traversal._resolve_node_id(token)
-                if resolved and resolved not in seen:
-                    seen.add(resolved)
-                    matched_node_ids.append(resolved)
+                for resolver in (self.traversal._resolve_node_id,
+                                 self.traversal._resolve_contract_or_endpoint):
+                    nid = resolver(token)
+                    if nid and nid not in seen:
+                        seen.add(nid)
+                        matched.append(nid)
+            if not matched and symptom.service_name:
+                svc_nodes = [
+                    nid for nid, data in self.graph.nodes(data=True)
+                    if data.get("type") in {"function", "method", "service_contract"}
+                    and self._service_matches(
+                        symptom.service_name,
+                        str(data.get("repo") or self.traversal._extract_service_name(
+                            data.get("file", ""), nid) or ""))
+                    and not self._is_test_node(nid, data)
+                ]
+                ranked = sorted(
+                    svc_nodes,
+                    key=lambda nid: (-sum(t.lower() in nid.lower() for t in tokens), nid)
+                )
+                matched.extend(ranked[:10])
+        return [self._to_code_node(nid) for nid in matched]
 
-                resolved_c = self.traversal._resolve_contract_or_endpoint(token)
-                if resolved_c and resolved_c not in seen:
-                    seen.add(resolved_c)
-                    matched_node_ids.append(resolved_c)
-
-        # Step 3: Service-level filtering / fallback if still empty
-        if not matched_node_ids and symptom.service_name:
-            svc_nodes = []
-            for nid, ndata in self.graph.nodes(data=True):
-                svc = ndata.get("repo") or self.traversal._extract_service_name(ndata.get("file", ""), nid)
-                if svc.lower() == symptom.service_name.lower():
-                    if ndata.get("type") in ("function", "method", "service_contract"):
-                        svc_nodes.append(nid)
-
-            ranked = sorted(
-                svc_nodes,
-                key=lambda n: sum(1 for t in tokens if t.lower() in n.lower()),
-                reverse=True,
-            )
-            for nid in ranked[:10]:
-                if nid not in seen:
-                    seen.add(nid)
-                    matched_node_ids.append(nid)
-
-        return [self._to_code_node(nid) for nid in matched_node_ids]
+    def invalidate_analysis_cache(self):
+        """Call after modifying graph contents without changing their counts."""
+        self._defect_cache = None
+        self._defect_cache_stamp = None
 
     def backward_traverse(
         self, node: CodeNode, policy: TraversalPolicy
@@ -452,10 +500,18 @@ class SCKGGraphProvider(GraphProvider):
 
         active_defects = []
         if self.remediation:
-            try:
-                active_defects = self.remediation.diagnose()
-            except Exception:
-                active_defects = []
+            # Reuse diagnosis across several symptoms on the same graph.
+            # Invalidate when the graph size changes; explicit invalidation is
+            # available for edits that preserve node and edge counts.
+            stamp = (id(self.graph), self.graph.number_of_nodes(),
+                     self.graph.number_of_edges())
+            if self._defect_cache_stamp != stamp:
+                try:
+                    self._defect_cache = self.remediation.diagnose()
+                except Exception:
+                    self._defect_cache = []
+                self._defect_cache_stamp = stamp
+            active_defects = self._defect_cache or []
 
         defect_map: Dict[str, Any] = {}
         for d in active_defects:
@@ -568,79 +624,79 @@ class SCKGGraphProvider(GraphProvider):
     def forward_traverse(
         self, node: CodeNode, policy: TraversalPolicy
     ) -> InducedSubgraph:
-        """
-        From a root-cause node, walk forward to extract the blast-radius
-        subgraph -- all downstream consumers and affected contracts.
+        """Deterministic, breadth-first and strictly node-bounded blast radius.
+
+        Semantic-neighbor and syntactic-containment edges are not operational
+        dependencies. Callers may explicitly opt into them with include_layers.
         """
         start_id = self.traversal._resolve_node_id(node.node_id) or node.node_id
-        if start_id not in self.graph:
+        if start_id not in self.graph or policy.max_nodes < 1:
             return InducedSubgraph(root_node_id=node.node_id, nodes=[], edges=[])
 
-        visited_nodes: Set[str] = {start_id}
-        collected_edges: List[TypedEdge] = []
-        queue: List[Tuple[str, int]] = [(start_id, 0)]
+        order = [start_id]
+        visited = {start_id}
+        queue = [(start_id, 0)]
+        edges: list[TypedEdge] = []
+        allowed = set(policy.include_layers) if policy.include_layers else None
+        suppressed = {"SEMANTIC_SIMILAR", "SEMANTIC_SIMILARITY", "CONTAINS",
+                      "DECLARES", "DEFINES", "RELATES_TO",
+                      "POSSIBLE_HTTP_TARGET"}
 
-        while queue and len(visited_nodes) < policy.max_nodes:
+        def permitted(data):
+            layer = data.get("layer", "")
+            if allowed is not None:
+                return layer in allowed
+            return data.get("relation", "") not in suppressed and layer != "Lsem"
+
+        while queue:
             curr, depth = queue.pop(0)
             if depth >= policy.max_depth:
                 continue
+            candidates = []
+            for _, tgt, key, data in self.graph.out_edges(curr, keys=True, data=True):
+                if permitted(data):
+                    candidates.append((str(tgt), str(data.get("relation", "")),
+                                       str(key), curr, tgt, data))
+            for src, _, key, data in self.graph.in_edges(curr, keys=True, data=True):
+                rel = data.get("relation")
+                if rel in {"CALLS", "POLYMORPHIC_CALL"} or (
+                    self.graph.nodes[curr].get("type") in {
+                        "rpc_contract", "service_contract", "http_endpoint"}
+                    and rel in {"CONSUMES", "HTTP_CALLS"}
+                ):
+                    if permitted(data):
+                        candidates.append((str(src), str(rel), str(key), src, curr, data))
+            candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+            for other, _, _, src, tgt, data in candidates:
+                if other not in visited:
+                    if len(order) >= policy.max_nodes:
+                        continue
+                    visited.add(other)
+                    order.append(other)
+                    queue.append((other, depth + 1))
+                if src in visited and tgt in visited:
+                    edges.append(self._to_typed_edge(src, tgt, data))
 
-            # Forward out-edges (callees, contracts consumed/implemented, dataflow targets)
-            for _, tgt, data in self.graph.out_edges(curr, data=True):
-                collected_edges.append(self._to_typed_edge(curr, tgt, data))
-                if tgt not in visited_nodes:
-                    visited_nodes.add(tgt)
-                    queue.append((tgt, depth + 1))
-
-            # Callers of curr (functions and tests that call curr) are downstream affected nodes
-            for caller_src, _, in_data in self.graph.in_edges(curr, data=True):
-                rel = in_data.get("relation")
-                if rel in ("CALLS", "POLYMORPHIC_CALL"):
-                    collected_edges.append(self._to_typed_edge(caller_src, curr, in_data))
-                    if caller_src not in visited_nodes:
-                        visited_nodes.add(caller_src)
-                        queue.append((caller_src, depth + 1))
-
-            # If curr is a contract or implements one, find downstream consumers (in-edges with CONSUMES)
-            curr_data = self.graph.nodes.get(curr, {})
-            if "contract" in curr_data.get("type", "") or "contract::" in curr:
-                for consumer_src, _, in_data in self.graph.in_edges(curr, data=True):
-                    rel = in_data.get("relation")
-                    if rel in ("CONSUMES", "HTTP_CALLS"):
-                        collected_edges.append(self._to_typed_edge(consumer_src, curr, in_data))
-                        if consumer_src not in visited_nodes:
-                            visited_nodes.add(consumer_src)
-                            queue.append((consumer_src, depth + 1))
-
-        # Filter nodes based on policy
-        result_nodes: List[CodeNode] = []
-        for nid in visited_nodes:
-            c_node = self._to_code_node(nid)
-            if policy.include_node_types and c_node.node_type not in policy.include_node_types:
+        result = []
+        for nid in order:
+            node_obj = self._to_code_node(nid)
+            if (policy.include_node_types and node_obj.node_type not in policy.include_node_types):
                 continue
-            if policy.exclude_node_types and c_node.node_type in policy.exclude_node_types:
+            if (policy.exclude_node_types and node_obj.node_type in policy.exclude_node_types):
                 continue
-            result_nodes.append(c_node)
+            result.append(node_obj)
 
-        node_id_set = {n.node_id for n in result_nodes}
-        seen_edges = set()
-        filtered_edges: List[TypedEdge] = []
-        for e in collected_edges:
-            if e.source_id in node_id_set and e.target_id in node_id_set:
-                # Collapse exact relationship repeats, not distinct multigraph predicates.
-                edge_key = (
-                    e.source_id, e.target_id, e.edge_type,
-                    e.metadata.get("raw_relation"), e.metadata.get("layer"),
-                )
-                if edge_key not in seen_edges:
-                    seen_edges.add(edge_key)
-                    filtered_edges.append(e)
-
-        return InducedSubgraph(
-            root_node_id=start_id,
-            nodes=result_nodes,
-            edges=filtered_edges,
-        )
+        result_ids = {item.node_id for item in result}
+        filtered, seen_edges = [], set()
+        for edge in edges:
+            if edge.source_id not in result_ids or edge.target_id not in result_ids:
+                continue
+            signature = (edge.source_id, edge.target_id, edge.edge_type,
+                         edge.metadata.get("raw_relation"), edge.metadata.get("layer"))
+            if signature not in seen_edges:
+                seen_edges.add(signature)
+                filtered.append(edge)
+        return InducedSubgraph(root_node_id=start_id, nodes=result, edges=filtered)
 
     def get_node_detail(self, node_id: str) -> CodeNode:
         """Fetch full details for a single node by ID (exact ID only)."""
@@ -776,7 +832,7 @@ class SCKGGraphProvider(GraphProvider):
         def _svc_matches(target: str, candidate: str) -> bool:
             t = target.lower().replace("-", "_")
             c = candidate.lower().replace("-", "_")
-            return t == c or t in c or c in t
+            return self._service_matches(target, candidate)
 
         # Iterate all contract nodes in graph
         for nid, data in self.graph.nodes(data=True):
@@ -822,7 +878,7 @@ class SCKGGraphProvider(GraphProvider):
                 if edata.get("relation") == "DEFINES_RPC":
                     contracts_found.add(parent_src)
 
-        return [self._to_code_node(c) for c in contracts_found]
+        return [self._to_code_node(c) for c in sorted(contracts_found)]
 
     def version(self) -> str:
         """Return a version string for reproducibility logging."""

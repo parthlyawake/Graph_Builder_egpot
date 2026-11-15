@@ -26,6 +26,10 @@ class NodeType(str, Enum):
     TOPIC_CONTRACT = "topic_contract"  # e.g., Kafka / RabbitMQ message topic
     ENDPOINT = "endpoint"       # e.g., REST / HTTP route endpoint
     HTTP_CALLSITE = "http_callsite"  # request with an unresolved host
+    CALLSITE = "callsite"
+    ARGUMENT_EXPRESSION = "argument_expression"
+    PROTO_FIELD = "proto_field"
+    SCHEMA_CONTRACT = "schema_contract"
     COMMIT = "commit"
     FILE = "file"
     MODULE = "module"
@@ -52,6 +56,12 @@ class EdgeType(str, Enum):
     HTTP_REQUEST = "http_request"  # function makes an unresolved-host request
     POSSIBLE_HTTP_TARGET = "possible_http_target"  # path match without host proof
     MODIFIED_BY = "modified_by"  # code node was changed by a commit
+    INVOKES = "invokes"
+    EVALUATES = "evaluates"
+    DECLARES_FIELD = "declares_field"
+    NESTED_MESSAGE = "nested_message"
+    ACCEPTS_SCHEMA = "accepts_schema"
+    RETURNS_SCHEMA = "returns_schema"
 
 
 class Language(str, Enum):
@@ -133,6 +143,7 @@ class TraversalPolicy:
     entropy_threshold: float = 0.7        # for EG-POT; ignored by simpler traversals
     include_node_types: Optional[list[NodeType]] = None
     exclude_node_types: Optional[list[NodeType]] = None
+    include_layers: Optional[list[str]] = None  # explicit opt-in for semantic/structural links
 
 
 # ---------------------------------------------------------------------------
