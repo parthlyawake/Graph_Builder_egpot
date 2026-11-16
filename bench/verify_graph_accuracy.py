@@ -31,9 +31,17 @@ def edges(graph):
 
 def metrics(truth, predicted):
     tp, fp, fn = truth & predicted, predicted - truth, truth - predicted
-    precision = len(tp) / len(predicted) if predicted else (1.0 if not truth else 0.0)
+    # Undefined denominators are not evidence of perfect accuracy.
+    # In particular, an empty prediction set cannot establish precision,
+    # and an empty truth set cannot establish recall.
+    precision = len(tp) / len(predicted) if predicted else None
     recall = len(tp) / len(truth) if truth else None
-    f1 = (2 * precision * recall / (precision + recall)) if recall is not None and precision + recall else (0.0 if recall is not None else None)
+    if precision is None or recall is None:
+        f1 = None
+    elif precision + recall == 0:
+        f1 = 0.0
+    else:
+        f1 = 2 * precision * recall / (precision + recall)
     return {"tp": len(tp), "fp": len(fp), "fn": len(fn), "precision": precision,
             "recall": recall, "f1": f1, "missing": sorted(map(list, fn)),
             "unexpected": sorted(map(list, fp))}
