@@ -1,0 +1,27 @@
+name: Build Operational Evidence Verification
+on:
+  push:
+    branches: [research-build-operational-evidence-2026-11-16]
+  workflow_dispatch:
+
+jobs:
+  operational-graph-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+      - name: Compile
+        run: |
+          python -m compileall -q operational_evidence.py tests/test_operational_evidence.py
+      - name: Test new operational evidence layer
+        run: |
+          python -m pytest -q tests/test_operational_evidence.py
+      - name: Existing graph regression suite
+        run: |
+          python -m pytest -q tests
