@@ -51,6 +51,9 @@ jobs:
             --configs R0 R1 R3 R5 R9 \
             --ablations --top-k 5 --token-budget 2048 \
             --output /tmp/publication-evidence/retrieval_and_ablations.json
+          python bench/analyze_paired_study.py \
+            --input /tmp/publication-evidence/retrieval_and_ablations.json \
+            --output /tmp/publication-evidence/paired_bootstrap_summary.json
       - name: P4 pinned repeatable incremental vs cold build
         run: |
           python bench/paper_performance.py \
