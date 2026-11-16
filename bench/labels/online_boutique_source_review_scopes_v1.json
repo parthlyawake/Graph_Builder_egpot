@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "dataset": "Online Boutique source-reviewed scoped protocol v1",
+  "source_repo": "GoogleCloudPlatform/microservices-demo",
+  "source_sha": "38e7348eb289eb5b87c0c6e8cb19ced0449dc389",
+  "status": "source_inspected_pending_independent_human_review",
+  "annotations_scope": "Ten complete Go frontend/rpc.go CONSUMES scopes, two shipping IMPLEMENTS scopes, two Python CONSUMES scopes. Not a full repo graph gold standard.",
+  "reviewers": [],
+  "nodes": [
+    {
+      "id": "src/frontend/rpc.go:frontendServer.getCurrencies",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) getCurrencies("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.getProducts",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) getProducts("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.getProduct",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) getProduct("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.getCart",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) getCart("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.emptyCart",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) emptyCart("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.insertCart",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) insertCart("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.convertCurrency",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) convertCurrency("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.getShippingQuote",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) getShippingQuote("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.getRecommendations",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) getRecommendations("
+      }
+    },
+    {
+      "id": "src/frontend/rpc.go:frontendServer.getAd",
+      "type": "function",
+      "file": "src/frontend/rpc.go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": "func (fe *frontendServer) getAd("
+      }
+    },
+    {
+      "id": "src/shippingservice/main.go:server.GetQuote",
+      "type": "function",
+      "file": "src/shippingservice/main.go",
+      "evidence": {
+        "file": "src/shippingservice/main.go",
+        "contains": "func (s *server) GetQuote("
+      }
+    },
+    {
+      "id": "src/shippingservice/main.go:server.ShipOrder",
+      "type": "function",
+      "file": "src/shippingservice/main.go",
+      "evidence": {
+        "file": "src/shippingservice/main.go",
+        "contains": "func (s *server) ShipOrder("
+      }
+    },
+    {
+      "id": "src/emailservice/email_client.py:send_confirmation_email",
+      "type": "function",
+      "file": "src/emailservice/email_client.py",
+      "evidence": {
+        "file": "src/emailservice/email_client.py",
+        "contains": "stub.SendOrderConfirmation("
+      }
+    },
+    {
+      "id": "src/recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations",
+      "type": "function",
+      "file": "src/recommendationservice/recommendation_server.py",
+      "evidence": {
+        "file": "src/recommendationservice/recommendation_server.py",
+        "contains": "product_catalog_stub.ListProducts("
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getCurrencies",
+      "relation": "CONSUMES",
+      "target": "contract::CurrencyService.GetSupportedCurrencies",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".GetSupportedCurrencies("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getProducts",
+      "relation": "CONSUMES",
+      "target": "contract::ProductCatalogService.ListProducts",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".ListProducts("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getProduct",
+      "relation": "CONSUMES",
+      "target": "contract::ProductCatalogService.GetProduct",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".GetProduct("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.GetCart",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".GetCart("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.emptyCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.EmptyCart",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".EmptyCart("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.insertCart",
+      "relation": "CONSUMES",
+      "target": "contract::CartService.AddItem",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".AddItem("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.convertCurrency",
+      "relation": "CONSUMES",
+      "target": "contract::CurrencyService.Convert",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".Convert("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getShippingQuote",
+      "relation": "CONSUMES",
+      "target": "contract::ShippingService.GetQuote",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".GetQuote("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getRecommendations",
+      "relation": "CONSUMES",
+      "target": "contract::RecommendationService.ListRecommendations",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".ListRecommendations("
+      }
+    },
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getAd",
+      "relation": "CONSUMES",
+      "target": "contract::AdService.GetAds",
+      "language": "go",
+      "evidence": {
+        "file": "src/frontend/rpc.go",
+        "contains": ".GetAds("
+      }
+    },
+    {
+      "source": "src/shippingservice/main.go:server.GetQuote",
+      "relation": "IMPLEMENTS",
+      "target": "contract::ShippingService.GetQuote",
+      "language": "go",
+      "evidence": {
+        "file": "src/shippingservice/main.go",
+        "contains": "func (s *server) GetQuote("
+      }
+    },
+    {
+      "source": "src/shippingservice/main.go:server.ShipOrder",
+      "relation": "IMPLEMENTS",
+      "target": "contract::ShippingService.ShipOrder",
+      "language": "go",
+      "evidence": {
+        "file": "src/shippingservice/main.go",
+        "contains": "func (s *server) ShipOrder("
+      }
+    },
+    {
+      "source": "src/emailservice/email_client.py:send_confirmation_email",
+      "relation": "CONSUMES",
+      "target": "contract::EmailService.SendOrderConfirmation",
+      "language": "python",
+      "evidence": {
+        "file": "src/emailservice/email_client.py",
+        "contains": "stub.SendOrderConfirmation("
+      }
+    },
+    {
+      "source": "src/recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations",
+      "relation": "CONSUMES",
+      "target": "contract::ProductCatalogService.ListProducts",
+      "language": "python",
+      "evidence": {
+        "file": "src/recommendationservice/recommendation_server.py",
+        "contains": "product_catalog_stub.ListProducts("
+      }
+    }
+  ],
+  "negatives": [
+    {
+      "source": "src/frontend/rpc.go:frontendServer.getCart",
+      "relation": "CONSUMES",
+      "target": "contract::ShippingService.ShipOrder"
+    },
+    {
+      "source": "src/emailservice/email_client.py:send_confirmation_email",
+      "relation": "CONSUMES",
+      "target": "contract::PaymentService.Charge"
+    }
+  ],
+  "closed_scopes": [
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.getCurrencies"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.getProducts"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.getProduct"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.getCart"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.emptyCart"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.insertCart"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.convertCurrency"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.getShippingQuote"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.getRecommendations"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/frontend/rpc.go:frontendServer.getAd"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "IMPLEMENTS",
+      "sources": [
+        "src/shippingservice/main.go:server.GetQuote"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "IMPLEMENTS",
+      "sources": [
+        "src/shippingservice/main.go:server.ShipOrder"
+      ],
+      "language": "go"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/emailservice/email_client.py:send_confirmation_email"
+      ],
+      "language": "python"
+    },
+    {
+      "relation": "CONSUMES",
+      "sources": [
+        "src/recommendationservice/recommendation_server.py:RecommendationService.ListRecommendations"
+      ],
+      "language": "python"
+    }
+  ],
+  "closed_node_scopes": [
+    {
+      "type": "function",
+      "files": [
+        "src/frontend/rpc.go"
+      ],
+      "language": "go"
+    },
+    {
+      "type": "function",
+      "files": [
+        "src/emailservice/email_client.py"
+      ],
+      "language": "python"
+    }
+  ]
+}
