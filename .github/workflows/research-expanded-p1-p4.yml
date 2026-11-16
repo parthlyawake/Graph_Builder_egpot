@@ -128,11 +128,28 @@ jobs:
           cat > /tmp/compiled/source-pin.json <<'JSON'
           {"source_repository":"GoogleCloudPlatform/microservices-demo","source_revision":"38e7348eb289eb5b87c0c6e8cb19ced0449dc389","source_path":"protos/demo.proto","artifact":"demo_pb2.py","evidence_kind":"actual_github_ci_build_only_not_deployment"}
           JSON
-      - name: GitHub OIDC-based artifact attestation
+      - name: Attempt GitHub OIDC-backed artifact attestation
+        id: attestation
+        continue-on-error: true
         uses: actions/attest-build-provenance@v3
         with:
           subject-path: /tmp/compiled/demo_pb2.py
+      - name: Record unavailable attestation capability without upgrading trust
+        if: steps.attestation.outcome != 'success'
+        run: |
+          python - <<'PY'
+          import json, pathlib, os
+          root=pathlib.Path('/tmp/compiled')
+          payload={"build_attestation_status":"UNVERIFIED",
+                   "deployment_status":"UNVERIFIED","telemetry_status":"UNVERIFIED",
+                   "attestation_step_outcome":"failure",
+                   "reason":"GitHub attestation step failed; consult run logs (private organization feature unavailable on current plan)",
+                   "run_id":os.getenv("GITHUB_RUN_ID"),"workflow_sha":os.getenv("GITHUB_SHA")}
+          (root/'trust-gate.json').write_text(json.dumps(payload,indent=2)+"\\n")
+          print('NO_AUTHENTICATED_PROVENANCE',json.dumps(payload))
+          PY
       - name: Validate attested build identity and digest
+        if: steps.attestation.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
