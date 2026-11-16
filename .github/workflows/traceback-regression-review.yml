@@ -1,0 +1,49 @@
+name: Traceback Regression and Branch Audit
+on:
+  push:
+    branches: [fix-pytest-frame-resolution-audit-2026-11-16]
+  workflow_dispatch:
+
+jobs:
+  traceback-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+      - name: Compile all Python sources
+        run: |
+          python -m compileall -q .
+      - name: Check severe static Python errors (Ruff)
+        run: |
+          python -m pip install ruff==0.14.5
+          ruff check --select E9,F63,F7,F82 .
+      - name: Run targeted traceback regression
+        run: |
+          python -m pytest -q tests/test_pytest_traceback_resolution.py tests/test_sop_review_defects.py tests/test_graph_provider.py
+      - name: Run whole repository regression suite twice
+        run: |
+          python -m pytest -q tests
+          python -m pytest -q tests
+      - name: Checkout pinned real DataHub source subtree
+        uses: actions/checkout@v4
+        with:
+          repository: datahub-project/datahub
+          ref: 051fb78fe6a6395043d272218b035cb00fe27321
+          path: _datahub
+          sparse-checkout: |
+            datahub-actions/src
+          filter: blob:none
+          persist-credentials: false
+      - name: Real-source incremental/full equivalence (twice)
+        run: |
+          python bench/smoke_datahub_graph.py --repo _datahub/datahub-actions/src --repetitions 2 --output /tmp/frame_review_datahub_smoke.json
+      - name: Verify source-grounded benchmark fixtures
+        run: |
+          python bench/run_paper_accuracy.py --repo benchmarks/polyglot_api --labels bench/labels/polyglot_api_closed_scopes.json --output /tmp/frame_review_closed_scope.json
+          python bench/run_paper_accuracy.py --repo benchmarks/paper_relations --labels bench/labels/paper_relations_closed_scopes.json --output /tmp/frame_review_paper_relations.json

@@ -19,6 +19,7 @@ import networkx as nx
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contracts.graph_provider import GraphProvider
+from contracts.stack_frames import parse_stack_frames
 from contracts.graph_types import (
     CandidateRootCause,
     CausalPath,
@@ -383,6 +384,12 @@ class SCKGGraphProvider(GraphProvider):
 
     def _frame_nodes(self, path: str, line: int, function: str,
                      service_name: str) -> list[str]:
+        """Resolve a frame conservatively by symbol, source extent and path.
+
+        Prefer the innermost enclosing function for line-only tracebacks and
+        line-consistent declarations for named frames. Never claim unique
+        certainty when only a shared basename identifies multiple files.
+        """
         candidates = []
         for nid, data in self.graph.nodes(data=True):
             if data.get("type") not in {"function", "method"} or self._is_test_node(nid, data):
@@ -391,34 +398,54 @@ class SCKGGraphProvider(GraphProvider):
             if not score:
                 continue
             name = data.get("name", "")
-            if function:
-                if not (name == function or nid.endswith(":" + function)
-                        or nid.endswith("." + function)):
-                    continue
-            else:
-                start = data.get("line_no")
-                end = data.get("line_end", start)
-                try:
-                    if not (int(start) <= line <= int(end or start)):
-                        continue
-                except (ValueError, TypeError):
-                    continue
+            if function and not (
+                name == function or nid.endswith(":" + function)
+                or nid.endswith("." + function)
+            ):
+                continue
+            start = data.get("line_no")
+            end = data.get("line_end", start)
+            try:
+                start = int(start)
+                end = int(end if end is not None else start)
+                inside = start > 0 and start <= line <= end
+            except (ValueError, TypeError):
+                start, end, inside = 0, 0, False
+            if not function and not inside:
+                continue
             service = str(data.get("repo") or
                           self.traversal._extract_service_name(data.get("file", ""), nid) or "")
-            candidates.append((self._service_matches(service_name, service), score, nid))
+            candidates.append({
+                "id": nid,
+                "service_match": self._service_matches(service_name, service),
+                "suffix": score,
+                "inside": inside,
+                "span": max(0, end - start) if inside else float("inf"),
+                "file": data.get("file", ""),
+                "repo": data.get("repo"),
+            })
         if not candidates:
             return []
-        # Service evidence dominates path suffix when available. Otherwise
-        # a longer exact suffix wins. Stable node IDs break remaining ties.
-        if service_name and any(c[0] for c in candidates):
-            candidates = [c for c in candidates if c[0]]
-        strongest = max(c[1] for c in candidates)
-        candidates = [c for c in candidates if c[1] == strongest]
-        # If the stack frame cannot identify a service and the best match
-        # spans several repositories, do not invent a unique root cause.
-        if not service_name and len({self.graph.nodes[n].get("repo") for _, _, n in candidates}) > 1:
+        if service_name and any(c["service_match"] for c in candidates):
+            candidates = [c for c in candidates if c["service_match"]]
+        strongest = max(c["suffix"] for c in candidates)
+        candidates = [c for c in candidates if c["suffix"] == strongest]
+        # A printed function name remains useful for older graphs without
+        # line_end; when current spans exist, prefer those containing the frame.
+        if function and any(c["inside"] for c in candidates):
+            candidates = [c for c in candidates if c["inside"]]
+        if not function and candidates:
+            shortest = min(c["span"] for c in candidates)
+            candidates = [c for c in candidates if c["span"] == shortest]
+        # Identical relative paths in different repositories require an
+        # explicit matching service. A shared basename cannot disambiguate
+        # different files even if the functions share a name.
+        if len({str(c["repo"]) for c in candidates}) > 1 and not any(
+                c["service_match"] for c in candidates):
             return []
-        return sorted(n for _, _, n in candidates)
+        if strongest == 1 and len({str(c["file"]) for c in candidates}) > 1:
+            return []
+        return sorted(c["id"] for c in candidates)
 
     def _is_test_node(self, nid: str, ndata: Optional[dict] = None) -> bool:
         if ndata is None:
@@ -469,20 +496,8 @@ class SCKGGraphProvider(GraphProvider):
         """
         matched: list[str] = []
         seen: Set[str] = set()
-        parsed_frames = []
-        if symptom.stack_trace:
-            for path, line, function in re.findall(
-                    r'File "([^"]+)", line (\d+)(?:, in ([\w.]+))?',
-                    symptom.stack_trace):
-                parsed_frames.append((path, int(line), function))
-            for path, line in re.findall(
-                    r'at (?:[\w.$]+)\(([\w./\\-]+\.java):(\d+)\)',
-                    symptom.stack_trace):
-                parsed_frames.append((path, int(line), ""))
-            for path, line in re.findall(
-                    r'([\w./\\-]+\.(?:go|js|ts|py|java)):(\d+)',
-                    symptom.stack_trace):
-                parsed_frames.append((path, int(line), ""))
+        parsed_frames = parse_stack_frames(symptom.stack_trace or "")
+        if parsed_frames:
             for path, line, function in parsed_frames:
                 for nid in self._frame_nodes(path, line, function, symptom.service_name):
                     if nid not in seen:
