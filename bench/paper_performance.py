@@ -44,6 +44,21 @@ def full_graph_signature(g):
     return hashlib.sha256(_dump(g).encode("utf-8")).hexdigest()
 
 
+def semantic_graph_signature(graph):
+    """Full JSON metadata/attribute signature, ignoring ephemeral eNNN edge keys.
+
+    Parallel edge multiplicity and every user-visible node/edge attribute are
+    still included; only internal insertion-order counter keys are excluded.
+    """
+    from sqlite_graph_store import _dump, _canonical
+    data=json.loads(_dump(graph))
+    for edge in data["edges"]:
+        del edge["key"]
+    data["edges"].sort(key=lambda e: (e["source"], e["target"],
+                                     _canonical(e["attrs"])))
+    return hashlib.sha256(_canonical(data).encode("utf-8")).hexdigest()
+
+
 def diagnose_graph_attribute_drift(incremental, fresh, *, limit=5):
     """Identify attribute drift without masking it as structural equality."""
     from collections import Counter
@@ -143,8 +158,11 @@ def run_case(case,repeats):
             tracemalloc.stop()
             equal=graph_signature(builder.graph)==graph_signature(fresh.graph)
             full_equal=full_graph_signature(builder.graph)==full_graph_signature(fresh.graph)
+            semantic_equal=(semantic_graph_signature(builder.graph)==
+                            semantic_graph_signature(fresh.graph))
             mismatch = diagnose_graph_attribute_drift(builder.graph, fresh.graph) if not full_equal else None
             trials.append({"attribute_mismatch_diagnostics":mismatch,
+                           "semantic_attribute_equivalence":semantic_equal,
                            "exact_attribute_equivalence":full_equal,"cold_s":cold,"incremental_s":incremental,"fresh_after_edit_s":rebuild,
                            "peak_cold_tracemalloc_bytes":peak_cold,
                            "peak_incremental_tracemalloc_bytes":peak_incr,
@@ -160,6 +178,7 @@ def run_case(case,repeats):
         "fresh_after_edit":time_summary([x["fresh_after_edit_s"] for x in trials]),
         "equivalence_passes":sum(x["equivalent"] for x in trials),
         "exact_attribute_equivalence_passes":sum(x["exact_attribute_equivalence"] for x in trials),
+        "semantic_attribute_equivalence_passes":sum(x["semantic_attribute_equivalence"] for x in trials),
         "example_attribute_mismatch":next((x["attribute_mismatch_diagnostics"] for x in trials
                                            if x["attribute_mismatch_diagnostics"]), None),
         "note":"Typed graph structural agreement is weaker than complete metadata and attribute agreement.",
@@ -193,6 +212,7 @@ def main():
             "git_commit":case["git_commit"],
             "equivalence_passes":case["equivalence_passes"],
             "exact_attribute_equivalence_passes":case["exact_attribute_equivalence_passes"],
+            "semantic_attribute_equivalence_passes":case["semantic_attribute_equivalence_passes"],
             "attribute_mismatch":case["example_attribute_mismatch"],
             "incremental_p50_s":case["incremental"]["p50_s"],
             "rebuild_p50_s":case["fresh_after_edit"]["p50_s"],
