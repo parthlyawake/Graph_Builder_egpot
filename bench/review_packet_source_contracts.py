@@ -12,6 +12,11 @@ import json
 import re
 import subprocess
 from pathlib import Path
+import sys
+
+ROOT=Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0,str(ROOT))
 
 THRIFT = ("6ecb09706140f8730b5385c08f1386c654c3c526",
           "socialNetwork/social_network.thrift")
