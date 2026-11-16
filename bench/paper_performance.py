@@ -135,6 +135,17 @@ def main():
     out=Path(args.output);out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2)+"\n",encoding="utf-8")
     print("Wrote",out)
+    for case in result["cases"]:
+        print("P4_VERIFIED_CASE", json.dumps({
+            "name":case["name"],
+            "git_commit":case["git_commit"],
+            "equivalence_passes":case["equivalence_passes"],
+            "exact_attribute_equivalence_passes":case["exact_attribute_equivalence_passes"],
+            "incremental_p50_s":case["incremental"]["p50_s"],
+            "rebuild_p50_s":case["fresh_after_edit"]["p50_s"],
+            "speedup_p50":case["incremental_vs_fresh_speedup_p50"],
+            "repetitions":args.repetitions
+        },sort_keys=True))
 
 
 if __name__=="__main__":main()
