@@ -84,6 +84,53 @@ def thrift_oracle(source: str) -> set[tuple[str,str,str]]:
         raise ValueError("No IDL method declarations identified")
     return expected
 
+def proto_oracle(source: str) -> set[tuple[str,str,str]]:
+    """Entire source Protobuf service->RPC declaration set, not runtime bindings."""
+    result=set()
+    service=None
+    for line_no,raw in enumerate(source.splitlines(),1):
+        line=raw.split("//",1)[0].strip()
+        if service is None:
+            match=re.fullmatch(r"service\\s+(\\w+)\\s*\\{\\s*",line)
+            if match:
+                service=match.group(1)
+            continue
+        if line=="}":
+            service=None
+            continue
+        rpc=re.match(r"^rpc\\s+(\\w+)\\s*\\(",line)
+        if rpc:
+            parent="contract::"+service
+            result.add((parent,"DEFINES_RPC",parent+"."+rpc.group(1)))
+        elif line.startswith("rpc"):
+            raise ValueError(f"Unsupported rpc declaration at line {line_no}")
+    if service is not None or not result:
+        raise ValueError("Unclosed/empty proto scope")
+    return result
+
+
+def inspect_proto(repo: Path) -> dict:
+    revision="38e7348eb289eb5b87c0c6e8cb19ced0449dc389"
+    relative="protos/demo.proto"
+    check_revision(repo,revision)
+    expected=proto_oracle((repo/relative).read_text(encoding="utf-8"))
+    sources={x[0] for x in expected}
+    with contextlib.redirect_stdout(io.StringIO()):
+        builder=CKGBuilder(str(repo))
+        builder.build()
+    actual={(str(u),"DEFINES_RPC",str(v)) for u,v,d in builder.graph.edges(data=True)
+            if d.get("relation")=="DEFINES_RPC" and str(u) in sources}
+    return {
+        "system":"Online Boutique","protocol":"Protobuf",
+        "revision":revision,"complete_source_file":relative,
+        "measured_relation":"service -> RPC declarations ONLY",
+        "expected_count":len(expected),"predicted_count":len(actual),
+        "score":score(expected,actual),
+        "evidence_status":"automatic_lexical_source_census_not_human_adjudicated",
+        "caveats":["Graph service names follow the repo's unqualified canonical RPC convention",
+                   "Not all consumer/producer bindings are measured"]
+    }
+
 def spring_oracle(source: str) -> set[tuple[str,str,str]]:
     """Entire Spring controller's literal route annotations and Java handlers."""
     route = re.compile(r'@(Get|Post|Put|Delete|Patch)Mapping\s*\(\s*(?:path|value)\s*=\s*"([^"]+)"\s*\)')
@@ -166,11 +213,11 @@ def inspect_train(repo: Path) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--protocol", choices=["thrift","spring"], required=True)
+    ap.add_argument("--protocol", choices=["thrift","spring","proto"], required=True)
     ap.add_argument("--repo", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
     args = ap.parse_args()
-    report = inspect_thrift(args.repo) if args.protocol=="thrift" else inspect_train(args.repo)
+    report = {"thrift":inspect_thrift,"spring":inspect_train,"proto":inspect_proto}[args.protocol](args.repo)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,sort_keys=True,indent=2)+"\n",encoding="utf-8")
     print("COMPLETE_FILE_DECLARATION_CENSUS", json.dumps(report,sort_keys=True))
