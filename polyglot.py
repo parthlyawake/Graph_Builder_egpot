@@ -1154,6 +1154,12 @@ class TreeSitterExtractor:
                 function_id += f":line{self._line(node)}"
             overload_scope = f"{name}@overload:{digest}"
         builder.add_ckg_node(function_id, "function", "Lsyn", name, self._line(node))
+        # Tree-sitter end_point is exclusive; translate to inclusive source line.
+        # Bare Go/Java/JS stack frames often contain no function name.
+        end_row, end_column = node.end_point.row, node.end_point.column
+        builder.graph.nodes[function_id]["line_end"] = max(
+            self._line(node), end_row + (1 if end_column else 0)
+        )
         if self.is_java or self.is_csharp:
             builder.graph.nodes[function_id]["signature"] = signature
             builder.graph.nodes[function_id]["overload_group"] = original_id
