@@ -21,7 +21,7 @@
       "file": "socialNetwork/social_network.thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeUniqueId("
+        "contains": "ComposeUniqueId"
       }
     },
     {
@@ -39,7 +39,7 @@
       "file": "socialNetwork/social_network.thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeText("
+        "contains": "ComposeText"
       }
     },
     {
@@ -57,7 +57,7 @@
       "file": "socialNetwork/social_network.thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeUserMentions("
+        "contains": "ComposeUserMentions"
       }
     },
     {
@@ -75,7 +75,7 @@
       "file": "socialNetwork/social_network.thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeMedia("
+        "contains": "ComposeMedia"
       }
     }
   ],
@@ -87,7 +87,7 @@
       "language": "thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeUniqueId("
+        "contains": "ComposeUniqueId"
       }
     },
     {
@@ -97,7 +97,7 @@
       "language": "thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeText("
+        "contains": "ComposeText"
       }
     },
     {
@@ -107,7 +107,7 @@
       "language": "thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeUserMentions("
+        "contains": "ComposeUserMentions"
       }
     },
     {
@@ -117,7 +117,7 @@
       "language": "thrift",
       "evidence": {
         "file": "socialNetwork/social_network.thrift",
-        "contains": "ComposeMedia("
+        "contains": "ComposeMedia"
       }
     }
   ],
