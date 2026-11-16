@@ -1,0 +1,32 @@
+name: Traceback Regression and Branch Audit
+on:
+  push:
+    branches: [fix-pytest-frame-resolution-audit-2026-11-16]
+  workflow_dispatch:
+
+jobs:
+  traceback-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+      - name: Compile all Python sources
+        run: |
+          python -m compileall -q .
+      - name: Run targeted traceback regression
+        run: |
+          python -m pytest -q tests/test_pytest_traceback_resolution.py tests/test_sop_review_defects.py tests/test_graph_provider.py
+      - name: Run whole repository regression suite twice
+        run: |
+          python -m pytest -q tests
+          python -m pytest -q tests
+      - name: Verify source-grounded benchmark fixtures
+        run: |
+          python bench/run_paper_accuracy.py --repo benchmarks/polyglot_api --labels bench/labels/polyglot_api_closed_scopes.json --output /tmp/frame_review_closed_scope.json
+          python bench/run_paper_accuracy.py --repo benchmarks/paper_relations --labels bench/labels/paper_relations_closed_scopes.json --output /tmp/frame_review_paper_relations.json
