@@ -43,6 +43,11 @@ jobs:
             --labels bench/labels/online_boutique_source_review_scopes_v1.json \
             --output /tmp/publication-evidence/online_boutique_closed_scope.json \
             --fail-on-missing
+      - name: P2 real-source contract-breaking Go consumer fault injection
+        run: |
+          python bench/verify_online_boutique_rpc_skew.py \
+            --repo _boutique \
+            --output /tmp/publication-evidence/online_boutique_rpc_typo_fault.json
       - name: P4 fixed-corpus internal baselines and graph masks
         run: |
           python bench/run_paper_study.py \
