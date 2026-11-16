@@ -19,7 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0,str(ROOT))
 
 from graft_ckg import CKGBuilder
-from bench.paper_performance import semantic_graph_signature
+from bench.paper_performance import semantic_graph_signature, diagnose_graph_attribute_drift
 
 EXPECTED_COMMIT="38e7348eb289eb5b87c0c6e8cb19ced0449dc389"
 REL="src/frontend/rpc.go"
@@ -63,6 +63,8 @@ def inspect(repo: Path) -> dict:
         fresh_binding=_has_binding(fresh.graph)
         equivalent=(semantic_graph_signature(builder.graph)==
                     semantic_graph_signature(fresh.graph))
+        mismatch=(diagnose_graph_attribute_drift(builder.graph, fresh.graph)
+                  if not equivalent else None)
         unresolved=[
             list(x) for x in getattr(builder,"unresolved_contract_calls",[])
             if isinstance(x,(list,tuple)) and "GetCartTypo" in x
@@ -81,6 +83,7 @@ def inspect(repo: Path) -> dict:
             "mutated_fresh_consumes":_all_consumes(fresh.graph),
             "unresolved_typo_candidates":unresolved,
             "semantic_graph_equivalence":equivalent,
+            "attribute_mismatch_diagnostics":mismatch,
             "passed":bool(baseline and not incremental_binding and
                           not fresh_binding and equivalent),
             "limitations":["Compilation/runtime not tested: mutant intentionally refers to an undefined gRPC method",
@@ -102,6 +105,7 @@ def main():
         "mutated_incremental":result["mutated_incremental_binding_present"],
         "mutated_fresh":result["mutated_fresh_binding_present"],
         "semantic_graph_equivalence":result["semantic_graph_equivalence"],
+        "attribute_mismatch_diagnostics":result["attribute_mismatch_diagnostics"],
         "unresolved_candidates":len(result["unresolved_typo_candidates"])
     },sort_keys=True))
     if not result["passed"]:
