@@ -177,3 +177,36 @@ jobs:
           path: /tmp/compiled/
           if-no-files-found: warn
           retention-days: 90
+
+  benchmark-email-otel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/checkout@v4
+        with:
+          repository: GoogleCloudPlatform/microservices-demo
+          ref: 38e7348eb289eb5b87c0c6e8cb19ced0449dc389
+          path: _boutique
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install original benchmark EmailService runtime and gRPC codegen
+        run: |
+          python -m pip install -r _boutique/src/emailservice/requirements.txt 'grpcio-tools==1.76.0'
+      - name: P3 actual benchmark service RPC -> OTLP collector, unsigned deployment
+        run: |
+          mkdir -p /tmp/p3-real-otel
+          python bench/real_benchmark_email_otlp.py --repo _boutique --output /tmp/p3-real-otel/email_rpc_otlp.json
+      - name: Preserve real OTLP trace samples and unverified provenance status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-benchmark-email-otel
+          path: /tmp/p3-real-otel/
+          if-no-files-found: warn
+          retention-days: 90
