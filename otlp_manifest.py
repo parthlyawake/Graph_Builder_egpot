@@ -14,29 +14,44 @@ def _attributes(items):
     if not isinstance(items, list):
         raise ValueError("OTLP resource.attributes must be an array")
     out = {}
+    seen = set()
     for item in items:
-        if not isinstance(item, dict) or not isinstance(item.get("key"), str):
+        if not isinstance(item, dict) or not isinstance(item.get("key"), str) or not item["key"]:
             raise ValueError("invalid OTLP attribute")
+        key = item["key"]
+        # OTLP resource attributes are a map: duplicated identity keys can
+        # otherwise silently change which deployment receives a signal.
+        if key in seen:
+            raise ValueError(f"duplicate OTLP resource attribute: {key}")
+        seen.add(key)
         value = item.get("value", {})
         if not isinstance(value, dict):
             raise ValueError("invalid OTLP attribute value")
-        # Keep string attributes only; no speculative object-to-identity coercion.
         if "stringValue" in value:
             if not isinstance(value["stringValue"], str):
                 raise ValueError("OTLP stringValue must be a string")
-            out[item["key"]] = value["stringValue"]
+            out[key] = value["stringValue"]
     return out
 
 
 def _timestamp_ns(value):
-    try:
+    if type(value) is int:
+        n = value
+    elif isinstance(value, str) and value.isascii() and value.isdecimal():
         n = int(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError("OTLP timestamp required as Unix nanoseconds") from exc
+    else:
+        raise ValueError("OTLP timestamp required as integer Unix nanoseconds")
     if n <= 0:
         raise ValueError("OTLP signal requires a positive Unix nanosecond time")
-    return datetime.fromtimestamp(n / 1_000_000_000, tz=timezone.utc).isoformat()
-
+    seconds, nanos = divmod(n, 1_000_000_000)
+    try:
+        # Avoid float conversion/rounding; the manifest format stores at most
+        # microseconds, while exact nanoseconds remain in original OTLP input.
+        return datetime.fromtimestamp(seconds, tz=timezone.utc).replace(
+            microsecond=nanos // 1000
+        ).isoformat()
+    except (OverflowError, OSError, ValueError) as exc:
+        raise ValueError("OTLP timestamp outside representable datetime") from exc
 
 def otlp_to_signals(payload: dict) -> list[dict]:
     """Parse resourceSpans, resourceLogs and resourceMetrics ExportRequest JSON.
@@ -106,7 +121,12 @@ def otlp_to_signals(payload: dict) -> list[dict]:
                 if not isinstance(metric, dict):
                     raise ValueError("invalid OTLP metric")
                 # One data point -> one time-localized metric evidence record.
-                for typ in ("gauge", "sum", "histogram", "exponentialHistogram", "summary"):
+                present = [typ for typ in ("gauge", "sum", "histogram",
+                                            "exponentialHistogram", "summary")
+                           if metric.get(typ) is not None]
+                if len(present) > 1:
+                    raise ValueError("OTLP metric data must contain one point kind")
+                for typ in present:
                     data = metric.get(typ)
                     if data is None:
                         continue
