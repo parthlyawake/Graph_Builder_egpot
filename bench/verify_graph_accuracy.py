@@ -133,9 +133,19 @@ def evaluate(graph, labels, source_root=None):
             "relation": relation, "language": scope.get("language", "unspecified"),
             "source_count": len(sources), **metrics(expected, predicted)})
     result["passed"] = not absent_nodes and not result["sampled_edges"]["missing"] and not result["negative_violations"] and evidence["missing"] == 0 and all(s["fp"] == 0 for s in result["closed_scopes"]) and all(s["fp"] == 0 for s in result["closed_node_scopes"])
-    result["publication_ready"] = (result["passed"] and bool(result["closed_scopes"]) and bool(result["closed_node_scopes"])
-                                   and evidence["unavailable"] == 0 and evidence["missing"] == 0
-                                   and labels.get("status") == "independently_reviewed")
+    # A JSON string status is a self-assertion, not an authenticated
+    # independent human review. Never let it automatically certify
+    # publication readiness, even when the selected source checks pass.
+    result["technical_evidence_complete_for_declared_scopes"] = bool(
+        result["passed"] and result["closed_scopes"] and
+        result["closed_node_scopes"] and
+        evidence["unavailable"] == 0 and evidence["missing"] == 0)
+    result["publication_ready"] = False
+    result["publication_gate_reason"] = (
+        "Source-marker existence and a self-declared review status do not "
+        "authenticate independent annotators or demonstrate complete unbiased "
+        "real-repository scopes; independent adjudication and external review required."
+    )
     return result
 
 
