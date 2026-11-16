@@ -1675,6 +1675,21 @@ class CKGBuilder(ast.NodeVisitor):
         produced = 0
         consumed = 0
 
+        def _contract_edge(source, target, relation, origin_file=""):
+            """Use the source symbol's file, not the last parser's current_file.
+
+            A full rebuild and an incremental update traverse files in
+            different orders. Borrowing self.current_file_ctx here attaches
+            unrelated file provenance to otherwise-correct contract edges.
+            """
+            source_file = str(self.graph.nodes.get(source, {}).get("file") or
+                              origin_file or "")
+            meta = HyperEdgeMetadata(d_scope=0, f_call=1.0,
+                                     c_type=1.0, id_ctx=source_file)
+            self.add_ckg_edge(source, target, relation, "Lcontract",
+                              metadata=meta)
+
+
         # Python servicers: class X(pb2_grpc.<Service>Servicer) with rpc methods.
         # The rpc method may be implemented on the servicer class itself OR on
         # any subclass (template pattern, e.g. BaseEmailService -> EmailService).
@@ -1695,13 +1710,13 @@ class CKGBuilder(ast.NodeVisitor):
             contract = self.proto_services.get(service_name)
             if not contract:
                 continue
-            self.add_ckg_edge(class_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+            _contract_edge(class_id, contract["node_id"], "IMPLEMENTS", file)
             produced += 1
             for rpc_name, rpc_id in contract["rpcs"].items():
                 for impl_class in [class_id, *sorted(_descendants(class_id))]:
                     direct = f"{impl_class}.{rpc_name}"
                     if direct in self.graph and self.graph.nodes[direct].get("type") == "function":
-                        self.add_ckg_edge(direct, rpc_id, "IMPLEMENTS", "Lcontract")
+                        _contract_edge(direct, rpc_id, "IMPLEMENTS", file)
                         produced += 1
 
         # Go servers: pb.Register<Service>Server(srv, impl) + methods on impl type
@@ -1720,12 +1735,12 @@ class CKGBuilder(ast.NodeVisitor):
                 if len(candidates) == 1:
                     impl_id = candidates[0]
             if impl_id in self.graph:
-                self.add_ckg_edge(impl_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+                _contract_edge(impl_id, contract["node_id"], "IMPLEMENTS", file)
                 produced += 1
                 for rpc_name, rpc_id in contract["rpcs"].items():
                     method_id = self._find_method(impl_id, rpc_name)
                     if method_id:
-                        self.add_ckg_edge(method_id, rpc_id, "IMPLEMENTS", "Lcontract")
+                        _contract_edge(method_id, rpc_id, "IMPLEMENTS", file)
                         produced += 1
 
         # JS servers: server.addService(pkg.<Service>.service, {rpc: handler})
@@ -1733,7 +1748,7 @@ class CKGBuilder(ast.NodeVisitor):
             contract = self.proto_services.get(service_name)
             if not contract:
                 continue
-            self.add_ckg_edge(scope_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+            _contract_edge(scope_id, contract["node_id"], "IMPLEMENTS", file)
             produced += 1
             for rpc_key, handler_expr in handlers.items():
                 rpc_id = self._match_rpc_case(contract, rpc_key)
@@ -1741,7 +1756,7 @@ class CKGBuilder(ast.NodeVisitor):
                     continue
                 target_ids = self._resolve_reference(file, handler_expr)
                 for tid in target_ids:
-                    self.add_ckg_edge(tid, rpc_id, "IMPLEMENTS", "Lcontract")
+                    _contract_edge(tid, rpc_id, "IMPLEMENTS", file)
                     produced += 1
 
         # Python stub calls whose stub variable was bound anywhere in the file
@@ -1763,7 +1778,7 @@ class CKGBuilder(ast.NodeVisitor):
                 continue
             rpc_id = self._match_rpc_case(contract, method)
             if rpc_id:
-                self.add_ckg_edge(caller_id, rpc_id, "CONSUMES", "Lcontract")
+                _contract_edge(caller_id, rpc_id, "CONSUMES", id_ctx)
                 consumed += 1
             else:
                 self.unresolved_contract_calls.append((caller_id, service_name, method, id_ctx))
