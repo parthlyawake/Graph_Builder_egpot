@@ -68,6 +68,9 @@ jobs:
         run: |
           python bench/review_packet_source_contracts.py --repo _deathstar --protocol thrift --output-dir /tmp/expanded-results/review_deathstar
           python bench/review_packet_source_contracts.py --repo _boutique --protocol proto --output-dir /tmp/expanded-results/review_boutique
+      - name: P1 complete Online Boutique Protobuf declarations
+        run: |
+          python bench/complete_protocol_declaration_census.py --protocol proto --repo _boutique --output /tmp/expanded-results/boutique_complete_proto.json
       - name: P1/P2 complete Thrift declaration scope
         run: |
           python bench/complete_protocol_declaration_census.py --protocol thrift --repo _deathstar --output /tmp/expanded-results/deathstar_complete_idl.json
