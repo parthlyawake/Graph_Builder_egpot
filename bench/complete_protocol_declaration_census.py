@@ -76,7 +76,7 @@ def thrift_oracle(source: str) -> set[tuple[str,str,str]]:
             name = m.group(1)
             u = f"contract::thrift::social_network.{service}"
             expected.add((u, "DEFINES_RPC", f"{u}.{name}"))
-        elif "(" in line and not re.match(r"^\d+\s*:", line):
+        elif "(" in line and not (re.match(r"^\d+\s*:", line) or line.startswith((")", "throws "))):
             raise ValueError("Unrecognized IDL method line: " + line)
     if service is not None:
         raise ValueError("Unclosed service block")
