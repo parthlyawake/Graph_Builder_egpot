@@ -10,21 +10,21 @@ For graph construction checks on eight polyglot systems, read the [baseline audi
 
 ## Overview
 
-Modern distributed software systems are composed of multiple microservices, each written in potentially different programming languages and communicating over network APIs (gRPC, REST) and asynchronous message queues (Kafka). Standard static analysis tools and code knowledge graph systems fail at this boundary: they lose track of execution paths the moment code crosses a network call or event channel from one service to another.
+Modern distributed software systems are composed of multiple microservices, each written in potentially different programming languages and communicating over network APIs (gRPC, REST) and asynchronous message queues (Kafka). Source-only dependency analysis often lacks reliable evidence for the code-to-network boundary; dynamically resolved targets require configuration or runtime corroboration.
 
-SCKG Graph Builder solves this by constructing a unified five-layer Code Knowledge Graph (CKG) that spans an entire multi-repository workspace. It explicitly models cross-service gRPC/Protobuf contracts, Spring REST endpoints, and event topics as first-class graph edges, enabling LLM agents and developer tools to trace execution paths across language and service boundaries with bounded token context and zero choke-point bottlenecks.
+SCKG Graph Builder solves this by constructing a unified five-layer Code Knowledge Graph (CKG) that spans an entire multi-repository workspace. It explicitly models cross-service gRPC/Protobuf contracts, Spring REST endpoints, and event topics as first-class graph edges, supporting source-evidenced dependency exploration and token-bounded context. Unresolved host identity, runtime dispatch, event routing and schema version skew remain explicit limitations.
 
 ---
 
 ## Key Capabilities
 
 - **Multi-Repository Composition:** Constructs a unified graph across multiple Git repositories in a single build pass.
-- **Polyglot Parsing:** Native AST and tree-sitter support across six programming languages (Go, Python, JavaScript, TypeScript, Java, C#) plus Protobuf schemas.
+- **Polyglot Parsing:** Native Python AST and Tree-sitter adapters cover core Go, JavaScript/TypeScript, Java, C# and additional language grammars. Feature completeness varies; see [real-source coverage](REAL_REPOSITORY_COMPATIBILITY_AUDIT.md).
 - **Contract Layer ($L_{\text{contract}}$):** Models gRPC, Spring REST (`@RestController`, `@GetMapping`, `@PostMapping`), and message queues (`@KafkaListener`, event publishing) via typed `CONSUMES`, `IMPLEMENTS`, `PRODUCES_EVENT`, and `CONSUMES_EVENT` edges.
-- **Incremental Streaming Build:** Sub-second incremental updates via SHA-256 hash checking and file-scoped contract invalidation, rebuilding only affected AST and contract subtrees upon file changes.
+- **Incremental Maintenance:** File-level updates preserve source registries and re-resolve derived edges. Large workspace/schema changes can trigger a full rebuild; latency and exact graph equivalence must be checked per edit and scope.
 - **Choke-Point-Free Traversal:** Optimizes blast-radius and context grafting traversals by bypassing backward traversal into parent service hubs, preventing star-graph fanout and choke points.
 - **Schema Drift Detection:** Detects API contract version skew between vendored Protobuf schemas across service boundaries.
-- **Deterministic Subtree Grafting:** Token-bounded context extraction for LLM agent prompts with minimal token redundancy.
+- **Deterministic Subtree Grafting:** Exact cl100k_base token-budget enforcement for rendered context. Semantic prompt redundancy has **not** been independently quantified.
 - **Standardized Graph Provider Interface:** Exposes an interface (`GraphProvider` / `SCKGGraphProvider`) for symptom resolution, backward root-cause analysis, and blast-radius tracing.
 - **Export & Storage:** Exports directly to NetworkX, JSON, GraphML, CSV, and Neo4j formats.
 
@@ -52,7 +52,7 @@ Adapts non-Python source files into the unified node and edge vocabulary using `
 ### multi_repo.py — Workspace Orchestration Engine
 
 Reads a `workspace.yaml` configuration, instantiates a CKG builder for each repository, and fuses all resulting graphs into one unified workspace graph:
-- Enforces strict node namespacing using the format `<repo_id>/<rel_path>:<qualname>`, guaranteeing zero node-ID collisions across repositories.
+- Uses repository-specific node namespacing (`<repo_id>/<rel_path>:<qualname>`) to reduce cross-repository ID collisions; unresolved symbol identities remain possible.
 - Parses `.proto` files to extract service and RPC definitions.
 - Computes SHA-256 hashes of schemas to detect `CONTRACT_SKEW` defects across repositories.
 - Binds cross-repository `CONSUMES`, `IMPLEMENTS`, `HTTP_CALLS`, and event edges.
@@ -68,7 +68,7 @@ Provides deterministic, typed graph traversal primitives across all five layers:
 - `deterministic_subtree_graft`: Bounded-token context subgraph extraction for LLM prompts.
 - `downstream_consumers`: Identifies all cross-service consumers dependent on a specific RPC, endpoint, or topic.
 - `contract_of`: Maps implementation functions back to their governing contract specification.
-- **Choke-Point Elimination:** Prevents backward traversal across `DEFINES_RPC` edges into parent `service_contract` nodes, eliminating star-graph combinatorial fanout during impact analysis.
+- **Fanout Control:** Prevents selected backward traversals through `DEFINES_RPC` service hubs to limit pathological expansion; no general complexity or zero-choke-point guarantee is implied.
 
 ### contracts/ (sckg_provider.py) — Graph Provider Interface
 
@@ -95,7 +95,7 @@ Each edge in the graph belongs to one of five topological layers:
 | $L_{\text{sem}}$ | Semantic | TF-IDF docstring similarity across symbols | `SEMANTIC_SIMILAR` |
 | $L_{\text{contract}}$ | Contract | Cross-service gRPC, REST, and messaging event bindings | `IMPLEMENTS`, `CONSUMES`, `PRODUCES`, `HTTP_CALLS`, `PRODUCES_EVENT`, `CONSUMES_EVENT` |
 
-The contract layer ($L_{\text{contract}}$) is the critical differentiator. Ablation experiments demonstrate that removing this layer causes a 43.1 percentage point drop in cross-service context recall (77.1% down to 34.0%), confirming it recovers nearly half of all cross-service context.
+The contract layer represents explicitly evidenced service relationships. In the revised **27-query, source-inspected** study, disabling contract edges after construction reduced exact-target graph-graft inclusion from **0.815 to 0.741**, while dependency-edge removal reduced it from **0.815 to 0.444**. These are selected context-inclusion ablations, **not** independent full-system contract accuracy or downstream agent improvements.
 
 ---
 
@@ -297,74 +297,43 @@ SCKG_Build/
 
 ---
 
-## Benchmark Results
+## Evaluation evidence and publication status (corrected 2026-11-17)
 
-All numbers below are sourced directly from `bench/results/*.json` and verified by `bench/verify_all_numbers.py`.
+**Do not cite the retired benchmark tables or agent-efficiency proxies formerly in this README.** They mixed historical runs, heterogeneous candidate sets, small source samples, simulated tool-call procedures and unadjudicated labels. Keep `bench/results/` JSON as historical diagnostics, **not** publication-certified accuracy.
 
-### Table I — Construction Scalability
+### Source-inspected exact-ID retrieval, Online Boutique
 
-| System | Languages | Services | LOC | Nodes | Edges | s/kLOC | Contract Edges | Skews |
-|---|---|---|---|---|---|---|---|---|
-| Google Online Boutique | Go, Python, Node.js, Proto | 10 | 5,001 | 1,794 | 5,155 | 0.040 | 30 | 0 |
-| Jaeger Distributed Tracing | Go, Python, Proto | 5 modules | 159,851 | 50,861 | 184,957 | 0.039 | 0 | 0 |
-| gRPC-Gateway | Go, Proto | 3 | 148,844 | 46,277 | 363,713 | 0.102 | 0 | 1 |
-| Podinfo Microservice | Go, Proto | 4 | 6,238 | 1,994 | 6,648 | 0.136 | 9 | 0 |
+Source: `GoogleCloudPlatform/microservices-demo@38e7348eb289eb5b87c0c6e8cb19ced0449dc389`; 27 source-inspected symbol-localization questions, no independent human sign-off, k=5 and 2,048 cl100k_base tokens.
 
-PyCG reports approximately 0.38 s/kLOC on Python-only single-repo codebases. SCKG Graph Builder achieves 0.039 to 0.136 s/kLOC on polyglot multi-repo systems — 2.8x to 9.5x faster — while handling multiple languages simultaneously.
+| Retriever | MRR@5 | Hits@1 | Hits@5 |
+|---|---:|---:|---:|
+| BM25 R0 | 0.341 | 18.5% | 59.3% |
+| LSA R1 | **0.638** | 48.1% | 92.6% |
+| Syntax hybrid R3 | 0.514 | 37.0% | 74.1% |
+| Static graph hybrid R5 | 0.514 | 37.0% | 74.1% |
+| Contract hybrid R9 | 0.514 | 37.0% | 74.1% |
 
-### Table II — Retrieval and Context Quality
+LSA **outperformed** the tested graph hybrids on this task set. In the separate P1–P4 research branch, paired LSA-minus-R5 MRR was +0.125, with a 10,000-sample within-cohort bootstrap 95% interval [−0.057, 0.300], including zero. No general or statistically reliable graph-ranking advantage is claimed.
 
-Evaluated on a 12-query polyglot benchmark over Google Online Boutique:
+The revised paper reports **post-construction** graft inclusion of annotated exact node IDs: full 0.815, without dependencies 0.444, without contracts 0.741. These are not real agent task resolution scores or parser-stage ablations.
 
-| Baseline | MRR@5 | Hits@1 (%) | Recall@10 (%) | Token Redundancy (%) |
-|---|---|---|---|---|
-| SCKG Graph Builder (full) | 0.561 | 41.7 | 77.1 | 103.2 |
-| BM25 Lexical | 0.617 | 50.0 | 46.5 | 100.0 |
-| Flat File Chunking | 1.000 | 100.0 | 72.2 | 251.0 |
-| Naive AST/CPG | 0.561 | 41.7 | 29.2 | 46.4 |
+### Source-graph correctness and operational integration
 
-### Table II-b — Layer Ablation Study
+- Baseline `krishna` CI `a5dfc871ffbb74f7c3a752fe15eaa48e931edaee`: 323 passed, 3 skipped in each of three test runs, plus green real-repository compatibility jobs. Test success is **not** graph precision.
+- Controlled 6-positive/2-negative HTTP and 21-triple relation fixtures verify designed scopes; their perfect scores are not unbiased real-source precision.
+- [P1–P4 research study](https://github.com/Vikas-Personal-Research-Org/Graph_Builder/tree/research-publication-evidence-p1-p4-2026-11-17): Online Boutique 14/14 selected gRPC consumer/producer edges; DeathStarBench Thrift four selected declaration edges; Sock Shop queue-master one AMQP consumer; Train-Ticket three Spring REST route registrations. The first three sets have closed-scoped P/R/F1 **only in their listed selections**, without independent human adjudication.
+- Source-to-Git object bridge, optional locally trusted DSSE signed build assertions, SQLite snapshot history/restart and synthetic deployment/telemetry integration exist in the research branch. This does **not** certify real production CI/CD, real deployment identity or OTLP telemetry provenance.
+- The pinned Go incremental edit after correcting stale gRPC/HTTP edge provenance gave **3/3 semantic graph attribute equivalence** (internal counter edge keys excluded) and medians 0.723s incremental versus 7.962s fresh, approximately 11.0× for this one edit. Exact internal edge-key agreement remains 0/3; no universal speedup claim.
 
-| Configuration | Recall@10 (%) | Delta Recall |
-|---|---|---|
-| Full model | 77.1 | — |
-| Without $L_{\text{flow}}$ | 77.1 | 0.0% |
-| Without $L_{\text{dep}}$ | 75.0 | -2.1% |
-| Without $L_{\text{sem}}$ | 77.1 | 0.0% |
-| Without $L_{\text{contract}}$ | 34.0 | -43.1% |
+See [PAPER_EVALUATION_STATUS.md](PAPER_EVALUATION_STATUS.md), [PUBLICATION_EVIDENCE_AUDIT_2026_11_17.md](PUBLICATION_EVIDENCE_AUDIT_2026_11_17.md) and [source coverage limitations](REAL_REPOSITORY_COMPATIBILITY_AUDIT.md) before presenting any numeric result.
 
-### Table III — Contract Layer Precision, Recall and F1
-
-Evaluated against ground truth on Google Online Boutique:
-
-| Binding Type | Ground Truth | Resolved | Precision | Recall | F1 |
-|---|---|---|---|---|---|
-| CONSUMES (gRPC) | 21 | 21 | 1.000 | 1.000 | 1.000 |
-| IMPLEMENTS (gRPC) | 9 | 9 | 1.000 | 1.000 | 1.000 |
-| HTTP_CALLS | 1 | 1 | 1.000 | 1.000 | 1.000 |
-
-### Table IV — Incremental Build Speedup
-
-| System | LOC | Full Build (ms) | Incremental (ms) | Speedup |
-|---|---|---|---|---|
-| Online Boutique | 5,001 | 3.1 | 2.7 | 1.1x |
-| Podinfo | 6,238 | 44.7 | 18.3 | 2.4x |
-| Jaeger | 159,851 | 4,424 | 242 | 18.3x |
-| gRPC-Gateway | 148,844 | 2,054 | 61 | 33.7x |
-
-### Table V — Agent Tool-Call Efficiency
-
-| Metric | SCKG Graph Builder | Raw File Reader | Delta |
-|---|---|---|---|
-| Mean Tool Calls per Task | 1.8 | 3.3 | -45.5% |
-| Mean Context Tokens per Task | 190 | 252 | -24.6% |
-| Mean Latency (ms) | 11.9 | 1.1 | +11ms |
+**Still missing for full PhD Objective 1 scientific sign-off:** independently reviewed exhaustive graph scopes, authenticated real deployment/OTLP evidence on representative systems, broader incremental and scaling trials, and equivalent external construction-method baselines. No claim of 0.90 symbolic P/R, 0.85/0.80 contract P/R, or 0.80 operational-lineage precision has been established.
 
 ---
 
 ## Running the Tests
 
-The test suite contains 67 tests covering contract resolution, dependency resolution, multi-repo composition, polyglot extraction, incremental updates, choke-point avoidance, and Graph Provider operations:
+The evolving test suite covers contract resolution, dependency resolution, multi-repo composition, polyglot extraction, incremental updates, traversal and Graph Provider operations. Use the current GitHub Actions run for exact totals:
 
 ```bash
 # Run the full test suite
@@ -382,16 +351,16 @@ python -m pytest tests/test_graph_provider.py -v
 
 ---
 
-## Comparison with Related Work
+## Comparison with related work — task-aligned, not borrowed scores
 
-| System | Multi-Repo | Polyglot | API Contracts | Incremental | Primary Metric |
-|---|---|---|---|---|---|
-| SCKG Graph Builder | Yes | 6 languages | Yes (gRPC, REST, Events) | Yes (up to 33.7x) | Recall@10=77.1%, Contract F1=1.000 |
-| RepoGraph (ICLR 2025) | No | Python only | No | No | SWE-bench +6.6% delta resolve |
-| LocAgent (ACL 2025) | No | Python only | No | No | Acc@1=85%+, 86% cost reduction |
-| CodexGraph (2024) | No | Python only | No | No | Pass@1=86.2% |
-| PyCG (ICSE 2021) | No | Python only | No | No | F1=0.822 on call graphs |
-| Agentless (2024) | No | Python only | No | No | 27.3% SWE-bench resolve |
+| Published work | Verified venue | Main evaluation task | Comparable interpretation |
+|---|---|---|---|
+| [RepoGraph](https://proceedings.iclr.cc/paper_files/paper/2025/hash/4a4a3c197deac042461c677219efd36c-Abstract-Conference.html) | ICLR 2025 | Repository graph navigation for software-engineering agents and CrossCodeEval | Structural graph idea; its SWE-bench resolve rate is not our construction edge precision |
+| [CodexGraph](https://aclanthology.org/2025.naacl-long.7/) | NAACL 2025 | Code graph database querying with LLMs | Graph interfaces and navigation; different benchmark and tasks |
+| [LocAgent](https://aclanthology.org/2025.acl-long.426/) | ACL 2025 | Graph-guided code localization | Different question population/targets; published scores are not our MRR baseline |
+| [CodePlan](https://www.microsoft.com/en-us/research/publication/codeplan-repository-level-coding-using-llms-and-planning-2/) | FSE 2024 | Repository-wide edit planning and incremental impact | Relevant method idea, not direct four-service graph-accuracy score |
+
+External implementations have **not** been rerun under the same pinned source, candidate-ID set and scoring protocol here. Do not place their published scores in a numerical performance comparison without such an experiment. The [literature comparability audit](LITERATURE_COMPARABILITY_AUDIT_2026_11_17.md) records verified reference metadata.
 
 ---
 
