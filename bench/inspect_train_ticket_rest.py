@@ -6,7 +6,11 @@ import contextlib
 import io
 import json
 from pathlib import Path
+import sys
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from graft_ckg import CKGBuilder
 
 SRC = "ts-order-service/src/main/java/order/controller/OrderController.java"
