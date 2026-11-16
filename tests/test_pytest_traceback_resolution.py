@@ -102,3 +102,23 @@ def test_duplicate_source_basename_does_not_invent_identity():
     found = provider.resolve_symptom(TelemetryEvent(
         service_name="api", stack_trace=trace))
     assert [item.node_id for item in found] == ["api/service-a/auth.py:verify_token"]
+
+
+@pytest.mark.parametrize("filename,source,body_line", [
+    ("service.go", "package sample\nfunc verifyToken(v string) bool {\n    if v == \"\" {\n        return false\n    }\n    return true\n}\n", 4),
+    ("Demo.java", "class Demo {\n    void verifyToken() {\n        int x = 1;\n    }\n}\n", 3),
+    ("utils.ts", "export function verifyToken(value: string): boolean {\n  return value.length > 0;\n}\n", 2),
+])
+def test_polyglot_body_lines_recover_bare_frames(tmp_path, filename, source, body_line):
+    (tmp_path / filename).write_text(source, encoding="utf-8")
+    with contextlib.redirect_stdout(io.StringIO()):
+        builder = CKGBuilder(str(tmp_path))
+        builder.build()
+    expected = [n for n, a in builder.graph.nodes(data=True)
+                if a.get("type") == "function" and a.get("name") == "verifyToken"]
+    assert len(expected) == 1
+    node = expected[0]
+    assert builder.graph.nodes[node]["line_end"] >= body_line
+    matches = SCKGGraphProvider(builder).resolve_symptom(
+        TelemetryEvent(stack_trace=f"{filename}:{body_line}"))
+    assert [item.node_id for item in matches] == [node]
