@@ -50,12 +50,17 @@ def semantic_graph_signature(graph):
     Parallel edge multiplicity and every user-visible node/edge attribute are
     still included; only internal insertion-order counter keys are excluded.
     """
+    import re
     from sqlite_graph_store import _dump, _canonical
     data=json.loads(_dump(graph))
     for edge in data["edges"]:
-        del edge["key"]
+        # Only drop known volatile insertion-counter keys. User-assigned,
+        # relationship-stable and synthetic identity keys can be meaningful
+        # and MUST participate in the semantic equality check.
+        if isinstance(edge["key"], str) and re.fullmatch(r"e[0-9]+", edge["key"]):
+            del edge["key"]
     data["edges"].sort(key=lambda e: (e["source"], e["target"],
-                                     _canonical(e["attrs"])))
+                                     str(e.get("key", "")), _canonical(e["attrs"])))
     return hashlib.sha256(_canonical(data).encode("utf-8")).hexdigest()
 
 
