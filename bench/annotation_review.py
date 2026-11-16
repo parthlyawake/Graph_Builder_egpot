@@ -68,12 +68,12 @@ def compare_two_reviews(universe, first, second):
     agreeing=[key for key in target if a[key]==b[key] and a[key] != "uncertain"]
     disputed=[key for key in target if a[key]!=b[key] or "uncertain" in (a[key],b[key])]
     n=len(target)
-    observed=len(agreeing)/n
-    positive_a=sum(v=="positive" for v in a.values())/n
-    positive_b=sum(v=="positive" for v in b.values())/n
-    negative_a=sum(v=="negative" for v in a.values())/n
-    negative_b=sum(v=="negative" for v in b.values())/n
-    chance=positive_a*positive_b+negative_a*negative_b
+    categories=("positive","negative","uncertain")
+    observed=sum(a[key]==b[key] for key in target)/n
+    chance=sum(
+        (sum(v==label for v in a.values())/n) *
+        (sum(v==label for v in b.values())/n)
+        for label in categories)
     kappa=(observed-chance)/(1-chance) if chance<1 else None
     return {
         "source_revision":universe["source_revision"],
@@ -84,8 +84,8 @@ def compare_two_reviews(universe, first, second):
         "disagreements_or_uncertain":[{"source":k[0],"relation":k[1],"target":k[2],
                                       "review_1":a[k],"review_2":b[k]}
                                      for k in sorted(disputed)],
-        "observed_binary_agreement":observed,
-        "cohen_kappa_with_uncertain_penalized":kappa,
+        "observed_three_category_agreement":observed,
+        "cohen_kappa_three_category":kappa,
         "status":"claimed_distinct_reviewers; authenticity_and_universe_completeness_not_verified",
         "publication_ready":False,
         "note":"A third-party human must adjudicate disagreements, authenticate reviewers and certify exhaustive source scope."
