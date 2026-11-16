@@ -9,6 +9,7 @@ import io
 import json
 import subprocess
 
+import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -86,6 +87,14 @@ def test_full_chain_preserves_verified_and_unverified_boundaries(tmp_path):
         expected_commit_sha=commit,expected_repo_id="demo",
         service_name="demo",artifact_path=artifact)
     assert evidence["verification"]=="dsse_ed25519_valid_under_caller_trust_policy"
+    wrong_build_time=graph.copy()
+    wrong_build_time.nodes["build::build-1"]["timestamp"]=trace_time
+    with pytest.raises(ValueError, match="Signed build metadata"):
+        annotate_verified_build(
+            wrong_build_time,"build-1",env,trusted_public_keys={"fixture-key":pub},
+            expected_builder_id=builder_id,expected_source_uri=source_uri,
+            expected_commit_sha=commit,expected_repo_id="demo",
+            service_name="demo",artifact_path=artifact)
     assert signed.has_edge("source_revision::demo::"+commit,"commit::"+commit[:12])
     assert signed.has_edge("commit::"+commit[:12],"file::app.py")
     assert signed.nodes["build::build-1"]["verification"]==evidence["verification"]
