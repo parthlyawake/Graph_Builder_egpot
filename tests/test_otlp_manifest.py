@@ -24,3 +24,26 @@ def test_otlp_rejects_missing_clock_and_invalid_type():
         otlp_to_signals({"resourceSpans": [{"scopeSpans": [{"spans": [{}]}]}]})
     with pytest.raises(ValueError):
         otlp_to_signals({"resourceLogs": {}})
+
+
+def test_duplicate_resource_identity_keys_rejected():
+    attrs = [{"key": "sckg.deployment.id", "value": {"stringValue": "safe"}},
+             {"key": "sckg.deployment.id", "value": {"stringValue": "wrong"}}]
+    payload = {"resourceSpans": [{"resource": {"attributes": attrs},
+               "scopeSpans": [{"spans": [{"startTimeUnixNano": "1794736800000000000"}]}]}]}
+    with pytest.raises(ValueError, match="duplicate OTLP"):
+        otlp_to_signals(payload)
+
+
+def test_timestamp_precision_invalid_types_and_metric_oneof():
+    from otlp_manifest import _timestamp_ns
+    assert _timestamp_ns("1000000001") == "1970-01-01T00:00:01+00:00"
+    assert _timestamp_ns("1000001000") == "1970-01-01T00:00:01.000001+00:00"
+    for bad in (1.5, True, None, "0", "1.2", "-1"):
+        with pytest.raises(ValueError):
+            _timestamp_ns(bad)
+    payload = {"resourceMetrics": [{"scopeMetrics": [{"metrics": [
+        {"gauge": {"dataPoints": []}, "sum": {"dataPoints": []}}
+    ]}]}]}
+    with pytest.raises(ValueError, match="one point kind"):
+        otlp_to_signals(payload)
