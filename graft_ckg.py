@@ -1313,8 +1313,11 @@ class CKGBuilder(ast.NodeVisitor):
             )
             self.http_contract_ids[(method, path)] = contract_id
             for handler_id in valid:
-                self.add_ckg_edge(handler_id, contract_id, "IMPLEMENTS", "Lcontract")
-                self.add_ckg_edge(contract_id, handler_id, "PRODUCES", "Lcontract")
+                handler_file = str(self.graph.nodes[handler_id].get("file") or "")
+                self.add_ckg_edge(handler_id, contract_id, "IMPLEMENTS", "Lcontract",
+                                  metadata=HyperEdgeMetadata(id_ctx=handler_file))
+                self.add_ckg_edge(contract_id, handler_id, "PRODUCES", "Lcontract",
+                                  metadata=HyperEdgeMetadata(id_ctx=handler_file))
 
     def _build_dynamic_http_calls(self):
         """Keep a dynamic-host callsite and label path matches as possible only."""
@@ -1327,11 +1330,13 @@ class CKGBuilder(ast.NodeVisitor):
                 name=f"{method} {path} (host unresolved)", file=source_file,
                 repo=self.repo_id or "", line_no=line, docstring="", code="",
             )
-            self.add_ckg_edge(caller_id, call_id, "HTTP_REQUEST", "Lcontract")
+            self.add_ckg_edge(caller_id, call_id, "HTTP_REQUEST", "Lcontract",
+                              metadata=HyperEdgeMetadata(id_ctx=source_file))
             for key in ((method, path), ("*", path)):
                 contract_id = self.http_contract_ids.get(key)
                 if contract_id:
-                    self.add_ckg_edge(call_id, contract_id, "POSSIBLE_HTTP_TARGET", "Lcontract")
+                    self.add_ckg_edge(call_id, contract_id, "POSSIBLE_HTTP_TARGET", "Lcontract",
+                                      metadata=HyperEdgeMetadata(id_ctx=source_file))
 
     def _resolve_dependency_layer(self):
         print(f"[*] Resolving Dependency Layer (Ldep) for {len(self.calls_to_resolve)} call sites...")
@@ -1558,7 +1563,8 @@ class CKGBuilder(ast.NodeVisitor):
             for key in ((method.upper(), path), ("*", path)):
                 contract_id = self.http_contract_ids.get(key)
                 if contract_id:
-                    self.add_ckg_edge(caller_id, contract_id, "CONSUMES", "Lcontract")
+                    self.add_ckg_edge(caller_id, contract_id, "CONSUMES", "Lcontract",
+                                      metadata=HyperEdgeMetadata(id_ctx=id_ctx))
         print(f"[*] HTTP dependency resolution: {resolved_count} local endpoint bindings created.")
 
     # -------------------------------------------------------------
