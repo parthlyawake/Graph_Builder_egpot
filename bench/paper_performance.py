@@ -26,10 +26,22 @@ from bench.paper_metrics import time_summary
 
 
 def graph_signature(g):
+    """Structural ID/typed-edge multiplicity signature (not attribute equality)."""
     nodes=set(map(str,g.nodes))
     edges=Counter((str(u),str(v),str(d.get("relation","")),str(d.get("layer","")))
                   for u,v,d in g.edges(data=True))
     return nodes,edges
+
+
+def full_graph_signature(g):
+    """Exact JSON-encodable graph metadata, node attrs and keyed-edge attrs.
+
+    Distinguishes graphs that are structurally identical but have stale source
+    lines, incorrect provenance, or conflicting dispatch confidence. Refuse
+    opaque unserializable attributes instead of coercing them to strings.
+    """
+    from sqlite_graph_store import _dump
+    return hashlib.sha256(_dump(g).encode("utf-8")).hexdigest()
 
 
 def rev(root):
@@ -82,7 +94,8 @@ def run_case(case,repeats):
             _,peak_fresh=tracemalloc.get_traced_memory()
             tracemalloc.stop()
             equal=graph_signature(builder.graph)==graph_signature(fresh.graph)
-            trials.append({"cold_s":cold,"incremental_s":incremental,"fresh_after_edit_s":rebuild,
+            full_equal=full_graph_signature(builder.graph)==full_graph_signature(fresh.graph)
+            trials.append({"exact_attribute_equivalence":full_equal,"cold_s":cold,"incremental_s":incremental,"fresh_after_edit_s":rebuild,
                            "peak_cold_tracemalloc_bytes":peak_cold,
                            "peak_incremental_tracemalloc_bytes":peak_incr,
                            "peak_fresh_tracemalloc_bytes":peak_fresh,
@@ -96,6 +109,8 @@ def run_case(case,repeats):
         "incremental":time_summary([x["incremental_s"] for x in trials]),
         "fresh_after_edit":time_summary([x["fresh_after_edit_s"] for x in trials]),
         "equivalence_passes":sum(x["equivalent"] for x in trials),
+        "exact_attribute_equivalence_passes":sum(x["exact_attribute_equivalence"] for x in trials),
+        "note":"Typed graph structural agreement is weaker than complete metadata and attribute agreement.",
         "incremental_vs_fresh_speedup_p50":statistics.median(x["fresh_after_edit_s"] for x in trials) /
                    statistics.median(x["incremental_s"] for x in trials)}
 
