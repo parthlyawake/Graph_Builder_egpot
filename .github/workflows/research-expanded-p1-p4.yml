@@ -1,7 +1,15 @@
 name: Research P1-P4 Extended Source Experiments
 on:
   push:
-    branches: [research-p1-p4-expanded-reproducibility-2026-11-17]
+    branches: [research-p1-p4-expanded-reproducibility-2026-11-17, krishna]
+    paths:
+      - ".github/workflows/research-expanded-p1-p4.yml"
+      - "bench/**"
+      - "graft_ckg.py"
+      - "multi_repo.py"
+      - "requirements.txt"
+      - "tests/test_publication*"
+      - "tests/test_verify_graph_accuracy.py"
   workflow_dispatch:
 
 permissions:
