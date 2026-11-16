@@ -1,0 +1,155 @@
+name: Research P1-P4 Extended Source Experiments
+on:
+  push:
+    branches: [research-p1-p4-expanded-reproducibility-2026-11-17]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-real-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned-tool requirements
+        run: python -m pip install -r requirements.txt
+      - name: Validate metric and schema protocols
+        run: |
+          python -m pytest -q tests/test_publication_annotation_review.py tests/test_verify_graph_accuracy.py tests/test_publication_schema_incremental.py tests/test_publication_signed_provenance.py
+      - name: Fetch Online Boutique pinned source
+        uses: actions/checkout@v4
+        with:
+          repository: GoogleCloudPlatform/microservices-demo
+          ref: 38e7348eb289eb5b87c0c6e8cb19ced0449dc389
+          path: _boutique
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch Train-Ticket pinned source
+        uses: actions/checkout@v4
+        with:
+          repository: FudanSELab/train-ticket
+          ref: 313886e99befb94be6cd45f085c98e0019f59829
+          path: _train
+          fetch-depth: 0
+          sparse-checkout: |
+            ts-order-service/src/main/java/order/controller/OrderController.java
+          persist-credentials: false
+      - name: Fetch DeathStarBench pinned source
+        uses: actions/checkout@v4
+        with:
+          repository: delimitrou/DeathStarBench
+          ref: 6ecb09706140f8730b5385c08f1386c654c3c526
+          path: _deathstar
+          fetch-depth: 0
+          sparse-checkout: |
+            socialNetwork/social_network.thrift
+          persist-credentials: false
+      - name: Fetch Sock Shop queue-master pinned source
+        uses: actions/checkout@v4
+        with:
+          repository: microservices-demo/queue-master
+          ref: 7dc33721c765e5af415c9d244d84637ff2d510cd
+          path: _queue
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify four pinned revisions
+        run: |
+          test "$(git -C _boutique rev-parse HEAD)" = 38e7348eb289eb5b87c0c6e8cb19ced0449dc389
+          test "$(git -C _train rev-parse HEAD)" = 313886e99befb94be6cd45f085c98e0019f59829
+          test "$(git -C _deathstar rev-parse HEAD)" = 6ecb09706140f8730b5385c08f1386c654c3c526
+          test "$(git -C _queue rev-parse HEAD)" = 7dc33721c765e5af415c9d244d84637ff2d510cd
+          mkdir -p /tmp/expanded-results
+      - name: P1/P2 complete Thrift declaration scope
+        run: |
+          python bench/complete_protocol_declaration_census.py --protocol thrift --repo _deathstar --output /tmp/expanded-results/deathstar_complete_idl.json
+      - name: P2 complete Train-Ticket controller route scope
+        run: |
+          python bench/complete_protocol_declaration_census.py --protocol spring --repo _train --output /tmp/expanded-results/train_ticket_complete_controller.json
+      - name: P1/P2 existing independent source marker and selected scope checks
+        run: |
+          python bench/verify_graph_accuracy.py --repo _boutique --source-root _boutique --labels bench/labels/online_boutique_source_review_scopes_v1.json --output /tmp/expanded-results/boutique_source_scope.json --fail-on-missing
+          python bench/verify_graph_accuracy.py --repo _deathstar --source-root _deathstar --labels bench/labels/deathstarbench_thrift_source_review_scopes_v1.json --output /tmp/expanded-results/deathstar_sample.json --fail-on-missing
+          python bench/verify_graph_accuracy.py --repo _queue --source-root _queue --labels bench/labels/sockshop_queue_source_review_scopes_v1.json --output /tmp/expanded-results/sockshop_sample.json --fail-on-missing
+      - name: P2 real Go unresolved RPC mutation
+        run: |
+          python bench/verify_online_boutique_rpc_skew.py --repo _boutique --output /tmp/expanded-results/boutique_bad_rpc.json
+      - name: P4 six-mode real-source graph mutation matrix
+        run: |
+          python bench/real_source_mutation_matrix.py --boutique _boutique --train _train --deathstar _deathstar --repetitions 3 --output /tmp/expanded-results/mutation_matrix.json
+      - name: P4 reproduce fixed query baselines and graph-only masks
+        run: |
+          python bench/run_paper_study.py --repo _boutique --labels bench/labels/online_boutique_27_source_tasks.json --configs R0 R1 R3 R5 R9 --ablations --top-k 5 --token-budget 2048 --output /tmp/expanded-results/retrieval.json
+          python bench/analyze_paired_study.py --input /tmp/expanded-results/retrieval.json --output /tmp/expanded-results/paired_bootstrap.json
+      - name: P3 signed provenance and persistent lineage controlled regressions
+        run: |
+          python -m pytest -q tests/test_publication_operational_chain.py tests/test_publication_persistence.py
+      - name: Publish raw results (including failed findings)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expanded-p1-p4-raw
+          path: /tmp/expanded-results/
+          if-no-files-found: warn
+          retention-days: 90
+
+  github-attested-codegen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install grpcio-tools
+      - uses: actions/checkout@v4
+        with:
+          repository: GoogleCloudPlatform/microservices-demo
+          ref: 38e7348eb289eb5b87c0c6e8cb19ced0449dc389
+          path: _boutique
+          persist-credentials: false
+      - name: Produce reproducible real-source compiled Protobuf artifact
+        run: |
+          mkdir -p /tmp/compiled
+          python -m grpc_tools.protoc -I _boutique/protos --python_out=/tmp/compiled _boutique/protos/demo.proto
+          sha256sum /tmp/compiled/demo_pb2.py | tee /tmp/compiled/sha256.txt
+          cat > /tmp/compiled/source-pin.json <<'JSON'
+          {"source_repository":"GoogleCloudPlatform/microservices-demo","source_revision":"38e7348eb289eb5b87c0c6e8cb19ced0449dc389","source_path":"protos/demo.proto","artifact":"demo_pb2.py","evidence_kind":"actual_github_ci_build_only_not_deployment"}
+          JSON
+      - name: GitHub OIDC-based artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: /tmp/compiled/demo_pb2.py
+      - name: Validate attested build identity and digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh attestation verify /tmp/compiled/demo_pb2.py --repo "$GITHUB_REPOSITORY" --format json > /tmp/compiled/verified-attestation.json
+          python - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path('/tmp/compiled')
+          raw=(root/'demo_pb2.py').read_bytes()
+          expected=hashlib.sha256(raw).hexdigest()
+          actual=(root/'sha256.txt').read_text().split()[0]
+          assert expected==actual, 'Build artifact digest mismatch'
+          attestations=json.loads((root/'verified-attestation.json').read_text())
+          assert attestations, 'No externally verified CI attestation'
+          print('VERIFIED_GITHUB_CI_BUILD_ARTIFACT',expected)
+          print('DEPLOYMENT_AND_OTLP_NOT_VERIFIED')
+          PY
+      - name: Preserve attestation report and compiled artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-ci-build-only
+          path: /tmp/compiled/
+          if-no-files-found: warn
+          retention-days: 90
