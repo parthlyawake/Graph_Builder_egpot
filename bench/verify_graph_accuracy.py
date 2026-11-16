@@ -57,7 +57,7 @@ def evaluate(graph, labels, source_root=None):
     negatives = {edge(item) for item in labels.get("negatives", [])}
     if truth & negatives:
         raise ValueError("Contradictory positive and negative labels")
-    evidence = {"verified": 0, "missing": 0, "unavailable": 0}
+    evidence = {"verified": 0, "missing": 0, "unavailable": 0, "failures": []}
     for item in node_labels + edge_labels:
         proof = item.get("evidence", {})
         if not source_root or not proof:
@@ -67,9 +67,24 @@ def evaluate(graph, labels, source_root=None):
         file = proof.get("file")
         marker = proof.get("contains")
         target = (root / str(file)).resolve() if file else root
-        if (not file or not marker or root not in target.parents or
-                not target.is_file() or marker not in target.read_text(encoding="utf-8", errors="replace")):
+        failure = None
+        if not file or not isinstance(marker, str) or not marker:
+            failure = "missing_file_or_source_marker"
+        elif root not in target.parents:
+            failure = "path_outside_source_root"
+        elif not target.is_file():
+            failure = "source_file_unavailable"
+        elif marker not in target.read_text(encoding="utf-8", errors="replace"):
+            failure = "source_marker_not_found"
+        if failure:
             evidence["missing"] += 1
+            evidence["failures"].append({
+                "label": str(item.get("id") or
+                             (item.get("source"), item.get("relation"), item.get("target"))),
+                "source_file": file,
+                "marker": marker[:120] if isinstance(marker, str) else None,
+                "reason": failure,
+            })
         else:
             evidence["verified"] += 1
     node_truth = {str(item["id"]) for item in node_labels}
@@ -118,9 +133,19 @@ def evaluate(graph, labels, source_root=None):
             "relation": relation, "language": scope.get("language", "unspecified"),
             "source_count": len(sources), **metrics(expected, predicted)})
     result["passed"] = not absent_nodes and not result["sampled_edges"]["missing"] and not result["negative_violations"] and evidence["missing"] == 0 and all(s["fp"] == 0 for s in result["closed_scopes"]) and all(s["fp"] == 0 for s in result["closed_node_scopes"])
-    result["publication_ready"] = (result["passed"] and bool(result["closed_scopes"]) and bool(result["closed_node_scopes"])
-                                   and evidence["unavailable"] == 0 and evidence["missing"] == 0
-                                   and labels.get("status") == "independently_reviewed")
+    # A JSON string status is a self-assertion, not an authenticated
+    # independent human review. Never let it automatically certify
+    # publication readiness, even when the selected source checks pass.
+    result["technical_evidence_complete_for_declared_scopes"] = bool(
+        result["passed"] and result["closed_scopes"] and
+        result["closed_node_scopes"] and
+        evidence["unavailable"] == 0 and evidence["missing"] == 0)
+    result["publication_ready"] = False
+    result["publication_gate_reason"] = (
+        "Source-marker existence and a self-declared review status do not "
+        "authenticate independent annotators or demonstrate complete unbiased "
+        "real-repository scopes; independent adjudication and external review required."
+    )
     return result
 
 

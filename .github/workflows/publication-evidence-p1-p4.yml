@@ -1,0 +1,75 @@
+name: Publication Evidence P1-P4 (Research, Not Human Adjudication)
+on:
+  push:
+    branches: [research-publication-evidence-p1-p4-2026-11-17]
+  workflow_dispatch:
+
+jobs:
+  audited-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install reproducible study dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install 'cryptography>=42,<48'
+      - name: Compile and run provenance, persistence, and measurement tests
+        run: |
+          python -m compileall -q .
+          python -m pytest -q tests/test_publication_persistence.py tests/test_publication_signed_provenance.py
+      - name: Run repository regressions
+        run: python -m pytest -q tests
+      - name: Fetch independently pinned source for scoped empirical study
+        uses: actions/checkout@v4
+        with:
+          repository: GoogleCloudPlatform/microservices-demo
+          ref: 38e7348eb289eb5b87c0c6e8cb19ced0449dc389
+          path: _boutique
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify pinned source revision
+        run: |
+          test "$(git -C _boutique rev-parse HEAD)" = "38e7348eb289eb5b87c0c6e8cb19ced0449dc389"
+          mkdir -p /tmp/publication-evidence
+      - name: P1/P2 source-inspected closed-scope audit (pending second human reviewer)
+        run: |
+          python bench/verify_graph_accuracy.py \
+            --repo _boutique \
+            --source-root _boutique \
+            --labels bench/labels/online_boutique_source_review_scopes_v1.json \
+            --output /tmp/publication-evidence/online_boutique_closed_scope.json \
+            --fail-on-missing
+      - name: P2 real-source contract-breaking Go consumer fault injection
+        run: |
+          python bench/verify_online_boutique_rpc_skew.py \
+            --repo _boutique \
+            --output /tmp/publication-evidence/online_boutique_rpc_typo_fault.json
+      - name: P4 fixed-corpus internal baselines and graph masks
+        run: |
+          python bench/run_paper_study.py \
+            --repo _boutique \
+            --labels bench/labels/online_boutique_27_source_tasks.json \
+            --configs R0 R1 R3 R5 R9 \
+            --ablations --top-k 5 --token-budget 2048 \
+            --output /tmp/publication-evidence/retrieval_and_ablations.json
+          python bench/analyze_paired_study.py \
+            --input /tmp/publication-evidence/retrieval_and_ablations.json \
+            --output /tmp/publication-evidence/paired_bootstrap_summary.json
+      - name: P4 pinned repeatable incremental vs cold build
+        run: |
+          python bench/paper_performance.py \
+            --manifest bench/manifests/publication_online_boutique_pinned.json \
+            --repetitions 3 \
+            --output /tmp/publication-evidence/incremental_performance.json
+      - name: Preserve raw study outputs even if results fail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-evidence-p1-p4
+          path: /tmp/publication-evidence/
+          if-no-files-found: warn
+          retention-days: 30

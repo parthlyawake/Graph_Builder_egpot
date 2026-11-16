@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "dataset": "DeathStarBench Thrift service declarations (four closed scopes)",
+  "source_repo": "delimitrou/DeathStarBench",
+  "source_sha": "6ecb09706140f8730b5385c08f1386c654c3c526",
+  "status": "source_inspected_pending_independent_human_review",
+  "description": "Only exact Thrift service-to-RPC declarations, not generated dispatch or cross-service runtime bindings.",
+  "nodes": [
+    {
+      "id": "contract::thrift::social_network.UniqueIdService",
+      "type": "service_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "service UniqueIdService {"
+      }
+    },
+    {
+      "id": "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+      "type": "rpc_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeUniqueId"
+      }
+    },
+    {
+      "id": "contract::thrift::social_network.TextService",
+      "type": "service_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "service TextService {"
+      }
+    },
+    {
+      "id": "contract::thrift::social_network.TextService.ComposeText",
+      "type": "rpc_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeText"
+      }
+    },
+    {
+      "id": "contract::thrift::social_network.UserMentionService",
+      "type": "service_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "service UserMentionService {"
+      }
+    },
+    {
+      "id": "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+      "type": "rpc_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeUserMentions"
+      }
+    },
+    {
+      "id": "contract::thrift::social_network.MediaService",
+      "type": "service_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "service MediaService {"
+      }
+    },
+    {
+      "id": "contract::thrift::social_network.MediaService.ComposeMedia",
+      "type": "rpc_contract",
+      "file": "socialNetwork/social_network.thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeMedia"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "contract::thrift::social_network.UniqueIdService",
+      "relation": "DEFINES_RPC",
+      "target": "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+      "language": "thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeUniqueId"
+      }
+    },
+    {
+      "source": "contract::thrift::social_network.TextService",
+      "relation": "DEFINES_RPC",
+      "target": "contract::thrift::social_network.TextService.ComposeText",
+      "language": "thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeText"
+      }
+    },
+    {
+      "source": "contract::thrift::social_network.UserMentionService",
+      "relation": "DEFINES_RPC",
+      "target": "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+      "language": "thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeUserMentions"
+      }
+    },
+    {
+      "source": "contract::thrift::social_network.MediaService",
+      "relation": "DEFINES_RPC",
+      "target": "contract::thrift::social_network.MediaService.ComposeMedia",
+      "language": "thrift",
+      "evidence": {
+        "file": "socialNetwork/social_network.thrift",
+        "contains": "ComposeMedia"
+      }
+    }
+  ],
+  "closed_scopes": [
+    {
+      "relation": "DEFINES_RPC",
+      "sources": [
+        "contract::thrift::social_network.UniqueIdService"
+      ],
+      "language": "thrift"
+    },
+    {
+      "relation": "DEFINES_RPC",
+      "sources": [
+        "contract::thrift::social_network.TextService"
+      ],
+      "language": "thrift"
+    },
+    {
+      "relation": "DEFINES_RPC",
+      "sources": [
+        "contract::thrift::social_network.UserMentionService"
+      ],
+      "language": "thrift"
+    },
+    {
+      "relation": "DEFINES_RPC",
+      "sources": [
+        "contract::thrift::social_network.MediaService"
+      ],
+      "language": "thrift"
+    }
+  ],
+  "negatives": [
+    {
+      "source": "contract::thrift::social_network.UniqueIdService",
+      "relation": "DEFINES_RPC",
+      "target": "contract::thrift::social_network.TextService.ComposeText"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Online Boutique Go shipping (pinned source)",
+    "repo": "_boutique",
+    "relative_file": "src/shippingservice/main.go",
+    "mode": "append_comment",
+    "expected_commit": "38e7348eb289eb5b87c0c6e8cb19ced0449dc389"
+  }
+]

@@ -1,0 +1,93 @@
+name: Multi-system Contract Source Audit (P2)
+on:
+  push:
+    branches: [research-publication-evidence-p1-p4-2026-11-17]
+    paths:
+      - "bench/labels/*source_review*"
+      - "bench/inspect_train_ticket_rest.py"
+      - ".github/workflows/publication-multisystem-contracts.yml"
+  workflow_dispatch:
+jobs:
+  deathstar-thrift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: delimitrou/DeathStarBench
+          ref: 6ecb09706140f8730b5385c08f1386c654c3c526
+          path: _deathstar
+          sparse-checkout: |
+            socialNetwork/social_network.thrift
+          filter: blob:none
+          persist-credentials: false
+      - name: Audit four closed Thrift source scopes
+        run: |
+          mkdir -p /tmp/p2
+          python bench/verify_graph_accuracy.py --repo _deathstar \
+            --labels bench/labels/deathstarbench_thrift_source_review_scopes_v1.json \
+            --source-root _deathstar --output /tmp/p2/deathstar_thrift.json --fail-on-missing
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deathstar-p2-source-accuracy
+          path: /tmp/p2/
+  sockshop-amqp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: microservices-demo/queue-master
+          ref: 7dc33721c765e5af415c9d244d84637ff2d510cd
+          path: _sock_queue
+          persist-credentials: false
+      - name: Audit Spring AMQP consumer from real service source
+        run: |
+          mkdir -p /tmp/p2
+          python bench/verify_graph_accuracy.py --repo _sock_queue \
+            --labels bench/labels/sockshop_queue_source_review_scopes_v1.json \
+            --source-root _sock_queue --output /tmp/p2/sockshop_queue.json --fail-on-missing
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sockshop-p2-source-accuracy
+          path: /tmp/p2/
+  train-ticket-rest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: FudanSELab/train-ticket
+          ref: 313886e99befb94be6cd45f085c98e0019f59829
+          path: _train
+          sparse-checkout: |
+            ts-order-service/src/main/java/order/controller/OrderController.java
+          filter: blob:none
+          persist-credentials: false
+      - name: Source-inspected Spring REST route registrations
+        run: |
+          mkdir -p /tmp/p2
+          python bench/inspect_train_ticket_rest.py \
+            --repo _train --output /tmp/p2/train_ticket_rest.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trainticket-p2-source-probe
+          path: /tmp/p2/

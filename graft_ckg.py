@@ -307,14 +307,21 @@ class CKGBuilder(ast.NodeVisitor):
         except (ValueError, TypeError):
             parsed_line = 0
             
-        is_test = self._is_test_path(self.current_file_ctx)
+        # An external::<symbol> is one graph-wide placeholder, not a source
+        # declaration. It may be referenced from many files. Inheriting the
+        # last visited file creates false provenance and makes incremental
+        # graphs depend on traversal order. Per-callsite provenance remains
+        # available on CALLS edge metadata (id_ctx/callsite_file).
+        is_external = node_type == "external_func" and str(node_id).startswith("external::")
+        source_file = "" if is_external else self.current_file_ctx
+        is_test = self._is_test_path(source_file)
         self.graph.add_node(
             node_id,
             id=node_id,
             type=node_type,
             layer=layer,
             name=name,
-            file=self.current_file_ctx,
+            file=source_file,
             repo=repo if repo is not None else (self.repo_id or ""),
             line_no=parsed_line,
             docstring=doc,
@@ -1313,8 +1320,11 @@ class CKGBuilder(ast.NodeVisitor):
             )
             self.http_contract_ids[(method, path)] = contract_id
             for handler_id in valid:
-                self.add_ckg_edge(handler_id, contract_id, "IMPLEMENTS", "Lcontract")
-                self.add_ckg_edge(contract_id, handler_id, "PRODUCES", "Lcontract")
+                handler_file = str(self.graph.nodes[handler_id].get("file") or "")
+                self.add_ckg_edge(handler_id, contract_id, "IMPLEMENTS", "Lcontract",
+                                  metadata=HyperEdgeMetadata(id_ctx=handler_file))
+                self.add_ckg_edge(contract_id, handler_id, "PRODUCES", "Lcontract",
+                                  metadata=HyperEdgeMetadata(id_ctx=handler_file))
 
     def _build_dynamic_http_calls(self):
         """Keep a dynamic-host callsite and label path matches as possible only."""
@@ -1327,11 +1337,13 @@ class CKGBuilder(ast.NodeVisitor):
                 name=f"{method} {path} (host unresolved)", file=source_file,
                 repo=self.repo_id or "", line_no=line, docstring="", code="",
             )
-            self.add_ckg_edge(caller_id, call_id, "HTTP_REQUEST", "Lcontract")
+            self.add_ckg_edge(caller_id, call_id, "HTTP_REQUEST", "Lcontract",
+                              metadata=HyperEdgeMetadata(id_ctx=source_file))
             for key in ((method, path), ("*", path)):
                 contract_id = self.http_contract_ids.get(key)
                 if contract_id:
-                    self.add_ckg_edge(call_id, contract_id, "POSSIBLE_HTTP_TARGET", "Lcontract")
+                    self.add_ckg_edge(call_id, contract_id, "POSSIBLE_HTTP_TARGET", "Lcontract",
+                                      metadata=HyperEdgeMetadata(id_ctx=source_file))
 
     def _resolve_dependency_layer(self):
         print(f"[*] Resolving Dependency Layer (Ldep) for {len(self.calls_to_resolve)} call sites...")
@@ -1558,7 +1570,8 @@ class CKGBuilder(ast.NodeVisitor):
             for key in ((method.upper(), path), ("*", path)):
                 contract_id = self.http_contract_ids.get(key)
                 if contract_id:
-                    self.add_ckg_edge(caller_id, contract_id, "CONSUMES", "Lcontract")
+                    self.add_ckg_edge(caller_id, contract_id, "CONSUMES", "Lcontract",
+                                      metadata=HyperEdgeMetadata(id_ctx=id_ctx))
         print(f"[*] HTTP dependency resolution: {resolved_count} local endpoint bindings created.")
 
     # -------------------------------------------------------------
@@ -1675,6 +1688,21 @@ class CKGBuilder(ast.NodeVisitor):
         produced = 0
         consumed = 0
 
+        def _contract_edge(source, target, relation, origin_file=""):
+            """Use the source symbol's file, not the last parser's current_file.
+
+            A full rebuild and an incremental update traverse files in
+            different orders. Borrowing self.current_file_ctx here attaches
+            unrelated file provenance to otherwise-correct contract edges.
+            """
+            source_file = str(self.graph.nodes.get(source, {}).get("file") or
+                              origin_file or "")
+            meta = HyperEdgeMetadata(d_scope=0, f_call=1.0,
+                                     c_type=1.0, id_ctx=source_file)
+            self.add_ckg_edge(source, target, relation, "Lcontract",
+                              metadata=meta)
+
+
         # Python servicers: class X(pb2_grpc.<Service>Servicer) with rpc methods.
         # The rpc method may be implemented on the servicer class itself OR on
         # any subclass (template pattern, e.g. BaseEmailService -> EmailService).
@@ -1695,13 +1723,13 @@ class CKGBuilder(ast.NodeVisitor):
             contract = self.proto_services.get(service_name)
             if not contract:
                 continue
-            self.add_ckg_edge(class_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+            _contract_edge(class_id, contract["node_id"], "IMPLEMENTS", file)
             produced += 1
             for rpc_name, rpc_id in contract["rpcs"].items():
                 for impl_class in [class_id, *sorted(_descendants(class_id))]:
                     direct = f"{impl_class}.{rpc_name}"
                     if direct in self.graph and self.graph.nodes[direct].get("type") == "function":
-                        self.add_ckg_edge(direct, rpc_id, "IMPLEMENTS", "Lcontract")
+                        _contract_edge(direct, rpc_id, "IMPLEMENTS", file)
                         produced += 1
 
         # Go servers: pb.Register<Service>Server(srv, impl) + methods on impl type
@@ -1720,12 +1748,12 @@ class CKGBuilder(ast.NodeVisitor):
                 if len(candidates) == 1:
                     impl_id = candidates[0]
             if impl_id in self.graph:
-                self.add_ckg_edge(impl_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+                _contract_edge(impl_id, contract["node_id"], "IMPLEMENTS", file)
                 produced += 1
                 for rpc_name, rpc_id in contract["rpcs"].items():
                     method_id = self._find_method(impl_id, rpc_name)
                     if method_id:
-                        self.add_ckg_edge(method_id, rpc_id, "IMPLEMENTS", "Lcontract")
+                        _contract_edge(method_id, rpc_id, "IMPLEMENTS", file)
                         produced += 1
 
         # JS servers: server.addService(pkg.<Service>.service, {rpc: handler})
@@ -1733,7 +1761,7 @@ class CKGBuilder(ast.NodeVisitor):
             contract = self.proto_services.get(service_name)
             if not contract:
                 continue
-            self.add_ckg_edge(scope_id, contract["node_id"], "IMPLEMENTS", "Lcontract")
+            _contract_edge(scope_id, contract["node_id"], "IMPLEMENTS", file)
             produced += 1
             for rpc_key, handler_expr in handlers.items():
                 rpc_id = self._match_rpc_case(contract, rpc_key)
@@ -1741,7 +1769,7 @@ class CKGBuilder(ast.NodeVisitor):
                     continue
                 target_ids = self._resolve_reference(file, handler_expr)
                 for tid in target_ids:
-                    self.add_ckg_edge(tid, rpc_id, "IMPLEMENTS", "Lcontract")
+                    _contract_edge(tid, rpc_id, "IMPLEMENTS", file)
                     produced += 1
 
         # Python stub calls whose stub variable was bound anywhere in the file
@@ -1763,7 +1791,7 @@ class CKGBuilder(ast.NodeVisitor):
                 continue
             rpc_id = self._match_rpc_case(contract, method)
             if rpc_id:
-                self.add_ckg_edge(caller_id, rpc_id, "CONSUMES", "Lcontract")
+                _contract_edge(caller_id, rpc_id, "CONSUMES", id_ctx)
                 consumed += 1
             else:
                 self.unresolved_contract_calls.append((caller_id, service_name, method, id_ctx))

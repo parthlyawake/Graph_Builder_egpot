@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "dataset": "Sock Shop queue-master source-inspected AMQP consumer scope",
+  "source_repo": "microservices-demo/queue-master",
+  "source_sha": "7dc33721c765e5af415c9d244d84637ff2d510cd",
+  "status": "source_inspected_pending_independent_human_review",
+  "description": "A single queue consumer binding evidenced by Java Spring listener and handler source. No claim of end-to-end RabbitMQ delivery.",
+  "nodes": [
+    {
+      "id": "src/main/java/works/weave/socks/queuemaster/ShippingTaskHandler.java:ShippingTaskHandler.handleMessage",
+      "type": "function",
+      "file": "src/main/java/works/weave/socks/queuemaster/ShippingTaskHandler.java",
+      "evidence": {
+        "file": "src/main/java/works/weave/socks/queuemaster/ShippingTaskHandler.java",
+        "contains": "public void handleMessage(Shipment shipment)"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "src/main/java/works/weave/socks/queuemaster/ShippingTaskHandler.java:ShippingTaskHandler.handleMessage",
+      "relation": "CONSUMES_EVENT",
+      "target": "queue::amqp::shipping-task",
+      "language": "java",
+      "evidence": {
+        "file": "src/main/java/works/weave/socks/queuemaster/configuration/ShippingConsumerConfiguration.java",
+        "contains": "container.setMessageListener(messageListenerAdapter())"
+      }
+    }
+  ],
+  "closed_scopes": [
+    {
+      "relation": "CONSUMES_EVENT",
+      "sources": [
+        "src/main/java/works/weave/socks/queuemaster/ShippingTaskHandler.java:ShippingTaskHandler.handleMessage"
+      ],
+      "language": "java"
+    }
+  ],
+  "closed_node_scopes": [
+    {
+      "type": "function",
+      "files": [
+        "src/main/java/works/weave/socks/queuemaster/ShippingTaskHandler.java"
+      ],
+      "language": "java"
+    }
+  ],
+  "negatives": [
+    {
+      "source": "src/main/java/works/weave/socks/queuemaster/ShippingTaskHandler.java:ShippingTaskHandler.handleMessage",
+      "relation": "CONSUMES_EVENT",
+      "target": "queue::amqp::payments"
+    }
+  ]
+}

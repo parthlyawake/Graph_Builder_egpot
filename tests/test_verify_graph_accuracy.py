@@ -33,6 +33,28 @@ class GraphAccuracyTests(unittest.TestCase):
         self.assertEqual(result["closed_scopes"][0]["f1"], 1)
         self.assertIsNone(result["sampled_edges"]["precision"])
 
+    def test_unverified_self_declared_independent_review_is_not_publication_certification(self):
+        self.labels["status"] = "independently_reviewed"
+        self.graph.nodes["src/backend.py:serve"]["file"] = "src/backend.py"
+        self.labels["nodes"][0].update({"file":"src/backend.py","type":"function"})
+        self.labels["closed_node_scopes"] = [{
+            "type":"function","files":["src/backend.py"],"language":"python"}]
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "src" / "backend.py"
+            source.parent.mkdir(parents=True)
+            source.write_text("def serve():\n    return 1\n")
+            self.labels["nodes"][0]["evidence"] = {
+                "file":"src/backend.py","contains":"def serve():"}
+            # Existing contract edge must also have source evidence.
+            client = Path(tmp) / "src" / "client.py"
+            client.write_text("def request():\n    return 'invoke'\n")
+            self.labels["edges"][0]["evidence"] = {
+                "file":"src/client.py","contains":"def request():"}
+            result = audit.evaluate(self.graph,self.labels,source_root=tmp)
+        self.assertTrue(result["technical_evidence_complete_for_declared_scopes"])
+        self.assertFalse(result["publication_ready"])
+        self.assertIn("independent annotators",result["publication_gate_reason"])
+
     def test_wrong_target_is_false_positive_and_false_negative(self):
         self.graph.add_node("contract::Service.Other", type="rpc_contract")
         self.graph.remove_edge("src/client.py:request", "contract::Service.Get")
