@@ -74,6 +74,12 @@ def diagnose_graph_attribute_drift(incremental, fresh, *, limit=5):
         "exact_keyed_edge_attribute_equivalence": a_exact == b_exact,
         "edge_attribute_equivalence_disregarding_keys": a_sem == b_sem,
         "unmatched_edge_attribute_rows_without_keys": sum((a_sem-b_sem).values()),
+        "sample_semantic_incremental_only_edges": [
+            {"source": key[0], "target": key[1], "attrs": key[3][:900]}
+            for key in list((a_sem-b_sem).keys())[:limit]],
+        "sample_semantic_fresh_only_edges": [
+            {"source": key[0], "target": key[1], "attrs": key[3][:900]}
+            for key in list((b_sem-a_sem).keys())[:limit]],
         "unmatched_keyed_edge_rows": sum((a_exact-b_exact).values()),
         "sample_incremental_only_edges": [
             {"source": key[0], "target": key[1], "key": key[2],
