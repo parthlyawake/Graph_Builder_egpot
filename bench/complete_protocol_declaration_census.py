@@ -91,14 +91,14 @@ def proto_oracle(source: str) -> set[tuple[str,str,str]]:
     for line_no,raw in enumerate(source.splitlines(),1):
         line=raw.split("//",1)[0].strip()
         if service is None:
-            match=re.fullmatch(r"service\\s+(\\w+)\\s*\\{\\s*",line)
+            match=re.fullmatch(r"service\s+(\w+)\s*\{\s*",line)
             if match:
                 service=match.group(1)
             continue
         if line=="}":
             service=None
             continue
-        rpc=re.match(r"^rpc\\s+(\\w+)\\s*\\(",line)
+        rpc=re.match(r"^rpc\s+(\w+)\s*\(",line)
         if rpc:
             parent="contract::"+service
             result.add((parent,"DEFINES_RPC",parent+"."+rpc.group(1)))
