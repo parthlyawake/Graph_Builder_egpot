@@ -75,3 +75,30 @@ def test_ast_spans_include_async_nested_and_class(tmp_path):
     for symbol, end in (("Handler", 4), ("Handler.run", 4),
                         ("outer", 9), ("outer.inner", 8)):
         assert b.graph.nodes["service.py:" + symbol]["line_end"] == end
+
+
+def test_line_only_frame_prefers_innermost_function(tmp_path):
+    (tmp_path / "service.py").write_text(
+        "def outer():\n    def inner():\n"
+        "        return 2\n    return inner()\n")
+    with contextlib.redirect_stdout(io.StringIO()):
+        builder = CKGBuilder(str(tmp_path))
+        builder.build()
+    provider = SCKGGraphProvider(builder)
+    matches = provider.resolve_symptom(TelemetryEvent(stack_trace="service.py:3"))
+    assert [item.node_id for item in matches] == ["service.py:outer.inner"]
+
+
+def test_duplicate_source_basename_does_not_invent_identity():
+    import networkx as nx
+    graph = nx.MultiDiGraph()
+    for repo, path in [("api", "service-a/auth.py"), ("billing", "service-b/auth.py")]:
+        nid = repo + "/" + path + ":verify_token"
+        graph.add_node(nid, type="function", name="verify_token",
+                       file=path, repo=repo, line_no=2, line_end=12)
+    provider = SCKGGraphProvider(graph)
+    trace = "auth.py:9: in verify_token"
+    assert provider.resolve_symptom(TelemetryEvent(stack_trace=trace)) == []
+    found = provider.resolve_symptom(TelemetryEvent(
+        service_name="api", stack_trace=trace))
+    assert [item.node_id for item in found] == ["api/service-a/auth.py:verify_token"]
