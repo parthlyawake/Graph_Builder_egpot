@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import contextlib
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import io
 import json
@@ -35,6 +36,10 @@ def test_full_chain_preserves_verified_and_unverified_boundaries(tmp_path):
         builder=CKGBuilder(str(tmp_path))
         builder.build()
         LineageLayer(builder).ingest(max_commits=1)
+    commit_time=datetime.fromtimestamp(int(git(tmp_path,"show","-s","--format=%ct",commit)), tz=timezone.utc)
+    build_time=(commit_time + timedelta(seconds=10)).isoformat()
+    deploy_time=(commit_time + timedelta(seconds=20)).isoformat()
+    trace_time=(commit_time + timedelta(seconds=30)).isoformat()
     artifact=tmp_path/"artifact.bin"
     artifact.write_bytes(b"deterministic output artifact from this CI fixture")
     digest=sha256(artifact.read_bytes()).hexdigest()
@@ -44,11 +49,11 @@ def test_full_chain_preserves_verified_and_unverified_boundaries(tmp_path):
         "schema_version":1,
         "builds":[{"id":"build-1","repo_id":"demo","service_name":"demo",
                    "builder_id":builder_id,"commit_sha":commit,
-                   "artifact_digest":"sha256:"+digest,"timestamp":"2026-11-16T09:00:00Z"}],
+                   "artifact_digest":"sha256:"+digest,"timestamp":build_time}],
         "deployments":[{"id":"deployment-1","build_id":"build-1",
                         "environment":"fixture-staging",
-                        "start_time":"2026-11-16T10:00:00Z"}],
-        "signals":[{"id":"span-1","type":"span","timestamp":"2026-11-16T10:15:00Z",
+                        "start_time":deploy_time}],
+        "signals":[{"id":"span-1","type":"span","timestamp":trace_time,
                     "deployment_id":"deployment-1",
                     "resource":{"service.name":"demo","service.version":commit}}]
     }
@@ -64,7 +69,7 @@ def test_full_chain_preserves_verified_and_unverified_boundaries(tmp_path):
             "buildDefinition":{"resolvedDependencies":[{"uri":source_uri,
                                                          "digest":{"gitCommit":commit}}]},
             "runDetails":{"builder":{"id":builder_id},
-                          "metadata":{"finishedOn":"2026-11-16T09:00:00Z"}}
+                          "metadata":{"finishedOn":build_time}}
         }
     }
     key=Ed25519PrivateKey.generate()
