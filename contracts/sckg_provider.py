@@ -19,6 +19,7 @@ import networkx as nx
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from contracts.graph_provider import GraphProvider
+from contracts.stack_frames import parse_stack_frames
 from contracts.graph_types import (
     CandidateRootCause,
     CausalPath,
@@ -469,20 +470,8 @@ class SCKGGraphProvider(GraphProvider):
         """
         matched: list[str] = []
         seen: Set[str] = set()
-        parsed_frames = []
-        if symptom.stack_trace:
-            for path, line, function in re.findall(
-                    r'File "([^"]+)", line (\d+)(?:, in ([\w.]+))?',
-                    symptom.stack_trace):
-                parsed_frames.append((path, int(line), function))
-            for path, line in re.findall(
-                    r'at (?:[\w.$]+)\(([\w./\\-]+\.java):(\d+)\)',
-                    symptom.stack_trace):
-                parsed_frames.append((path, int(line), ""))
-            for path, line in re.findall(
-                    r'([\w./\\-]+\.(?:go|js|ts|py|java)):(\d+)',
-                    symptom.stack_trace):
-                parsed_frames.append((path, int(line), ""))
+        parsed_frames = parse_stack_frames(symptom.stack_trace or "")
+        if parsed_frames:
             for path, line, function in parsed_frames:
                 for nid in self._frame_nodes(path, line, function, symptom.service_name):
                     if nid not in seen:
