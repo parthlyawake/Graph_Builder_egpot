@@ -18,7 +18,9 @@ Date: 2026-11-16. Scope: Phase 2 of Vikas Ranjan's BITS PhD proposal, *not* the 
 - Telemetry without explicit deployment ID stays unlinked; no guess-based cross-service or causal link is emitted.
 - All records are marked `reported_unverified`. A valid manifest is NOT evidence of a signed and verified SLSA attestation. No source function is inferred to have caused an observed incident.
 - `bench/ingest_operational_manifest.py` integrates with the existing `graph_io.load_graph_json` and writes a deterministic graph JSON export plus a provenance report. Unit regression tests cover valid chains and adversarial cases.
-- Local focused tests: 5 passed. Separately verify full repository test suite through GitHub Actions; do not equate passing fixture tests with empirical accuracy.
+- `otlp_manifest.py` parses OTLP/JSON exports with `resourceSpans`, `resourceLogs`, and `resourceMetrics`; only explicit `sckg.deployment.id` can associate a signal with a deployment. No service-only guessing.
+- `slsa_manifest.py` parses explicitly identified SLSA provenance v1 source revisions and SHA-256 artifact subjects into manifest build rows. This does not verify cryptographic signatures or builder trust.
+- Local focused tests: 10 passed (including CLI export/reload). GitHub Actions runs the complete repository regression suite; do not equate passing fixture tests with empirical accuracy.
 
 ## Schema example
 
@@ -45,8 +47,8 @@ python bench/ingest_operational_manifest.py \
 |---|---|---|
 | Symbolic accuracy | Source parser tests and grammar coverage, not exhaustive real-repo node annotation | Independent reference labels and per-language node P/R/F1 on pinned realistic sources |
 | Contract accuracy | Controlled 6-positive HTTP and 21-triple seven-relation fixtures | Independently adjudicated, *closed* real-source scopes with hard negatives, precision/recall and evidence spans on four proposal systems |
-| Operational data acquisition | JSON manifest bridge and Git `TOUCHES` exist | Import real CI provenance, validate signed SLSA statements (if available), ingest real deployment metadata, and prove identity joins against trusted records |
-| Telemetry acquisition | Explicit OpenTelemetry-style signal representation | OTLP/JSON adapters and real source trace/log/metric population, service/deployment identity controls, complete scope audit |
+| Operational data acquisition | JSON manifest bridge, Git `TOUCHES`, and unverified SLSA v1 statement parser | Import real CI provenance, validate signed SLSA statements (if available), ingest real deployment metadata, and prove identity joins against trusted records |
+| Telemetry acquisition | OTLP/JSON logs, traces and metric data-point adapter plus conservative manifest joins | Live OTLP ingestion or representative exported traces from all four benchmark systems, service/deployment identity controls, complete scope audit |
 | Persistence | NetworkX and JSON export/import, Neo4j export | Repeat-process durable storage with tested graph migrations, query contracts, concurrency and restart validation |
 | Incremental maintenance | 3/3 equivalence for two pinned single-repo edit cases | Real cross-repo contract + deployment deltas, file deletion, history reorder, multi-edit and scaling study; compare node attributes, typed edge multiplicities and provenance |
 | Comparative baselines | In-project BM25/LSA/hybrids | Rerun selected published/official implementations on identical tasks and candidate sets; no imported scores |
@@ -68,5 +70,6 @@ The original draft's 0.894 MRR@5, 14.8% token redundancy, 46% tool-call improvem
 - GraphCoder (ASE 2024): https://conf.researchr.org/details/ase-2024/ase-2024-research/46/GraphCoder-Enhancing-Repository-Level-Code-Completion-via-Coarse-to-fine-Retrieval-B
 - SLSA Provenance specification: https://slsa.dev/spec/v1.0/provenance
 - OpenTelemetry service resource conventions: https://opentelemetry.io/docs/specs/semconv/resource/service/
+- OTLP transport and JSON mapping: https://opentelemetry.io/docs/specs/otlp/
 
 **Interpretation:** This increment implements one missing Build substrate capability. It does not complete all Phase 2 deliverables and is not a submission-ready evaluation.
