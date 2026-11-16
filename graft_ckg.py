@@ -687,6 +687,7 @@ class CKGBuilder(ast.NodeVisitor):
         
         # Add Class to Syntactic Layer (Lsyn)
         self.add_ckg_node(class_id, node_type="class", layer="Lsyn", name=node.name, line_no=node.lineno, doc=doc, code=code)
+        self.graph.nodes[class_id]["line_end"] = getattr(node, "end_lineno", node.lineno)
         self.register_symbol(class_id, node.name)
         
         # AST Containment Edge
@@ -732,6 +733,8 @@ class CKGBuilder(ast.NodeVisitor):
 
         # Add Function to Syntactic Layer (Lsyn)
         self.add_ckg_node(func_id, node_type="function", layer="Lsyn", name=node.name, line_no=node.lineno, doc=doc, code=code)
+        # end_lineno is inclusive; traceback locations frequently point into the body.
+        self.graph.nodes[func_id]["line_end"] = getattr(node, "end_lineno", node.lineno)
         self.register_symbol(func_id, node.name)
 
         # AST Containment Edge (Lsyn)
