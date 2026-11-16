@@ -93,3 +93,22 @@ def test_different_manifest_replaces_only_operational_layer():
     assert "telemetry::span-1" not in new
     assert "telemetry::unlinked-1" not in new
     assert old.graph["operational_manifest_sha256"] != report["manifest_sha256"]
+
+
+def test_rejects_deployment_before_build_and_contradictory_resource_version():
+    data = example()
+    data["deployments"][0]["start_time"] = "2026-11-15T08:00:00Z"
+    with pytest.raises(ValueError, match="before its build"):
+        ingest_operational_evidence(nx.MultiDiGraph(), data)
+    data = example()
+    data["signals"][0]["resource"]["service.version"] = "c" * 40
+    with pytest.raises(ValueError, match="revision differs"):
+        ingest_operational_evidence(nx.MultiDiGraph(), data)
+    data = example()
+    data["signals"][0]["resource"]["service.version"] = "sha256:" + "c" * 64
+    with pytest.raises(ValueError, match="digest differs"):
+        ingest_operational_evidence(nx.MultiDiGraph(), data)
+    data = example()
+    data["signals"][0]["resource"]["service.version"] = "v2.0.0"
+    graph, result = ingest_operational_evidence(nx.MultiDiGraph(), data)
+    assert result["signals"] == 2
