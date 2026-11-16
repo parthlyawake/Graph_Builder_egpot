@@ -92,3 +92,29 @@ Pinned 27 Online Boutique source-inspected localization questions, k=5, B=2,048 
 **Required external inputs:** two or more independent subject-matter annotators on complete source scopes, access to actual signed build provenance and deployment identity records plus corresponding OTLP captures from benchmark services, and comparable external baseline reproductions where research scope demands them.
 
 Raw CI outputs are retained as GitHub Actions artifacts (30 days by workflow setting), NOT copied into checked-in performance tables without an explicit pinned run reference. Never silently promote fixtures or assumptions into facts.
+
+
+## 2026-11-17 additional fault injection and provenance hardening
+
+### Correctly unresolved real-source Go RPC typo
+
+`bench/verify_online_boutique_rpc_skew.py` tests a **single source-confirmed, deliberately non-compiling** mutation in pinned Online Boutique Go frontend:
+
+- Before mutation, `frontendServer.getCart -> contract::CartService.GetCart` exists.
+- Change exactly one source call `NewCartServiceClient(...).GetCart(` to `NewCartServiceClient(...).GetCartTypo(`.
+- After mutation, neither full nor incremental graph retains the old `CONSUMES` binding; the invalid call remains explicitly unresolved instead of being assigned to another RPC.
+- Fresh/incremental graphs agree on complete node and semantic edge attributes **ignoring only volatile eNNN edge-counter keys**. The first attempt correctly FAILED this integrity gate even though both graphs removed the binding; `external::grpc.CartService.GetCartTypo` had inconsistent inherited source-file metadata. This was an implementation defect, not a test fluke.
+- `graft_ckg.add_ckg_node` now assigns **no fake source file** to graph-wide external pseudo-functions. The actual caller file remains on the individual CALLS edge (`callsite_file`/`id_ctx`). The rerun passed including this differential equivalence check.
+
+GitHub CI green source and fault results: https://github.com/Vikas-Personal-Research-Org/Graph_Builder/actions/runs/43939991013 (`347 passed, 3 skipped` full suite; `PINNED_RPC_MUTATION passed=true`, `semantic_graph_equivalence=true`). This is one deliberate fault, **not** a population estimate of hard-negative precision. The typo mutant is invalid application code by design; do not report it as a runtime test.
+
+### Broader update correctness and methodological corrections
+
+- Prior `incremental_builder.py` fell through on `.thrift`, `.pdl`, `.avsc`, `.yaml`, `.yml`, `.json` schema changes. This can leave old canonical contract IDs. The updater now conservatively falls back to full indexing for these potential global schema/config inputs. `tests/test_publication_schema_incremental.py` exercises Thrift, Avro, PDL and OpenAPI rename plus Thrift deletion against a fresh build.
+- `bench.paper_performance.semantic_graph_signature` now **retains stable or user-assigned edge keys**, discarding only synthetic `eNNN` insertion counters. A test rejects a false-equivalence between graphs with different stable keys. The exact-counter identity signature remains stricter and is reported separately.
+- Previously, `bench.verify_graph_accuracy.evaluate` could mark `publication_ready=true` merely because its input labels carried `status="independently_reviewed"`, even though that string could be added by anyone. The status is now **always false automatically**; a separate technical-evidence flag describes verification of the declared source scope, and a publication note requires out-of-band authenticated human adjudication.
+- `README.md` had outdated broad 33.7× speedup, legacy perfect extraction and simulated agent-efficiency tables, unsupported cross-paper numerical comparisons, and zero-choke-point wording. These were corrected/retired. `RESULTS.md` now explicitly labels its older heuristic tables historical and non-publication.
+
+### Definitive epistemic boundary
+
+These fixes strengthen repeatable **software engineering** and partial **source-inspected science**. They do **not** supply the missing independent external human reviewers, represent all four target systems' complete communication paths, prove deployment-to-OTLP provenance, or reproduce published external builder baselines. Do not claim P1–P4 universally complete, or that the manuscript is yet publication-certified.
