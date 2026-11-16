@@ -69,6 +69,31 @@ class GraphAccuracyTests(unittest.TestCase):
         self.graph.add_edge("src/client.py:request", "contract::Service.Other", relation="CONSUMES")
         self.assertEqual(audit.evaluate(self.graph, self.labels)["closed_scopes"][0]["precision"], .5)
 
+    def test_empty_precision_denominator_is_undefined(self):
+        self.graph.remove_edge("src/client.py:request", "contract::Service.Get")
+        outcome = audit.evaluate(self.graph, self.labels)["closed_scopes"][0]
+        self.assertEqual((outcome["tp"], outcome["fp"], outcome["fn"]), (0, 0, 1))
+        self.assertIsNone(outcome["precision"])
+        self.assertEqual(outcome["recall"], 0.0)
+        self.assertIsNone(outcome["f1"])
+
+    def test_empty_closed_scope_has_no_perfect_score(self):
+        self.labels["edges"] = []
+        self.graph.remove_edge("src/client.py:request", "contract::Service.Get")
+        outcome = audit.evaluate(self.graph, self.labels)["closed_scopes"][0]
+        self.assertEqual((outcome["tp"], outcome["fp"], outcome["fn"]), (0, 0, 0))
+        self.assertIsNone(outcome["precision"])
+        self.assertIsNone(outcome["recall"])
+        self.assertIsNone(outcome["f1"])
+
+    def test_false_positive_with_no_truth_has_undefined_recall(self):
+        self.labels["edges"] = []
+        outcome = audit.evaluate(self.graph, self.labels)["closed_scopes"][0]
+        self.assertEqual((outcome["tp"], outcome["fp"], outcome["fn"]), (0, 1, 0))
+        self.assertEqual(outcome["precision"], 0.0)
+        self.assertIsNone(outcome["recall"])
+        self.assertIsNone(outcome["f1"])
+
     def test_runtime_is_recall_only(self):
         trace = {"observed_edges": [
             {"source": "src/client.py:request", "relation": "CONSUMES", "target": "contract::Service.Get"},
