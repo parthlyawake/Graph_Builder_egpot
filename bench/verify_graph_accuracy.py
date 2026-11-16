@@ -57,7 +57,7 @@ def evaluate(graph, labels, source_root=None):
     negatives = {edge(item) for item in labels.get("negatives", [])}
     if truth & negatives:
         raise ValueError("Contradictory positive and negative labels")
-    evidence = {"verified": 0, "missing": 0, "unavailable": 0}
+    evidence = {"verified": 0, "missing": 0, "unavailable": 0, "failures": []}
     for item in node_labels + edge_labels:
         proof = item.get("evidence", {})
         if not source_root or not proof:
@@ -67,9 +67,24 @@ def evaluate(graph, labels, source_root=None):
         file = proof.get("file")
         marker = proof.get("contains")
         target = (root / str(file)).resolve() if file else root
-        if (not file or not marker or root not in target.parents or
-                not target.is_file() or marker not in target.read_text(encoding="utf-8", errors="replace")):
+        failure = None
+        if not file or not isinstance(marker, str) or not marker:
+            failure = "missing_file_or_source_marker"
+        elif root not in target.parents:
+            failure = "path_outside_source_root"
+        elif not target.is_file():
+            failure = "source_file_unavailable"
+        elif marker not in target.read_text(encoding="utf-8", errors="replace"):
+            failure = "source_marker_not_found"
+        if failure:
             evidence["missing"] += 1
+            evidence["failures"].append({
+                "label": str(item.get("id") or
+                             (item.get("source"), item.get("relation"), item.get("target"))),
+                "source_file": file,
+                "marker": marker[:120] if isinstance(marker, str) else None,
+                "reason": failure,
+            })
         else:
             evidence["verified"] += 1
     node_truth = {str(item["id"]) for item in node_labels}
