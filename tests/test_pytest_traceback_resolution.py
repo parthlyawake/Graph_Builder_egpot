@@ -122,3 +122,30 @@ def test_polyglot_body_lines_recover_bare_frames(tmp_path, filename, source, bod
     matches = SCKGGraphProvider(builder).resolve_symptom(
         TelemetryEvent(stack_trace=f"{filename}:{body_line}"))
     assert [item.node_id for item in matches] == [node]
+
+
+@pytest.mark.parametrize("filename,initial,updated,target_line", [
+    ("service.py", "def work():\n    return 1\n",
+     "def work():\n    value = 2\n    return value\n", 3),
+    ("service.go", "package x\nfunc work() int {\n  return 1\n}\n",
+     "package x\nfunc work() int {\n  value := 2\n  return value\n}\n", 4),
+])
+def test_source_ranges_rebuilt_after_incremental_edits(
+        tmp_path, filename, initial, updated, target_line):
+    target = tmp_path / filename
+    target.write_text(initial, encoding="utf-8")
+    with contextlib.redirect_stdout(io.StringIO()):
+        b = CKGBuilder(str(tmp_path))
+        b.build()
+        target.write_text(updated, encoding="utf-8")
+        b.update_files([filename])
+        fresh = CKGBuilder(str(tmp_path))
+        fresh.build()
+    for graph in (b.graph, fresh.graph):
+        nid = filename + ":work"
+        assert graph.nodes[nid]["line_end"] >= target_line
+        matches = SCKGGraphProvider(graph).resolve_symptom(
+            TelemetryEvent(stack_trace=f"{filename}:{target_line}"))
+        assert [node.node_id for node in matches] == [nid]
+    assert b.graph.nodes[filename + ":work"]["line_end"] == (
+        fresh.graph.nodes[filename + ":work"]["line_end"])
