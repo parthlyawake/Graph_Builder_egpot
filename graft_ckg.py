@@ -307,14 +307,21 @@ class CKGBuilder(ast.NodeVisitor):
         except (ValueError, TypeError):
             parsed_line = 0
             
-        is_test = self._is_test_path(self.current_file_ctx)
+        # An external::<symbol> is one graph-wide placeholder, not a source
+        # declaration. It may be referenced from many files. Inheriting the
+        # last visited file creates false provenance and makes incremental
+        # graphs depend on traversal order. Per-callsite provenance remains
+        # available on CALLS edge metadata (id_ctx/callsite_file).
+        is_external = node_type == "external_func" and str(node_id).startswith("external::")
+        source_file = "" if is_external else self.current_file_ctx
+        is_test = self._is_test_path(source_file)
         self.graph.add_node(
             node_id,
             id=node_id,
             type=node_type,
             layer=layer,
             name=name,
-            file=self.current_file_ctx,
+            file=source_file,
             repo=repo if repo is not None else (self.repo_id or ""),
             line_no=parsed_line,
             docstring=doc,
