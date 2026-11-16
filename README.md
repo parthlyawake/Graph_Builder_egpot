@@ -22,7 +22,7 @@ SCKG Graph Builder solves this by constructing a unified five-layer Code Knowled
 - **Polyglot Parsing:** Native Python AST and Tree-sitter adapters cover core Go, JavaScript/TypeScript, Java, C# and additional language grammars. Feature completeness varies; see [real-source coverage](REAL_REPOSITORY_COMPATIBILITY_AUDIT.md).
 - **Contract Layer ($L_{\text{contract}}$):** Models gRPC, Spring REST (`@RestController`, `@GetMapping`, `@PostMapping`), and message queues (`@KafkaListener`, event publishing) via typed `CONSUMES`, `IMPLEMENTS`, `PRODUCES_EVENT`, and `CONSUMES_EVENT` edges.
 - **Incremental Maintenance:** File-level updates preserve source registries and re-resolve derived edges. Large workspace/schema changes can trigger a full rebuild; latency and exact graph equivalence must be checked per edit and scope.
-- **Choke-Point-Free Traversal:** Optimizes blast-radius and context grafting traversals by bypassing backward traversal into parent service hubs, preventing star-graph fanout and choke points.
+- **Bounded Traversal Policies:** Limits selected service-hub expansion during blast-radius/context extraction; no global choke-point or asymptotic-complexity guarantee is claimed.
 - **Schema Drift Detection:** Detects API contract version skew between vendored Protobuf schemas across service boundaries.
 - **Deterministic Subtree Grafting:** Exact cl100k_base token-budget enforcement for rendered context. Semantic prompt redundancy has **not** been independently quantified.
 - **Standardized Graph Provider Interface:** Exposes an interface (`GraphProvider` / `SCKGGraphProvider`) for symptom resolution, backward root-cause analysis, and blast-radius tracing.
@@ -59,7 +59,7 @@ Reads a `workspace.yaml` configuration, instantiates a CKG builder for each repo
 - Computes the workspace-level semantic layer ($L_{\text{sem}}$) across all repositories.
 - Implements `rebuild_incremental(changed_files_by_repo)` for workspace-wide streaming updates.
 
-For high-precision cross-service HTTP graphs, set `strict_http_source_evidence: true` in `workspace.yaml` (or `WorkspaceConfig`). The default is `false` for backwards compatibility. Strict mode preserves HTTP edges supported by a resolved source URL, HTTP verb, and unique destination service/handler, but suppresses legacy path-only guesses. It can reduce recall for JS/TS/Go requests whose hosts are not yet resolved. Python `urllib` import aliases are supported, and ambiguous Java overload caller nodes are never treated as confirmed HTTP call sources.
+For conservative, source-evidenced cross-service HTTP graphs, set `strict_http_source_evidence: true` in `workspace.yaml` (or `WorkspaceConfig`). The default is `false` for backwards compatibility. Strict mode preserves HTTP edges supported by a resolved source URL, HTTP verb, and unique destination service/handler, but suppresses legacy path-only guesses. It can reduce recall for JS/TS/Go requests whose hosts are not yet resolved. Python `urllib` import aliases are supported, and ambiguous Java overload caller nodes are never treated as confirmed HTTP call sources.
 
 ### traversal.py — Graph-Guided Traversal & Grafting
 
@@ -74,7 +74,7 @@ Provides deterministic, typed graph traversal primitives across all five layers:
 
 Defines the service layer interface `GraphProvider` and `SCKGGraphProvider` implementation:
 - `find_node_by_name`: Exact and partial symbol lookup.
-- `get_node_detail`: Complete node attribute and adjacency inspection.
+- `get_node_detail`: Inspects recorded node attributes and adjacency; unrepresented dynamic/runtime behavior is outside its scope.
 - `resolve_symptom`: Maps stack trace frames and error logs directly to graph nodes.
 - `backward_traverse`: Traverses dependencies backward to identify candidate root causes.
 - `forward_traverse`: Traverses forward to compute blast radius and affected services.
@@ -111,7 +111,7 @@ To support large, fast-evolving multi-repository codebases, SCKG provides fine-g
    - Only modified files are re-parsed by the appropriate AST or tree-sitter extractor.
    - Internal edges ($L_{\text{syn}}$, $L_{\text{dep}}$, $L_{\text{flow}}$) for the modified file are re-established.
    - Cross-file call sites and contract bindings are re-resolved against the existing global index without rebuilding untouched services.
-4. **Sub-Second Throughput:** On codebases with up to 150K LOC, incremental rebuilds take between 20ms and 240ms (up to 33.7x faster than a full build).
+4. **Measured Incremental Cost:** Report source revision, change type, multi-run latency and semantic graph equivalence. In the pinned 2026-11-17 Go source edit, the observed medians were 0.723s incremental versus 7.962s fresh (~11.0×); no uniform sub-second or universal speedup guarantee exists.
 
 ---
 
