@@ -92,7 +92,17 @@ def verify_dsse_build_provenance(
     matched = [b for b in builds if b["artifact_digest"] == "sha256:" + artifact_digest]
     if len(matched) != 1 or matched[0]["commit_sha"] != expected_commit_sha.lower():
         raise ValueError("Signed provenance subject does not match artifact bytes")
+    from datetime import datetime, timezone
+    finished_at = matched[0]["timestamp"]
+    try:
+        parsed = datetime.fromisoformat(finished_at.replace("Z","+00:00"))
+        if parsed.tzinfo is None:
+            raise ValueError("missing timezone")
+        finished_at_utc = parsed.astimezone(timezone.utc).isoformat()
+    except (ValueError, TypeError) as exc:
+        raise ValueError("Signed build finish time must be a timezone-aware timestamp") from exc
     return {"verification": "dsse_ed25519_valid_under_caller_trust_policy",
+            "build_finished_at_utc": finished_at_utc,
             "signing_key_id": key_id, "builder_id": expected_builder_id,
             "source_uri": expected_source_uri, "source_commit": expected_commit_sha.lower(),
             "artifact_sha256": artifact_digest,
@@ -134,7 +144,8 @@ def annotate_verified_build(
     data = graph.nodes[build_nid]
     if (data.get("builder_id") != expected_builder_id or
             data.get("service_name") != service_name or
-            data.get("repo_id") != expected_repo_id):
+            data.get("repo_id") != expected_repo_id or
+            data.get("timestamp") != verified["build_finished_at_utc"]):
         raise ValueError("Signed build metadata differs from graph")
     for u,v,relation in ((src_nid,build_nid,"BUILT_BY"),
                          (build_nid,art_nid,"PRODUCED_ARTIFACT")):
