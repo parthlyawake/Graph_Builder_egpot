@@ -73,3 +73,18 @@ The original draft's 0.894 MRR@5, 14.8% token redundancy, 46% tool-call improvem
 - OTLP transport and JSON mapping: https://opentelemetry.io/docs/specs/otlp/
 
 **Interpretation:** This increment implements one missing Build substrate capability. It does not complete all Phase 2 deliverables and is not a submission-ready evaluation.
+
+
+## 2026-11-16 adversarial-review follow-up
+
+The user requested a thorough review alongside the traceback bug fix. Additional operational evidence defects were identified and addressed *on this separate Build research branch*:
+
+- Duplicate OTLP identity keys were silently overwritten. The OTLP adapter now rejects duplicate keys instead of allowing a last-value-wins deployment identity.
+- OTLP Unix nanosecond timestamps were converted through floating-point seconds, which can round microseconds. The adapter now splits integer seconds and nanoseconds directly and rejects noninteger and impossible timestamps. The manifest remains microsecond-precision; original OTLP retains full nanoseconds.
+- A metric with multiple mutually exclusive point kinds (e.g., gauge and sum) is rejected.
+- A deployment could begin before the recorded build completed; such chronology is now invalid.
+- Signals with source SHA-1 or artifact SHA-256 formatted `service.version` values now fail closed if they explicitly contradict the associated build. Non-SHA application-version strings are not guessed as Git revisions.
+
+Added tests for these contradictions. GitHub Actions executes `tests/test_operational_evidence.py` and the entire repository suite on the research branch. These checks do *not* authenticate unsigned SLSA statements or eliminate the need for real-world CI/CD and telemetry evaluation.
+
+The separate traceback / Python and polyglot line-range issue is fixed in draft PR #3, not on this branch.
