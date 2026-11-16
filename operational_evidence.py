@@ -118,7 +118,8 @@ def ingest_operational_evidence(
                   digest=artifact, verification="reported_unverified")
         _edge(graph, commit_id, name, "BUILT_BY")
         _edge(graph, name, artifact_id, "PRODUCED_ARTIFACT")
-        build_nodes[key] = (name, _text(record, "service_name"))
+        build_nodes[key] = (name, _text(record, "service_name"), revision, artifact,
+                            _timestamp(_text(record, "timestamp")))
     deployment_nodes = {}
     for key, record in deployments.items():
         build_key = _text(record, "build_id")
@@ -129,6 +130,8 @@ def ingest_operational_evidence(
         end = _timestamp(end_str) if end_str is not None else None
         if end is not None and end <= begin:
             raise ValueError("deployment end_time must follow start_time")
+        if begin < build_nodes[build_key][4]:
+            raise ValueError("deployment cannot start before its build completed")
         name = f"deployment::{key}"
         env = _text(record, "environment")
         env_id = f"environment::{env}"
@@ -140,7 +143,8 @@ def ingest_operational_evidence(
                   verification="reported_unverified")
         _edge(graph, build_nodes[build_key][0], name, "DEPLOYED_AS")
         _edge(graph, name, env_id, "DEPLOYED_IN")
-        deployment_nodes[key] = (name, build_nodes[build_key][1], begin, end)
+        deployment_nodes[key] = (name, build_nodes[build_key][1], begin, end,
+                                 build_nodes[build_key][2], build_nodes[build_key][3])
     unmatched = []
     for key, record in signals.items():
         kind = _text(record, "type")
@@ -166,9 +170,15 @@ def ingest_operational_evidence(
             continue
         if not isinstance(deployment_key, str) or deployment_key not in deployment_nodes:
             raise ValueError(f"signal {key} references unknown deployment {deployment_key}")
-        dep_node, deployed_service, start, end = deployment_nodes[deployment_key]
+        dep_node, deployed_service, start, end, revision, artifact = deployment_nodes[deployment_key]
         if service is not None and service != deployed_service:
             raise ValueError(f"signal {key} service differs from deployed service")
+        # When the resource version *explicitly* uses a Git SHA or artifact
+        # digest, a contradictory identity must not be linked to deployment.
+        if version is not None and _SHA.fullmatch(version) and version.lower() != revision:
+            raise ValueError(f"signal {key} revision differs from deployed source")
+        if version is not None and _DIGEST.fullmatch(version) and version.lower() != artifact:
+            raise ValueError(f"signal {key} digest differs from deployed artifact")
         if event_time < start or (end is not None and event_time >= end):
             raise ValueError(f"signal {key} falls outside deployment interval")
         _edge(graph, event_id, dep_node, "OBSERVED_DURING")
