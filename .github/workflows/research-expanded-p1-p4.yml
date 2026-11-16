@@ -64,6 +64,10 @@ jobs:
           test "$(git -C _deathstar rev-parse HEAD)" = 6ecb09706140f8730b5385c08f1386c654c3c526
           test "$(git -C _queue rev-parse HEAD)" = 7dc33721c765e5af415c9d244d84637ff2d510cd
           mkdir -p /tmp/expanded-results
+      - name: P1 blinded independent-review packets (no predictions or votes)
+        run: |
+          python bench/review_packet_source_contracts.py --repo _deathstar --protocol thrift --output-dir /tmp/expanded-results/review_deathstar
+          python bench/review_packet_source_contracts.py --repo _boutique --protocol proto --output-dir /tmp/expanded-results/review_boutique
       - name: P1/P2 complete Thrift declaration scope
         run: |
           python bench/complete_protocol_declaration_census.py --protocol thrift --repo _deathstar --output /tmp/expanded-results/deathstar_complete_idl.json
