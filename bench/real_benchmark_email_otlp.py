@@ -52,6 +52,8 @@ def reserve_port():
         return sock.getsockname()[1]
 
 def run(repo:Path)->dict:
+    # Resolve before using app.parent as the child process cwd.
+    repo=repo.resolve()
     got=subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()
     if got!=PIN:
         raise ValueError("Source revision changed: "+got)
