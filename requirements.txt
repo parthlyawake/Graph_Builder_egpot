@@ -19,3 +19,4 @@ tiktoken>=0.5          # BPE token counting for paper token-redundancy metric
 pytest>=7.0            # Test runner
 graphql-core>=3.2,<4       # Standards-based SDL and query-document parsing
 grpcio-tools>=1.62,<2      # Compiler-backed Protobuf descriptor parsing
+cryptography>=42,<48      # Ed25519/DSSE signed provenance verification and tests
