@@ -24,8 +24,15 @@ def incremental_update(builder, changed_rel_paths, deleted_rel_paths=()):
     if not getattr(builder, "_built_once", False):
         return builder.build()
     config_files = {"tsconfig.json", "package.json", ".ckgignore"}
-    if any(path.endswith((".proto", ".graphql", ".gql")) or
-           os.path.basename(path) in config_files for path in affected):
+    # Schema, IDL, manifest and configuration edits change canonical global
+    # identities. They MUST trigger full source+contract reindexing instead of
+    # silently preserving stale declarations from old schema files.
+    global_contract_extensions = (
+        ".proto", ".graphql", ".gql", ".thrift", ".pdl", ".avsc",
+        ".yaml", ".yml", ".json",
+    )
+    if any(path.lower().endswith(global_contract_extensions) or
+           os.path.basename(path).lower() in config_files for path in affected):
         return builder.build()
 
     # Do not lose persisted callsites or contracts in untouched source files.
