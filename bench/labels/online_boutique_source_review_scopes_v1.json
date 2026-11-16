@@ -142,7 +142,7 @@
       "language": "go",
       "evidence": {
         "file": "src/frontend/rpc.go",
-        "contains": ".GetSupportedCurrencies("
+        "contains": "GetSupportedCurrencies("
       }
     },
     {
@@ -152,7 +152,7 @@
       "language": "go",
       "evidence": {
         "file": "src/frontend/rpc.go",
-        "contains": ".ListProducts("
+        "contains": "ListProducts("
       }
     },
     {
@@ -162,7 +162,7 @@
       "language": "go",
       "evidence": {
         "file": "src/frontend/rpc.go",
-        "contains": ".GetProduct("
+        "contains": "GetProduct("
       }
     },
     {
@@ -202,7 +202,7 @@
       "language": "go",
       "evidence": {
         "file": "src/frontend/rpc.go",
-        "contains": ".Convert("
+        "contains": "Convert("
       }
     },
     {
