@@ -102,3 +102,54 @@ def verify_dsse_build_provenance(
                 "Trust in the caller-supplied signing key is an external assumption.",
                 "A signed artifact claim does not authenticate deployment or telemetry events."
             ]}
+
+
+def annotate_verified_build(
+    graph, build_id: str, envelope: dict, *,
+    trusted_public_keys: dict[str, bytes],
+    expected_builder_id: str, expected_source_uri: str,
+    expected_commit_sha: str, expected_repo_id: str,
+    service_name: str, artifact_path: str | Path,
+):
+    """Return a copy with ONLY verified build edges promoted.
+
+    Never upgrade DEPLOYED_AS, DEPLOYED_IN or OBSERVED_DURING edges:
+    an authenticated build statement does not attest to a deployment.
+    """
+    import networkx as nx
+    if not isinstance(graph, nx.MultiDiGraph):
+        raise TypeError("Expected MultiDiGraph")
+    verified = verify_dsse_build_provenance(
+        envelope, trusted_public_keys=trusted_public_keys,
+        expected_builder_id=expected_builder_id,
+        expected_source_uri=expected_source_uri,
+        expected_commit_sha=expected_commit_sha,
+        expected_repo_id=expected_repo_id, service_name=service_name,
+        artifact_path=artifact_path)
+    build_nid = "build::" + build_id
+    src_nid = f"source_revision::{expected_repo_id}::{verified['source_commit']}"
+    art_nid = "artifact::sha256:" + verified["artifact_sha256"]
+    if build_nid not in graph or src_nid not in graph or art_nid not in graph:
+        raise ValueError("Signed build objects do not match graph identities")
+    data = graph.nodes[build_nid]
+    if (data.get("builder_id") != expected_builder_id or
+            data.get("service_name") != service_name or
+            data.get("repo_id") != expected_repo_id):
+        raise ValueError("Signed build metadata differs from graph")
+    for u,v,relation in ((src_nid,build_nid,"BUILT_BY"),
+                         (build_nid,art_nid,"PRODUCED_ARTIFACT")):
+        found = [(k, d) for k,d in graph[u][v].items()
+                 if d.get("relation")==relation] if graph.has_edge(u,v) else []
+        if len(found) != 1:
+            raise ValueError("Missing or ambiguous signed build edge: " + relation)
+    result=graph.copy()
+    result.nodes[build_nid]["verification"] = verified["verification"]
+    result.nodes[build_nid]["signing_key_id"] = verified["signing_key_id"]
+    result.nodes[build_nid]["verified_artifact_sha256"] = verified["artifact_sha256"]
+    for u,v,relation in ((src_nid,build_nid,"BUILT_BY"),
+                         (build_nid,art_nid,"PRODUCED_ARTIFACT")):
+        for key, attrs in result[u][v].items():
+            if attrs.get("relation") == relation:
+                attrs["verification"] = verified["verification"]
+                attrs["signing_key_id"] = verified["signing_key_id"]
+    return result, verified
