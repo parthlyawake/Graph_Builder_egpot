@@ -433,25 +433,29 @@ class StandardMCTS(_RetrieverBase):
 
 NEW_BASELINES = (*[f"vector_bfs_k{k}" for k in (2, 3, 4, 5)], "ppr", "scalar_beam",
                  "community_graphrag", "mcts_standard")
+TIEBREAK_METHOD = "egpot_full_tiebreak"
 
 
-def make_comparison_retrievers(view, scorer, *, query_ids=None):
-    """Additional registry; existing registries/retrievers remain unchanged."""
-    methods = {
-        "egpot_full": EGPOTRetriever(EGPOTConfig(use_mcts=False), view, scorer),
-        "egpot_full_mcts": EGPOTRetriever(EGPOTConfig(use_mcts=True), view, scorer),
-        "egpot_no_pareto": EGPOTRetriever(EGPOTConfig(use_mcts=False, use_pareto=False), view, scorer),
-        "vector_topk": VectorTopK(view, scorer), "bfs": BFS(view, scorer),
-        "greedy_walk": GreedyWalk(view, scorer),
-    }
-    factories = {**{f"vector_bfs_k{k}": lambda k=k: VectorBFS(view, scorer, k) for k in (2, 3, 4, 5)},
+def make_comparison_retrievers(view, scorer, *, query_ids=None, method_names=None):
+    """Construct the default comparison methods or an explicitly requested subset."""
+    factories = {
+        "egpot_full": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=False), view, scorer),
+        "egpot_full_mcts": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=True), view, scorer),
+        TIEBREAK_METHOD: lambda: EGPOTRetriever(EGPOTConfig(lookahead_mode="tiebreak"), view, scorer),
+        "egpot_no_pareto": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=False, use_pareto=False), view, scorer),
+        "vector_topk": lambda: VectorTopK(view, scorer), "bfs": lambda: BFS(view, scorer),
+        "greedy_walk": lambda: GreedyWalk(view, scorer),
+        **{f"vector_bfs_k{k}": lambda k=k: VectorBFS(view, scorer, k) for k in (2, 3, 4, 5)},
         "ppr": lambda: PersonalizedPageRank(view, scorer), "scalar_beam": lambda: ScalarBeam(view, scorer),
         "community_graphrag": lambda: CommunityGraphRAG(view, scorer),
         "mcts_standard": lambda: StandardMCTS(view, scorer, seed=0, query_ids=query_ids)}
-    for name, factory in factories.items():
+    names = (name for name in factories if name != TIEBREAK_METHOD) if method_names is None else method_names
+    methods = {}
+    for name in names:
         began = perf_counter()
-        methods[name] = factory()
-        methods[name].setup_latency_s = perf_counter()-began
+        methods[name] = factories[name]()
+        if name in NEW_BASELINES:
+            methods[name].setup_latency_s = perf_counter()-began
     return methods
 
 
@@ -766,7 +770,8 @@ def print_comparison_table(records, methods, budget, query_type=None):
 def run_comparison(rows, methods):
     """Console-only experiment. Gold remains inside evaluate/metrics."""
     records, wall = [], {}
-    for name in NEW_BASELINES:
+    baselines = [name for name in NEW_BASELINES if name in methods]
+    for name in baselines:
         print(f"SETUP method={name} wall_s={methods[name].setup_latency_s:.6f}", flush=True)
     for budget in (20, 40):
         current = []
@@ -780,11 +785,14 @@ def run_comparison(rows, methods):
         if budget == 40:
             for query_type in ("explicit", "indirect"):
                 print_comparison_table(current, methods, budget, query_type)
-    print("\nNew-method wall seconds: setup is separate, query totals include metrics/harness; shared fit/load excluded.", flush=True)
-    print("| Method | Setup s | Budget 20 / all queries s | Budget 40 / all queries s |", flush=True)
-    print("|---|---:|---:|---:|", flush=True)
-    for name in NEW_BASELINES:
-        print(f"| {name} | {methods[name].setup_latency_s:.6f} | {wall[name,20]:.6f} | {wall[name,40]:.6f} |", flush=True)
+    if baselines:
+        print("\nNew-method wall seconds: setup is separate, query totals include metrics/harness; shared fit/load excluded.", flush=True)
+        print("| Method | Setup s | Budget 20 / all queries s | Budget 40 / all queries s |", flush=True)
+        print("|---|---:|---:|---:|", flush=True)
+        for name in baselines:
+            print(f"| {name} | {methods[name].setup_latency_s:.6f} | {wall[name,20]:.6f} | {wall[name,40]:.6f} |", flush=True)
+    if "egpot_full" not in methods:
+        return records, wall
     for budget in (20, 40):
         selected = [r for r in records if r["node_budget"] == budget]
         base = summarize([r for r in selected if r["method"] == "egpot_full"])
@@ -1384,6 +1392,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--split", choices=("dev", "test"), default="dev")
     parser.add_argument("--confirm-test", action="store_true")
     parser.add_argument("--mode", choices=("all", "ablations", "sweep", "comparison", "fairness", "weights", "test-final"), default="all")
+    parser.add_argument("--methods", nargs="+",
+                        choices=("egpot_full", "egpot_full_mcts", TIEBREAK_METHOD, "egpot_no_pareto",
+                                 "vector_topk", "bfs", "greedy_walk", *NEW_BASELINES),
+                        help="Select methods for --mode comparison")
     parser.add_argument("--acknowledge-second-look", action="store_true")
     parser.add_argument("--edge-policy", choices=tuple(EDGE_POLICIES), default="legacy",
                         help="Edge policy for development experiments")
@@ -1392,6 +1404,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-contract-match-relation", action="append", default=[], metavar="REL",
                         help="Withhold the contract-match score for this relation; repeatable")
     args = parser.parse_args(argv)
+    if args.methods and args.mode != "comparison":
+        parser.error("--methods requires --mode comparison")
+    if TIEBREAK_METHOD in (args.methods or ()) and args.split != "dev":
+        parser.error(f"{TIEBREAK_METHOD} is DEV only")
     edge_policy = _selected_edge_policy(args)
     if edge_policy != LEGACY and (args.split == "test" or args.mode == "test-final"):
         parser.error("Non-legacy edge policies are DEV only; no test queries were evaluated")
@@ -1439,12 +1455,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.mode == "comparison":
         tasks = splits[args.split]
         query_ids = {(r["query"], r["start_node"]): r["id"] for r in tasks}
-        print("Comparison uses the requested fourteen named methods; every new graph method has choke-point ON.")
+        if args.methods:
+            print("Comparison methods: " + ", ".join(args.methods))
+        else:
+            print("Comparison uses the requested fourteen named methods; every new graph method has choke-point ON.")
         print("PPR transitions follow allowed traversal moves, weighted by parallel-edge multiplicity; query ignored.")
         print("VectorBFS seeds are start union the literal global top three; small budgets cap seeds first.")
         print("Community partition uses undirected, unweighted simple adjacency; setup/partition cost reported separately.")
         print("ScalarBeam is width four, path-score sum; StandardMCTS uses query-ID/start seeds and ranks tree occurrences before deduplication.")
-        methods = make_comparison_retrievers(view, scorer, query_ids=query_ids)
+        methods = make_comparison_retrievers(view, scorer, query_ids=query_ids,
+                                             method_names=args.methods)
         run_comparison(tasks, methods)
         return 0
     ablations = make_ablations(view, scorer)

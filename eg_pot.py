@@ -17,6 +17,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+TIEBREAK_BUCKET = 0.01
+
+
 @dataclass
 class EGPOTConfig:
     """Search settings (counts are positive; scores/discounts are in [0, 1]).
@@ -28,6 +31,8 @@ class EGPOTConfig:
     Weighted-sum ablation uses equal objective weights (0.25 each) by default.
     Lookahead blends at weight 0.5, samples with temperature 0.5, and limits
     simulated choices to the best 8 edges at each step.
+    Tiebreak mode uses rollouts only to order candidates within immediate-score
+    buckets and does not use the blend weight.
     """
 
     node_budget: int = 40
@@ -46,8 +51,11 @@ class EGPOTConfig:
     lookahead_weight: float = 0.5
     rollout_temperature: float = 0.5
     max_rollout_branching: int = 8
+    lookahead_mode: str = "blend"
 
     def __post_init__(self) -> None:
+        if self.lookahead_mode not in ("blend", "tiebreak"):
+            raise ValueError("lookahead_mode must be 'blend' or 'tiebreak'")
         for name in ("node_budget", "beam_width", "mcts_rollouts", "rollout_depth",
                      "max_rollout_branching"):
             value = getattr(self, name)
@@ -453,24 +461,26 @@ class EGPOT:
                     "return_vector": [max(0.0, min(1.0, v / math.fsum(discounts))) for v in sample_return]})
         return tuple(max(0.0, min(1.0, total / denominator)) for total in totals)
 
+    def _observed_lookahead(self, query: str, state: PathState,
+                            candidate: CandidateStep, trace: dict | None) -> tuple[float, float, float, float]:
+        if trace is None:
+            return self.lookahead_vector(query, state, candidate)
+        trace["rollouts"] = {}
+        future = self.lookahead_vector(query, state, candidate, trace=trace["rollouts"])
+        trace["lookahead_vector"] = list(future)
+        return future
+
     def candidate_vector(self, query: str, state: PathState,
                          candidate: CandidateStep, trace: dict | None = None) -> tuple[float, float, float, float]:
-        """Blend immediate and rollout vectors; disabled/zero weight skips simulation."""
+        """Return the objective vector used for ranking and path scoring."""
         immediate = self.objective_vector(query, state, candidate)
         if trace is not None:
             trace.update(immediate_vector=list(immediate), lookahead_vector=None, rollouts=None)
-        if not self.config.use_mcts or self.config.lookahead_weight == 0:
-            if trace is not None:
-                trace["final_vector"] = list(immediate)
-            return immediate
-        if trace is None:
-            future = self.lookahead_vector(query, state, candidate)
-        else:
-            trace["rollouts"] = {}
-            future = self.lookahead_vector(query, state, candidate, trace=trace["rollouts"])
-            trace["lookahead_vector"] = list(future)
+        result = immediate
         weight = self.config.lookahead_weight
-        result = tuple((1 - weight) * now + weight * later for now, later in zip(immediate, future))
+        if self.config.use_mcts and self.config.lookahead_mode == "blend" and weight:
+            future = self._observed_lookahead(query, state, candidate, trace)
+            result = tuple((1 - weight) * now + weight * later for now, later in zip(immediate, future))
         if trace is not None:
             trace["final_vector"] = list(result)
         return result
@@ -488,7 +498,8 @@ class EGPOT:
         return [candidates[i] for i in indices]
 
     def _select_top_indices(self, candidates: list[CandidateStep],
-                            vectors: list[tuple[float, ...]], k: int) -> list[int]:
+                            vectors: list[tuple[float, ...]], k: int, *,
+                            rollout_means: list[float] | None = None) -> list[int]:
         if len(candidates) != len(vectors):
             raise ValueError("each candidate requires one objective vector")
         if type(k) is not int or k < 0:
@@ -496,9 +507,14 @@ class EGPOT:
 
         def order(i: int) -> tuple:
             step, vector = candidates[i], vectors[i]
-            score = (sum(vector) / len(vector) if self.config.use_pareto else
-                     sum(w * value for w, value in zip(self.config.weights, vector)))
-            return (-score, str(step.to_node), str(step.from_node), str(step.relation),
+            if rollout_means is not None:
+                mean = sum(vector) / len(vector)
+                score_key = (-math.floor(mean / TIEBREAK_BUCKET), -rollout_means[i])
+            elif self.config.use_pareto:
+                score_key = (-sum(vector) / len(vector),)
+            else:
+                score_key = (-sum(w * value for w, value in zip(self.config.weights, vector)),)
+            return (*score_key, str(step.to_node), str(step.from_node), str(step.relation),
                     step.direction, _sort_id(step.edge_key), str(step.layer))
 
         fronts = non_dominated_sort(vectors) if self.config.use_pareto else [list(range(len(vectors)))]
@@ -556,6 +572,7 @@ class EGPOT:
         if trace is not None:
             trace["steps"] = []
         round_number, stop_reason = 0, "beam_exhausted"
+        use_tiebreak = self.config.use_mcts and self.config.lookahead_mode == "tiebreak"
 
         def rank(entry: tuple) -> tuple:
             state, log = entry
@@ -568,6 +585,7 @@ class EGPOT:
                 stop_reason = "budget"
                 break
             candidates, vectors, origins = [], [], []
+            rollout_means = [] if use_tiebreak else None
             if trace is not None:
                 beam_before = [{"state_id": f"r{round_number}s{i}", "nodes": list(state.ordered_nodes),
                                 "last_node": state.ordered_nodes[-1]} for i, (state, _) in enumerate(beam)]
@@ -575,11 +593,13 @@ class EGPOT:
             round_number += 1
             for beam_idx, (state, log) in enumerate(beam):
                 for step in self._candidate_steps(query, state):
-                    if trace is None:
-                        vector = self.candidate_vector(query, state, step)
-                    else:
-                        observed = {}
-                        vector = self.candidate_vector(query, state, step, trace=observed)
+                    observed = {} if trace is not None else None
+                    vector = (self.candidate_vector(query, state, step) if observed is None else
+                              self.candidate_vector(query, state, step, trace=observed))
+                    if rollout_means is not None:
+                        future = self._observed_lookahead(query, state, step, observed)
+                        rollout_means.append(sum(future) / len(future))
+                    if observed is not None:
                         details.append({"state_id": beam_before[beam_idx]["state_id"], "vectors": observed})
                     candidates.append(step)
                     vectors.append(vector)
@@ -596,7 +616,8 @@ class EGPOT:
             beam, extended = [], set()
             if trace is not None:
                 chosen_indices, new_nodes = [], []
-            for index in self._select_top_indices(candidates, vectors, self.config.beam_width):
+            for index in self._select_top_indices(
+                    candidates, vectors, self.config.beam_width, rollout_means=rollout_means):
                 step, vector = candidates[index], vectors[index]
                 state, log = origins[index]
                 if trace is not None:
