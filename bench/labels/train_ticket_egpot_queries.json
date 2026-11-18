@@ -1,0 +1,962 @@
+[
+  {
+    "id": "tt01_explicit",
+    "link_id": 1,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is queryById implemented for getRouteByRouteId?",
+    "start_node": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getRouteByRouteId",
+    "contract_node": "http::ts-route-service/GET:/api/v1/routeservice/routes/{routeId}",
+    "handler_node": "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.queryById",
+    "gold_nodes": [
+      "http::ts-route-service/GET:/api/v1/routeservice/routes/{routeId}",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.queryById"
+    ],
+    "gold_path": [
+      "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getRouteByRouteId",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.queryById",
+      "http::ts-route-service/GET:/api/v1/routeservice/routes/{routeId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-service",
+    "service_handler": "ts-route-service",
+    "evidence": {
+      "caller": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:521",
+      "handler": "ts-route-service/src/main/java/route/controller/RouteController.java:46",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.deleteRoute"
+  },
+  {
+    "id": "tt01_indirect",
+    "link_id": 1,
+    "type": "indirect",
+    "query": "Which service returns the stored route, with its stations and distances, for a given route ID?",
+    "start_node": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getRouteByRouteId",
+    "contract_node": "http::ts-route-service/GET:/api/v1/routeservice/routes/{routeId}",
+    "handler_node": "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.queryById",
+    "gold_nodes": [
+      "http::ts-route-service/GET:/api/v1/routeservice/routes/{routeId}",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.queryById"
+    ],
+    "gold_path": [
+      "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getRouteByRouteId",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.queryById",
+      "http::ts-route-service/GET:/api/v1/routeservice/routes/{routeId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-service",
+    "service_handler": "ts-route-service",
+    "evidence": {
+      "caller": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:521",
+      "handler": "ts-route-service/src/main/java/route/controller/RouteController.java:46",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.deleteRoute"
+  },
+  {
+    "id": "tt02_explicit",
+    "link_id": 2,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is delete implemented for deleteStation?",
+    "start_node": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.deleteStation",
+    "contract_node": "http::ts-station-service/DELETE:/api/v1/stationservice/stations/{stationsId}",
+    "handler_node": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.delete",
+    "gold_nodes": [
+      "http::ts-station-service/DELETE:/api/v1/stationservice/stations/{stationsId}",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.delete"
+    ],
+    "gold_path": [
+      "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.deleteStation",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.delete",
+      "http::ts-station-service/DELETE:/api/v1/stationservice/stations/{stationsId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-admin-basic-info-service",
+    "service_handler": "ts-station-service",
+    "evidence": {
+      "caller": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:137",
+      "handler": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:51",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-admin-basic-info-service/src/main/java/adminbasic/controller/AdminBasicInfoController.java:AdminBasicInfoController.deleteStation"
+  },
+  {
+    "id": "tt02_indirect",
+    "link_id": 2,
+    "type": "indirect",
+    "query": "Which service holds the station records and removes the chosen one when an administrator takes a station out of the system?",
+    "start_node": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.deleteStation",
+    "contract_node": "http::ts-station-service/DELETE:/api/v1/stationservice/stations/{stationsId}",
+    "handler_node": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.delete",
+    "gold_nodes": [
+      "http::ts-station-service/DELETE:/api/v1/stationservice/stations/{stationsId}",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.delete"
+    ],
+    "gold_path": [
+      "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.deleteStation",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.delete",
+      "http::ts-station-service/DELETE:/api/v1/stationservice/stations/{stationsId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-admin-basic-info-service",
+    "service_handler": "ts-station-service",
+    "evidence": {
+      "caller": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:137",
+      "handler": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:51",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-admin-basic-info-service/src/main/java/adminbasic/controller/AdminBasicInfoController.java:AdminBasicInfoController.deleteStation"
+  },
+  {
+    "id": "tt03_explicit",
+    "link_id": 3,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is getQuickestRoutes implemented for getRoutePlanResultQuickest?",
+    "start_node": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultQuickest",
+    "contract_node": "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/quickestRoute",
+    "handler_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes",
+    "gold_nodes": [
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/quickestRoute",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes"
+    ],
+    "gold_path": [
+      "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultQuickest",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes",
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/quickestRoute"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-plan-service",
+    "service_handler": "ts-route-plan-service",
+    "evidence": {
+      "caller": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:269",
+      "handler": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:37",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes"
+  },
+  {
+    "id": "tt03_indirect",
+    "link_id": 3,
+    "type": "indirect",
+    "query": "Which service finds the fastest connection options between a start station and an end station on a travel date?",
+    "start_node": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultQuickest",
+    "contract_node": "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/quickestRoute",
+    "handler_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes",
+    "gold_nodes": [
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/quickestRoute",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes"
+    ],
+    "gold_path": [
+      "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultQuickest",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes",
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/quickestRoute"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-plan-service",
+    "service_handler": "ts-route-plan-service",
+    "evidence": {
+      "caller": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:269",
+      "handler": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:37",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes"
+  },
+  {
+    "id": "tt04_explicit",
+    "link_id": 4,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is queryForTravel implemented for getTickets?",
+    "start_node": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getTickets",
+    "contract_node": "http::ts-basic-service/POST:/api/v1/basicservice/basic/travel",
+    "handler_node": "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravel",
+    "gold_nodes": [
+      "http::ts-basic-service/POST:/api/v1/basicservice/basic/travel",
+      "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravel"
+    ],
+    "gold_path": [
+      "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getTickets",
+      "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravel",
+      "http::ts-basic-service/POST:/api/v1/basicservice/basic/travel"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-service",
+    "service_handler": "ts-basic-service",
+    "evidence": {
+      "caller": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:396",
+      "handler": "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:36",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": true,
+    "lookalike_node": "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravels"
+  },
+  {
+    "id": "tt04_indirect",
+    "link_id": 4,
+    "type": "indirect",
+    "query": "Which service looks up the train type, route and prices for one single trip, given its start place, end place and departure time?",
+    "start_node": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getTickets",
+    "contract_node": "http::ts-basic-service/POST:/api/v1/basicservice/basic/travel",
+    "handler_node": "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravel",
+    "gold_nodes": [
+      "http::ts-basic-service/POST:/api/v1/basicservice/basic/travel",
+      "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravel"
+    ],
+    "gold_path": [
+      "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:TravelServiceImpl.getTickets",
+      "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravel",
+      "http::ts-basic-service/POST:/api/v1/basicservice/basic/travel"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-service",
+    "service_handler": "ts-basic-service",
+    "evidence": {
+      "caller": "ts-travel-service/src/main/java/travel/service/TravelServiceImpl.java:396",
+      "handler": "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:36",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": true,
+    "lookalike_node": "ts-basic-service/src/main/java/fdse/microservice/controller/BasicController.java:BasicController.queryForTravels"
+  },
+  {
+    "id": "tt05_explicit",
+    "link_id": 5,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is getFoodStoresByStationNames implemented for getAllFood?",
+    "start_node": "ts-food-service/src/main/java/foodsearch/service/FoodServiceImpl.java:FoodServiceImpl.getAllFood",
+    "contract_node": "http::ts-station-food-service/POST:/api/v1/stationfoodservice/stationfoodstores",
+    "handler_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresByStationNames",
+    "gold_nodes": [
+      "http::ts-station-food-service/POST:/api/v1/stationfoodservice/stationfoodstores",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresByStationNames"
+    ],
+    "gold_path": [
+      "ts-food-service/src/main/java/foodsearch/service/FoodServiceImpl.java:FoodServiceImpl.getAllFood",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresByStationNames",
+      "http::ts-station-food-service/POST:/api/v1/stationfoodservice/stationfoodstores"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-food-service",
+    "service_handler": "ts-station-food-service",
+    "evidence": {
+      "caller": "ts-food-service/src/main/java/foodsearch/service/FoodServiceImpl.java:286",
+      "handler": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:45",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": true,
+    "lookalike_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresOfStation"
+  },
+  {
+    "id": "tt05_indirect",
+    "link_id": 5,
+    "type": "indirect",
+    "query": "Which service returns the food stores at a whole list of stations, given those stations' names?",
+    "start_node": "ts-food-service/src/main/java/foodsearch/service/FoodServiceImpl.java:FoodServiceImpl.getAllFood",
+    "contract_node": "http::ts-station-food-service/POST:/api/v1/stationfoodservice/stationfoodstores",
+    "handler_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresByStationNames",
+    "gold_nodes": [
+      "http::ts-station-food-service/POST:/api/v1/stationfoodservice/stationfoodstores",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresByStationNames"
+    ],
+    "gold_path": [
+      "ts-food-service/src/main/java/foodsearch/service/FoodServiceImpl.java:FoodServiceImpl.getAllFood",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresByStationNames",
+      "http::ts-station-food-service/POST:/api/v1/stationfoodservice/stationfoodstores"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-food-service",
+    "service_handler": "ts-station-food-service",
+    "evidence": {
+      "caller": "ts-food-service/src/main/java/foodsearch/service/FoodServiceImpl.java:286",
+      "handler": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:45",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": true,
+    "lookalike_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodStoresOfStation"
+  },
+  {
+    "id": "tt06_explicit",
+    "link_id": 6,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is getUserByUserId implemented for getAccount?",
+    "start_node": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.getAccount",
+    "contract_node": "http::ts-user-service/GET:/api/v1/userservice/users/id/{userId}",
+    "handler_node": "ts-user-service/src/main/java/user/controller/UserController.java:UserController.getUserByUserId",
+    "gold_nodes": [
+      "http::ts-user-service/GET:/api/v1/userservice/users/id/{userId}",
+      "ts-user-service/src/main/java/user/controller/UserController.java:UserController.getUserByUserId"
+    ],
+    "gold_path": [
+      "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.getAccount",
+      "ts-user-service/src/main/java/user/controller/UserController.java:UserController.getUserByUserId",
+      "http::ts-user-service/GET:/api/v1/userservice/users/id/{userId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-other-service",
+    "service_handler": "ts-user-service",
+    "evidence": {
+      "caller": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:305",
+      "handler": "ts-user-service/src/main/java/user/controller/UserController.java:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": true,
+    "lookalike_node": "ts-auth-service/src/main/java/auth/controller/UserController.java:UserController.deleteUserById"
+  },
+  {
+    "id": "tt06_indirect",
+    "link_id": 6,
+    "type": "indirect",
+    "query": "Which service returns a customer's account details, such as name and email, for a given user ID?",
+    "start_node": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.getAccount",
+    "contract_node": "http::ts-user-service/GET:/api/v1/userservice/users/id/{userId}",
+    "handler_node": "ts-user-service/src/main/java/user/controller/UserController.java:UserController.getUserByUserId",
+    "gold_nodes": [
+      "http::ts-user-service/GET:/api/v1/userservice/users/id/{userId}",
+      "ts-user-service/src/main/java/user/controller/UserController.java:UserController.getUserByUserId"
+    ],
+    "gold_path": [
+      "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.getAccount",
+      "ts-user-service/src/main/java/user/controller/UserController.java:UserController.getUserByUserId",
+      "http::ts-user-service/GET:/api/v1/userservice/users/id/{userId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-other-service",
+    "service_handler": "ts-user-service",
+    "evidence": {
+      "caller": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:305",
+      "handler": "ts-user-service/src/main/java/user/controller/UserController.java:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": true,
+    "lookalike_node": "ts-auth-service/src/main/java/auth/controller/UserController.java:UserController.deleteUserById"
+  },
+  {
+    "id": "tt07_explicit",
+    "link_id": 7,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is getCheapestRoutes implemented for getRoutePlanResultCheapest?",
+    "start_node": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultCheapest",
+    "contract_node": "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/cheapestRoute",
+    "handler_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes",
+    "gold_nodes": [
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/cheapestRoute",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes"
+    ],
+    "gold_path": [
+      "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultCheapest",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes",
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/cheapestRoute"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-plan-service",
+    "service_handler": "ts-route-plan-service",
+    "evidence": {
+      "caller": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:257",
+      "handler": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:31",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes"
+  },
+  {
+    "id": "tt07_indirect",
+    "link_id": 7,
+    "type": "indirect",
+    "query": "Which service finds the lowest-priced connection options between a start station and an end station on a travel date?",
+    "start_node": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultCheapest",
+    "contract_node": "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/cheapestRoute",
+    "handler_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes",
+    "gold_nodes": [
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/cheapestRoute",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes"
+    ],
+    "gold_path": [
+      "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:TravelPlanServiceImpl.getRoutePlanResultCheapest",
+      "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getCheapestRoutes",
+      "http::ts-route-plan-service/POST:/api/v1/routeplanservice/routePlan/cheapestRoute"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-travel-plan-service",
+    "service_handler": "ts-route-plan-service",
+    "evidence": {
+      "caller": "ts-travel-plan-service/src/main/java/travelplan/service/TravelPlanServiceImpl.java:257",
+      "handler": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:31",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-route-plan-service/src/main/java/plan/controller/RoutePlanController.java:RoutePlanController.getQuickestRoutes"
+  },
+  {
+    "id": "tt08_explicit",
+    "link_id": 8,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is queryForIdBatch implemented for checkStationsExists?",
+    "start_node": "ts-basic-service/src/main/java/fdse/microservice/service/BasicServiceImpl.java:BasicServiceImpl.checkStationsExists",
+    "contract_node": "http::ts-station-service/POST:/api/v1/stationservice/stations/idlist",
+    "handler_node": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForIdBatch",
+    "gold_nodes": [
+      "http::ts-station-service/POST:/api/v1/stationservice/stations/idlist",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForIdBatch"
+    ],
+    "gold_path": [
+      "ts-basic-service/src/main/java/fdse/microservice/service/BasicServiceImpl.java:BasicServiceImpl.checkStationsExists",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForIdBatch",
+      "http::ts-station-service/POST:/api/v1/stationservice/stations/idlist"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-basic-service",
+    "service_handler": "ts-station-service",
+    "evidence": {
+      "caller": "ts-basic-service/src/main/java/fdse/microservice/service/BasicServiceImpl.java:345",
+      "handler": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:70",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForNameBatch"
+  },
+  {
+    "id": "tt08_indirect",
+    "link_id": 8,
+    "type": "indirect",
+    "query": "Which service converts a list of station names into the matching station IDs?",
+    "start_node": "ts-basic-service/src/main/java/fdse/microservice/service/BasicServiceImpl.java:BasicServiceImpl.checkStationsExists",
+    "contract_node": "http::ts-station-service/POST:/api/v1/stationservice/stations/idlist",
+    "handler_node": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForIdBatch",
+    "gold_nodes": [
+      "http::ts-station-service/POST:/api/v1/stationservice/stations/idlist",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForIdBatch"
+    ],
+    "gold_path": [
+      "ts-basic-service/src/main/java/fdse/microservice/service/BasicServiceImpl.java:BasicServiceImpl.checkStationsExists",
+      "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForIdBatch",
+      "http::ts-station-service/POST:/api/v1/stationservice/stations/idlist"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-basic-service",
+    "service_handler": "ts-station-service",
+    "evidence": {
+      "caller": "ts-basic-service/src/main/java/fdse/microservice/service/BasicServiceImpl.java:345",
+      "handler": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:70",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-station-service/src/main/java/fdse/microservice/controller/StationController.java:StationController.queryForNameBatch"
+  },
+  {
+    "id": "tt09_explicit",
+    "link_id": 9,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is modifyContacts implemented for modifyContact?",
+    "start_node": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.modifyContact",
+    "contract_node": "http::ts-contacts-service/PUT:/api/v1/contactservice/contacts",
+    "handler_node": "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:ContactsController.modifyContacts",
+    "gold_nodes": [
+      "http::ts-contacts-service/PUT:/api/v1/contactservice/contacts",
+      "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:ContactsController.modifyContacts"
+    ],
+    "gold_path": [
+      "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.modifyContact",
+      "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:ContactsController.modifyContacts",
+      "http::ts-contacts-service/PUT:/api/v1/contactservice/contacts"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-admin-basic-info-service",
+    "service_handler": "ts-contacts-service",
+    "evidence": {
+      "caller": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:74",
+      "handler": "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:67",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-admin-basic-info-service/src/main/java/adminbasic/controller/AdminBasicInfoController.java:AdminBasicInfoController.modifyContacts"
+  },
+  {
+    "id": "tt09_indirect",
+    "link_id": 9,
+    "type": "indirect",
+    "query": "Which service owns the saved contact records and applies the change when an administrator edits a contact's name, document or phone number?",
+    "start_node": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.modifyContact",
+    "contract_node": "http::ts-contacts-service/PUT:/api/v1/contactservice/contacts",
+    "handler_node": "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:ContactsController.modifyContacts",
+    "gold_nodes": [
+      "http::ts-contacts-service/PUT:/api/v1/contactservice/contacts",
+      "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:ContactsController.modifyContacts"
+    ],
+    "gold_path": [
+      "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:AdminBasicInfoServiceImpl.modifyContact",
+      "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:ContactsController.modifyContacts",
+      "http::ts-contacts-service/PUT:/api/v1/contactservice/contacts"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-admin-basic-info-service",
+    "service_handler": "ts-contacts-service",
+    "evidence": {
+      "caller": "ts-admin-basic-info-service/src/main/java/adminbasic/service/AdminBasicInfoServiceImpl.java:74",
+      "handler": "ts-contacts-service/src/main/java/contacts/controller/ContactsController.java:67",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-admin-basic-info-service/src/main/java/adminbasic/controller/AdminBasicInfoController.java:AdminBasicInfoController.modifyContacts"
+  },
+  {
+    "id": "tt10_explicit",
+    "link_id": 10,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is createAndModifyRoute implemented for createAndModifyRoute?",
+    "start_node": "ts-admin-route-service/src/main/java/adminroute/service/AdminRouteServiceImpl.java:AdminRouteServiceImpl.createAndModifyRoute",
+    "contract_node": "http::ts-route-service/POST:/api/v1/routeservice/routes",
+    "handler_node": "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.createAndModifyRoute",
+    "gold_nodes": [
+      "http::ts-route-service/POST:/api/v1/routeservice/routes",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.createAndModifyRoute"
+    ],
+    "gold_path": [
+      "ts-admin-route-service/src/main/java/adminroute/service/AdminRouteServiceImpl.java:AdminRouteServiceImpl.createAndModifyRoute",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.createAndModifyRoute",
+      "http::ts-route-service/POST:/api/v1/routeservice/routes"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-admin-route-service",
+    "service_handler": "ts-route-service",
+    "evidence": {
+      "caller": "ts-admin-route-service/src/main/java/adminroute/service/AdminRouteServiceImpl.java:70",
+      "handler": "ts-route-service/src/main/java/route/controller/RouteController.java:34",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-admin-route-service/src/main/java/adminroute/controller/AdminRouteController.java:AdminRouteController.addRoute"
+  },
+  {
+    "id": "tt10_indirect",
+    "link_id": 10,
+    "type": "indirect",
+    "query": "Which service owns the route records and creates a new route or updates an existing one from its stations and distances?",
+    "start_node": "ts-admin-route-service/src/main/java/adminroute/service/AdminRouteServiceImpl.java:AdminRouteServiceImpl.createAndModifyRoute",
+    "contract_node": "http::ts-route-service/POST:/api/v1/routeservice/routes",
+    "handler_node": "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.createAndModifyRoute",
+    "gold_nodes": [
+      "http::ts-route-service/POST:/api/v1/routeservice/routes",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.createAndModifyRoute"
+    ],
+    "gold_path": [
+      "ts-admin-route-service/src/main/java/adminroute/service/AdminRouteServiceImpl.java:AdminRouteServiceImpl.createAndModifyRoute",
+      "ts-route-service/src/main/java/route/controller/RouteController.java:RouteController.createAndModifyRoute",
+      "http::ts-route-service/POST:/api/v1/routeservice/routes"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-admin-route-service",
+    "service_handler": "ts-route-service",
+    "evidence": {
+      "caller": "ts-admin-route-service/src/main/java/adminroute/service/AdminRouteServiceImpl.java:70",
+      "handler": "ts-route-service/src/main/java/route/controller/RouteController.java:34",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-admin-route-service/src/main/java/adminroute/controller/AdminRouteController.java:AdminRouteController.addRoute"
+  },
+  {
+    "id": "tt11_explicit",
+    "link_id": 11,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is insertConsign implemented for createConsign?",
+    "start_node": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.createConsign",
+    "contract_node": "http::ts-consign-service/POST:/api/v1/consignservice/consigns",
+    "handler_node": "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.insertConsign",
+    "gold_nodes": [
+      "http::ts-consign-service/POST:/api/v1/consignservice/consigns",
+      "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.insertConsign"
+    ],
+    "gold_path": [
+      "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.createConsign",
+      "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.insertConsign",
+      "http::ts-consign-service/POST:/api/v1/consignservice/consigns"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-other-service",
+    "service_handler": "ts-consign-service",
+    "evidence": {
+      "caller": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:427",
+      "handler": "ts-consign-service/src/main/java/consign/controller/ConsignController.java:34",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.updateConsign"
+  },
+  {
+    "id": "tt11_indirect",
+    "link_id": 11,
+    "type": "indirect",
+    "query": "Which service creates a brand-new consignment record for an order, with the consignee's details and weight, and returns the computed price?",
+    "start_node": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.createConsign",
+    "contract_node": "http::ts-consign-service/POST:/api/v1/consignservice/consigns",
+    "handler_node": "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.insertConsign",
+    "gold_nodes": [
+      "http::ts-consign-service/POST:/api/v1/consignservice/consigns",
+      "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.insertConsign"
+    ],
+    "gold_path": [
+      "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:PreserveOtherServiceImpl.createConsign",
+      "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.insertConsign",
+      "http::ts-consign-service/POST:/api/v1/consignservice/consigns"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-other-service",
+    "service_handler": "ts-consign-service",
+    "evidence": {
+      "caller": "ts-preserve-other-service/src/main/java/preserveOther/service/PreserveOtherServiceImpl.java:427",
+      "handler": "ts-consign-service/src/main/java/consign/controller/ConsignController.java:34",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-consign-service/src/main/java/consign/controller/ConsignController.java:ConsignController.updateConsign"
+  },
+  {
+    "id": "tt12_explicit",
+    "link_id": 12,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is verifyCode implemented for getToken?",
+    "start_node": "ts-auth-service/src/main/java/auth/service/impl/TokenServiceImpl.java:TokenServiceImpl.getToken",
+    "contract_node": "http::ts-verification-code-service/GET:/api/v1/verifycode/verify/{verifyCode}",
+    "handler_node": "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.verifyCode",
+    "gold_nodes": [
+      "http::ts-verification-code-service/GET:/api/v1/verifycode/verify/{verifyCode}",
+      "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.verifyCode"
+    ],
+    "gold_path": [
+      "ts-auth-service/src/main/java/auth/service/impl/TokenServiceImpl.java:TokenServiceImpl.getToken",
+      "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.verifyCode",
+      "http::ts-verification-code-service/GET:/api/v1/verifycode/verify/{verifyCode}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-auth-service",
+    "service_handler": "ts-verification-code-service",
+    "evidence": {
+      "caller": "ts-auth-service/src/main/java/auth/service/impl/TokenServiceImpl.java:67",
+      "handler": "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:49",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.imageCode"
+  },
+  {
+    "id": "tt12_indirect",
+    "link_id": 12,
+    "type": "indirect",
+    "query": "Which service checks whether the captcha code typed in during sign-in is correct?",
+    "start_node": "ts-auth-service/src/main/java/auth/service/impl/TokenServiceImpl.java:TokenServiceImpl.getToken",
+    "contract_node": "http::ts-verification-code-service/GET:/api/v1/verifycode/verify/{verifyCode}",
+    "handler_node": "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.verifyCode",
+    "gold_nodes": [
+      "http::ts-verification-code-service/GET:/api/v1/verifycode/verify/{verifyCode}",
+      "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.verifyCode"
+    ],
+    "gold_path": [
+      "ts-auth-service/src/main/java/auth/service/impl/TokenServiceImpl.java:TokenServiceImpl.getToken",
+      "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.verifyCode",
+      "http::ts-verification-code-service/GET:/api/v1/verifycode/verify/{verifyCode}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-auth-service",
+    "service_handler": "ts-verification-code-service",
+    "evidence": {
+      "caller": "ts-auth-service/src/main/java/auth/service/impl/TokenServiceImpl.java:67",
+      "handler": "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:49",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-verification-code-service/src/main/java/verifycode/controller/VerifyCodeController.java:VerifyCodeController.imageCode"
+  },
+  {
+    "id": "tt13_explicit",
+    "link_id": 13,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is getFoodListByStationFoodStoreId implemented for createFoodDeliveryOrder?",
+    "start_node": "ts-food-delivery-service/src/main/java/food_delivery/service/FoodDeliveryServiceImpl.java:FoodDeliveryServiceImpl.createFoodDeliveryOrder",
+    "contract_node": "http::ts-station-food-service/GET:/api/v1/stationfoodservice/stationfoodstores/bystoreid/{stationFoodStoreId}",
+    "handler_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodListByStationFoodStoreId",
+    "gold_nodes": [
+      "http::ts-station-food-service/GET:/api/v1/stationfoodservice/stationfoodstores/bystoreid/{stationFoodStoreId}",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodListByStationFoodStoreId"
+    ],
+    "gold_path": [
+      "ts-food-delivery-service/src/main/java/food_delivery/service/FoodDeliveryServiceImpl.java:FoodDeliveryServiceImpl.createFoodDeliveryOrder",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodListByStationFoodStoreId",
+      "http::ts-station-food-service/GET:/api/v1/stationfoodservice/stationfoodstores/bystoreid/{stationFoodStoreId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-food-delivery-service",
+    "service_handler": "ts-station-food-service",
+    "evidence": {
+      "caller": "ts-food-delivery-service/src/main/java/food_delivery/service/FoodDeliveryServiceImpl.java:49",
+      "handler": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:50",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getAllFoodStores"
+  },
+  {
+    "id": "tt13_indirect",
+    "link_id": 13,
+    "type": "indirect",
+    "query": "Which service returns the details and food list of one particular station food store, given that store's ID?",
+    "start_node": "ts-food-delivery-service/src/main/java/food_delivery/service/FoodDeliveryServiceImpl.java:FoodDeliveryServiceImpl.createFoodDeliveryOrder",
+    "contract_node": "http::ts-station-food-service/GET:/api/v1/stationfoodservice/stationfoodstores/bystoreid/{stationFoodStoreId}",
+    "handler_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodListByStationFoodStoreId",
+    "gold_nodes": [
+      "http::ts-station-food-service/GET:/api/v1/stationfoodservice/stationfoodstores/bystoreid/{stationFoodStoreId}",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodListByStationFoodStoreId"
+    ],
+    "gold_path": [
+      "ts-food-delivery-service/src/main/java/food_delivery/service/FoodDeliveryServiceImpl.java:FoodDeliveryServiceImpl.createFoodDeliveryOrder",
+      "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getFoodListByStationFoodStoreId",
+      "http::ts-station-food-service/GET:/api/v1/stationfoodservice/stationfoodstores/bystoreid/{stationFoodStoreId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-food-delivery-service",
+    "service_handler": "ts-station-food-service",
+    "evidence": {
+      "caller": "ts-food-delivery-service/src/main/java/food_delivery/service/FoodDeliveryServiceImpl.java:49",
+      "handler": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:50",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-station-food-service/src/main/java/food/controller/StationFoodController.java:StationFoodController.getAllFoodStores"
+  },
+  {
+    "id": "tt14_explicit",
+    "link_id": 14,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is createNewAssurance implemented for addAssuranceForOrder?",
+    "start_node": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.addAssuranceForOrder",
+    "contract_node": "http::ts-assurance-service/GET:/api/v1/assuranceservice/assurances/{typeIndex}/{orderId}",
+    "handler_node": "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.createNewAssurance",
+    "gold_nodes": [
+      "http::ts-assurance-service/GET:/api/v1/assuranceservice/assurances/{typeIndex}/{orderId}",
+      "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.createNewAssurance"
+    ],
+    "gold_path": [
+      "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.addAssuranceForOrder",
+      "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.createNewAssurance",
+      "http::ts-assurance-service/GET:/api/v1/assuranceservice/assurances/{typeIndex}/{orderId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-service",
+    "service_handler": "ts-assurance-service",
+    "evidence": {
+      "caller": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:320",
+      "handler": "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:73",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.modifyAssurance"
+  },
+  {
+    "id": "tt14_indirect",
+    "link_id": 14,
+    "type": "indirect",
+    "query": "Which service creates a new assurance record for an order, given the assurance type and the order ID?",
+    "start_node": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.addAssuranceForOrder",
+    "contract_node": "http::ts-assurance-service/GET:/api/v1/assuranceservice/assurances/{typeIndex}/{orderId}",
+    "handler_node": "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.createNewAssurance",
+    "gold_nodes": [
+      "http::ts-assurance-service/GET:/api/v1/assuranceservice/assurances/{typeIndex}/{orderId}",
+      "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.createNewAssurance"
+    ],
+    "gold_path": [
+      "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.addAssuranceForOrder",
+      "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.createNewAssurance",
+      "http::ts-assurance-service/GET:/api/v1/assuranceservice/assurances/{typeIndex}/{orderId}"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-service",
+    "service_handler": "ts-assurance-service",
+    "evidence": {
+      "caller": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:320",
+      "handler": "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:73",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-assurance-service/src/main/java/assurance/controller/AssuranceController.java:AssuranceController.modifyAssurance"
+  },
+  {
+    "id": "tt15_explicit",
+    "link_id": 15,
+    "type": "explicit",
+    "query": "In Train-Ticket, where is createFoodOrder implemented for createFoodOrder?",
+    "start_node": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.createFoodOrder",
+    "contract_node": "http::ts-food-service/POST:/api/v1/foodservice/orders",
+    "handler_node": "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.createFoodOrder",
+    "gold_nodes": [
+      "http::ts-food-service/POST:/api/v1/foodservice/orders",
+      "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.createFoodOrder"
+    ],
+    "gold_path": [
+      "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.createFoodOrder",
+      "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.createFoodOrder",
+      "http::ts-food-service/POST:/api/v1/foodservice/orders"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-service",
+    "service_handler": "ts-food-service",
+    "evidence": {
+      "caller": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:411",
+      "handler": "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:57",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.findAllFoodOrder"
+  },
+  {
+    "id": "tt15_indirect",
+    "link_id": 15,
+    "type": "indirect",
+    "query": "Which service records a new order for food, with the station, store, food name and price, that a passenger adds to a reservation?",
+    "start_node": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.createFoodOrder",
+    "contract_node": "http::ts-food-service/POST:/api/v1/foodservice/orders",
+    "handler_node": "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.createFoodOrder",
+    "gold_nodes": [
+      "http::ts-food-service/POST:/api/v1/foodservice/orders",
+      "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.createFoodOrder"
+    ],
+    "gold_path": [
+      "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:PreserveServiceImpl.createFoodOrder",
+      "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.createFoodOrder",
+      "http::ts-food-service/POST:/api/v1/foodservice/orders"
+    ],
+    "path_relations": [
+      "HTTP_CALLS->",
+      "IMPLEMENTS->"
+    ],
+    "service_start": "ts-preserve-service",
+    "service_handler": "ts-food-service",
+    "evidence": {
+      "caller": "ts-preserve-service/src/main/java/preserve/service/PreserveServiceImpl.java:411",
+      "handler": "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:57",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike": false,
+    "lookalike_node": "ts-food-service/src/main/java/foodsearch/controller/FoodController.java:FoodController.findAllFoodOrder"
+  }
+]

@@ -1,0 +1,17 @@
+(function(root,factory){const logic=factory();if(typeof module==="object"&&module.exports)module.exports=logic;else root.CompareLogic=logic;})(typeof window==="object"?window:globalThis,function(){
+  "use strict";
+  function unionNodes(traces){const nodes=new Set();for(const t of traces){nodes.add(t.start_node);for(const n of [...t.final.visited_order,...t.final.ordered_path])nodes.add(n);for(const [u,,v] of t.final.edges){nodes.add(u);nodes.add(v);}for(const s of t.steps){for(const b of s.beam_before||[])b.nodes.forEach(n=>nodes.add(n));for(const c of s.candidates||[]){nodes.add(c.from_node);nodes.add(c.to_node);}for(const n of [...(s.frontier||[]),...(s.added||[])])nodes.add(n);for(const o of s.options||[])nodes.add(o.to);for(const r of s.ranking||[])nodes.add(r.node);if(s.from)nodes.add(s.from);if(s.chosen)nodes.add(s.chosen);}}return [...nodes].sort();}
+  function diffSets(sets){const values=sets.map(s=>new Set(s)),union=new Set(values.flatMap(s=>[...s])),all=[...union].filter(n=>values.every(s=>s.has(n))).sort(),only=values.map((s,i)=>[...s].filter(n=>values.every((other,j)=>j===i||!other.has(n))).sort());return {union:[...union].sort(),all,only};}
+  function capStep(trace,index){return Math.max(0,Math.min(index,Math.max(0,trace.steps.length-1)));}
+  function stepLabel(trace,index){if(!trace.steps.length)return "No recorded steps";const s=trace.steps[capStep(trace,index)];if(s.kind==="stop")return "Stopped · "+s.reason.replaceAll("_"," ");return s.kind==="egpot_round"?"Round "+s.round+" of "+trace.steps.filter(s=>s.kind==="egpot_round").length:"Step "+(capStep(trace,index)+1)+" of "+trace.steps.length;}
+  function sharedLayout(traces,edges,extra=[]){
+    const ids=[...new Set([...unionNodes(traces),...extra])].sort(),allowed=new Set(ids),adj=new Map(ids.map(n=>[n,new Set()]));
+    edges.forEach(e=>{if(allowed.has(e.source)&&allowed.has(e.target)){adj.get(e.source).add(e.target);adj.get(e.target).add(e.source);}});
+    const start=traces[0].start_node,depth=new Map([[start,0]]),queue=[start];for(let i=0;i<queue.length;i++)for(const n of [...adj.get(queue[i])||[]].sort())if(!depth.has(n)){depth.set(n,depth.get(queue[i])+1);queue.push(n);}
+    const groups=new Map();ids.forEach(id=>{const d=depth.get(id)??4;if(!groups.has(d))groups.set(d,[]);groups.get(d).push(id);});const positions={};
+    for(const [d,group] of groups)group.forEach((id,i)=>{const angle=2*Math.PI*i/group.length,r=d===0?0:100+Math.min(d,6)*45;positions[id]={x:Math.cos(angle)*r,y:Math.sin(angle)*r};});return positions;
+  }
+  function answerRows(traces,gold){return traces.map(t=>{const ids=t.final.visited_order;return {method:t.method,nodes:ids.length,contract:ids.indexOf(gold.gold_nodes[0])+1||null,handler:ids.indexOf(gold.gold_nodes[1])+1||null,hit:gold.gold_nodes.every(n=>ids.includes(n))};});}
+  function summary(rows,names){const hit=rows.filter(r=>r.hit).map(r=>names[r.method]||r.method),miss=rows.filter(r=>!r.hit).map(r=>names[r.method]||r.method),fewest=Math.min(...rows.map(r=>r.nodes)),small=rows.filter(r=>r.nodes===fewest).map(r=>names[r.method]||r.method);return (hit.length?hit.join(", ")+" found all answer nodes.":"None of the selected methods found all answer nodes.")+(miss.length?" "+miss.join(", ")+" did not.":"")+" Fewest nodes collected: "+small.join(", ")+" ("+fewest+").";}
+  return {unionNodes,diffSets,capStep,stepLabel,sharedLayout,answerRows,summary};
+});

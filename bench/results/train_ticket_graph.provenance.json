@@ -1,0 +1,48 @@
+{
+  "graph_builder_commit": "f08801555ca7f530a57adac7877f476adb632007",
+  "builder_http_22a_tag_commit": "9a89265b7e2a37eeca5bb43b75084c03e16a75dc",
+  "builder_files_equal_to_tag": true,
+  "tracked_tree_clean": true,
+  "train_ticket_commit": "313886e99befb94be6cd45f085c98e0019f59829",
+  "commits_file": "C:\\dev\\polyglot_repos\\_commits.txt",
+  "graphml_sha256": "8904e43268d34bd7b8734ec8f93326eb60051a6d2ac71484816ff595cc2a4c55",
+  "python": "3.13.6",
+  "versions": {
+    "networkx": "3.5",
+    "numpy": "2.3.2",
+    "scipy": "1.16.1",
+    "scikit-learn": "1.7.1",
+    "PyYAML": "6.0.2",
+    "rank-bm25": "0.2.2",
+    "tree-sitter": "0.25.2",
+    "tree-sitter-java": "0.23.5",
+    "tree-sitter-c-sharp": "0.23.5",
+    "tree-sitter-go": "0.23.4",
+    "tree-sitter-javascript": "0.25.0",
+    "tree-sitter-typescript": "0.23.2"
+  },
+  "nodes": 24990,
+  "edges": 123738,
+  "contract_node_types": {
+    "http_endpoint": 263,
+    "topic_contract": 1
+  },
+  "http_calls_edge_pairs": 123,
+  "build_seconds": 22.480768499983242,
+  "step22a_match": {
+    "node_counts": [
+      24990,
+      24990
+    ],
+    "edge_counts": [
+      123738,
+      123738
+    ],
+    "http_pairs": [
+      123,
+      123
+    ],
+    "lost_http_pairs": [],
+    "added_http_pairs": []
+  }
+}

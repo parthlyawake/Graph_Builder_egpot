@@ -1,0 +1,30 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
+const L=require("../js/explainer_logic.js"),root=path.join(__dirname,"../data/online_boutique"),context=vm.createContext({window:{}});
+function load(name){vm.runInContext(fs.readFileSync(path.join(root,name),"utf8"),context,{filename:name});}
+load("graph.js");load("results.js");
+load("traces_js/ob01_explicit__egpot_full__b20.js");
+load("traces_js/ob01_indirect__egpot_full_mcts__b20.js");
+const graph=context.window.VIZ_GRAPH,plain=context.window.VIZ_TRACES.ob01_explicit__egpot_full__b20,mcts=context.window.VIZ_TRACES.ob01_indirect__egpot_full_mcts__b20;
+const chosen=L.fourCandidates(plain,graph);
+assert.equal(chosen.length,L.scoreKeys.length);
+assert.ok(chosen.some(r=>r.node.id==="contract::CurrencyService.GetSupportedCurrencies"));
+assert.ok(chosen.some(r=>r.node.name.startsWith("grpc.")));
+assert.ok(chosen.some(r=>/New.*Client$/.test(r.node.name)));
+assert.equal(chosen.find(r=>r.role==="Zero-relevance candidate").candidate.immediate_vector[0],0);
+const round=L.firstRound(plain),manual=new Map();
+for(const c of round.candidates){const key=c.final_vector.join("|");manual.set(key,(manual.get(key)||0)+1);}
+const expected=[...manual.values()].filter(n=>n>1),ties=L.ties(round.candidates);
+assert.equal(ties.groups.length,expected.length);assert.equal(ties.tiedCandidates,expected.reduce((a,b)=>a+b,0));assert.ok(ties.tiedCandidates>0);
+const sizes=L.roundSizes(plain),collected=new Set([plain.start_node]);let previous=collected.size;
+plain.steps.filter(s=>s.kind==="egpot_round").forEach((step,i)=>{step.new_nodes.forEach(n=>collected.add(n));assert.equal(sizes[i].collected,collected.size);assert.equal(sizes[i].round,step.round);assert.ok(sizes[i].collected>=previous);assert.ok(sizes[i].collected<=plain.node_budget);previous=collected.size;});
+assert.equal(collected.size,plain.final.visited_order.length);assert.equal(L.stopReason(plain),plain.steps.at(-1).reason);
+const found=L.firstRollout(mcts);assert.equal(found.candidate.idx,mcts.steps[0].candidates.find(c=>c.rollouts?.samples?.length).idx);assert.ok(found.candidate.rollouts.samples.length>0);assert.equal(found.candidate.lookahead_vector.length,L.scoreKeys.length);
+const row=(method,hit)=>({method,budget:20,type:"indirect",hit,gold_recall:hit,precision:hit/20,path_coverage:hit,ordered_path_match:hit,nodes_returned:20,nodes_to_hit:hit?5:null,latency_s:.1});
+const synthetic=[row("bfs",1),row("bfs",1),row("vector_topk",1),row("vector_topk",0),row("greedy_walk",0),row("greedy_walk",0)];
+assert.equal(L.baselineSentence(synthetic,20),"Breadth-first search (2/2) does best on indirect questions among these baselines at budget 20.");
+const data=context.window.VIZ_RESULTS.rows,indirect=data.filter(r=>r.budget===plain.node_budget&&r.type==="indirect"&&L.baselineMethods.includes(r.method));
+const counts=L.baselineMethods.map(method=>({method,hits:indirect.filter(r=>r.method===method&&r.hit).length,n:indirect.filter(r=>r.method===method).length}));
+const best=Math.max(...counts.map(r=>r.hits/r.n));for(const r of counts.filter(r=>r.hits/r.n===best))assert.ok(L.baselineSentence(data,plain.node_budget).includes(r.hits+"/"+r.n));
+const route=L.route(graph,plain.start_node,"GetSupportedCurrencies");assert.equal(route.nodes[1].type,"rpc_contract");assert.equal(route.edges[0].relation,"CONSUMES");assert.equal(route.edges[1].relation,"IMPLEMENTS");assert.equal(route.edges[1].source,route.nodes[2].id);
+console.log("Explainer logic: 6 groups passed (real candidates, ties, collected sizes, rollouts, generated baseline sentence, verified route).");

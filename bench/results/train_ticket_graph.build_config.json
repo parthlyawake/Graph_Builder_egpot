@@ -1,0 +1,292 @@
+{
+  "name": "train-ticket",
+  "version": "1.0",
+  "base_dir": "C:\\dev\\polyglot_repos\\train-ticket",
+  "repositories": [
+    {
+      "id": "ts-admin-basic-info-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-admin-basic-info-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-admin-order-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-admin-order-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-admin-route-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-admin-route-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-admin-travel-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-admin-travel-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-admin-user-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-admin-user-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-assurance-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-assurance-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-auth-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-auth-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-avatar-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-avatar-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-basic-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-basic-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-cancel-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-cancel-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-common",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-common",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-config-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-config-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-consign-price-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-consign-price-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-consign-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-consign-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-contacts-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-contacts-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-delivery-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-delivery-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-execute-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-execute-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-food-delivery-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-food-delivery-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-food-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-food-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-gateway-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-gateway-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-inside-payment-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-inside-payment-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-news-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-news-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-notification-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-notification-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-order-other-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-order-other-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-order-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-order-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-payment-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-payment-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-preserve-other-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-preserve-other-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-preserve-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-preserve-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-price-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-price-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-rebook-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-rebook-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-route-plan-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-route-plan-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-route-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-route-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-seat-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-seat-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-security-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-security-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-station-food-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-station-food-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-station-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-station-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-ticket-office-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-ticket-office-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-train-food-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-train-food-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-train-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-train-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-travel-plan-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-travel-plan-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-travel-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-travel-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-travel2-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-travel2-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-ui-dashboard",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-ui-dashboard",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-user-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-user-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-verification-code-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-verification-code-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-voucher-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-voucher-service",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "ts-wait-order-service",
+      "path": "C:\\dev\\polyglot_repos\\train-ticket\\ts-wait-order-service",
+      "language": null,
+      "role": null
+    }
+  ],
+  "shared_contracts": [],
+  "ignore_patterns": [],
+  "exclude_nonproduction": true
+}
