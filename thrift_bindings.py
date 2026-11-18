@@ -112,6 +112,18 @@ def _typed_local_clients(text):
     return clients
 
 
+def _function_source(lines, span, excerpt):
+    first, first_col, last, last_col = span
+    if not 0 <= first <= last < len(lines):
+        return excerpt
+    if first == last:
+        full = lines[first][first_col:last_col]
+    else:
+        full = "\n".join([lines[first][first_col:], *lines[first + 1:last], lines[last][:last_col]])
+    # Use the range only if its beginning matches the stored definition.
+    return full if full.startswith(excerpt.replace("\r\n", "\n").rstrip("\r")) else excerpt
+
+
 def bind_thrift_runtime(graph, builders):
     """Link typed C++ clients and interface implementers to canonical RPCs.
 
@@ -126,6 +138,7 @@ def bind_thrift_runtime(graph, builders):
     for builder in builders:
         cpp = {name: "\n".join(lines) for name, lines in
                builder.raw_file_lines.items() if name.endswith(_CPP_EXT)}
+        function_spans = getattr(builder, "_cpp_function_spans", {})
         for file, source in sorted(cpp.items()):
             # A Thrift implementation must inherit the generated interface,
             # not merely define a function with the same spelling.
@@ -179,6 +192,9 @@ def bind_thrift_runtime(graph, builders):
                 if data.get("file") not in {file, builder.repo_prefix + file}:
                     continue
                 snippet = data.get("code") or ""
+                span = function_spans.get(file, {}).get(nid)
+                if span is not None:
+                    snippet = _function_source(builder.raw_file_lines[file], span, snippet)
                 if not snippet or "Client" not in (source + snippet):
                     continue
                 typed = _typed_local_clients(snippet)

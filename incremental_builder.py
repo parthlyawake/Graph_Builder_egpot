@@ -80,7 +80,7 @@ def incremental_update(builder, changed_rel_paths, deleted_rel_paths=()):
     for node in removal:
         builder.graph.remove_node(node)
     for rel in affected:
-        for attribute in ("raw_file_lines", "imports_by_file", "file_symbols",
+        for attribute in ("raw_file_lines", "_cpp_function_spans", "imports_by_file", "file_symbols",
                           "grpc_client_vars", "go_type_vars"):
             collection = getattr(builder, attribute, None)
             if isinstance(collection, dict):

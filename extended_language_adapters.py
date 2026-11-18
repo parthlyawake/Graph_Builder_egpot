@@ -173,6 +173,9 @@ def extract_legacy(builder, rel_path, full_path, language=None):
     builder.imports_by_file[rel_path] = {}
     lines = raw.decode("utf-8", errors="replace").splitlines()
     builder.raw_file_lines[rel_path] = lines
+    if lang == "cpp":
+        cpp_spans = builder._cpp_function_spans.setdefault(rel_path, {})
+        cpp_spans.clear()
     builder.total_loc += len(lines)
     root_id = builder.current_file_node_id
     builder.add_ckg_node(
@@ -205,8 +208,15 @@ def extract_legacy(builder, rel_path, full_path, language=None):
                 if target in builder.graph:
                     target += f"@line:{node.start_point.row + 1}"
                 snippet = source_text(node, raw)
+                stored_code = snippet[:4000]
                 builder.add_ckg_node(target, kind, "Lsyn", name,
-                                     node.start_point.row + 1, code=snippet[:4000])
+                                     node.start_point.row + 1, code=stored_code)
+                if lang == "cpp" and kind == "function" and len(snippet) > len(stored_code):
+                    start, end = node.start_point, node.end_point
+                    # Tree-sitter columns count bytes. The source lines are decoded strings.
+                    first_col = len(raw[node.start_byte - start.column:node.start_byte].decode("utf-8", "replace"))
+                    last_col = len(raw[node.end_byte - end.column:node.end_byte].decode("utf-8", "replace"))
+                    cpp_spans[target] = (start.row, first_col, end.row, last_col)
                 builder.register_symbol(target, name)
                 builder.add_ckg_edge(parent_id, target, "CONTAINS", "Lsyn")
                 current_id = target

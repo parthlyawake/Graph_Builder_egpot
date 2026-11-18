@@ -105,6 +105,7 @@ class CKGBuilder(ast.NodeVisitor):
         self.var_defs = {}          # scope_id -> {var_name: node_id}
         self.var_types = {}         # scope_id -> {var_name: class_or_type_name}
         self.raw_file_lines = {}    # file_rel_path -> list of lines
+        self._cpp_function_spans = {}  # private source bounds for Thrift binding
         self.total_loc = 0
         self.language_report = {}
         self.language_diagnostics = []
