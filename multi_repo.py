@@ -59,6 +59,7 @@ class WorkspaceConfig:
     shared_contracts: List[str] = field(default_factory=list)
     ignore_patterns: List[str] = field(default_factory=list)
     strict_http_source_evidence: bool = False  # opt-in: disable hostless path-only HTTP matches
+    exclude_nonproduction: bool = False
 
     @classmethod
     def from_file(cls, config_path: str) -> "WorkspaceConfig":
@@ -101,6 +102,7 @@ class WorkspaceConfig:
             shared_contracts=data.get("shared_contracts", []),
             ignore_patterns=data.get("ignore_patterns", []),
             strict_http_source_evidence=data.get("strict_http_source_evidence") is True,
+            exclude_nonproduction=data.get("exclude_nonproduction") is True,
         )
 
     @staticmethod
@@ -120,6 +122,8 @@ class WorkspaceConfig:
                 result["name"] = stripped.split(":", 1)[1].strip().strip('"\'')
             elif stripped.startswith("version:"):
                 result["version"] = stripped.split(":", 1)[1].strip().strip('"\'')
+            elif line_str.startswith("exclude_nonproduction:"):
+                result["exclude_nonproduction"] = stripped.split(":", 1)[1].strip().casefold() == "true"
             elif stripped == "repositories:":
                 current_section = "repositories"
             elif stripped == "shared_contracts:":
@@ -277,7 +281,8 @@ class WorkspaceCKGBuilder:
                 print(f"[!] Warning: Repository path does not exist: {repo_full_path}")
                 continue
 
-            builder = CKGBuilder(repo_full_path, repo_id=repo_cfg.id)
+            builder = CKGBuilder(repo_full_path, repo_id=repo_cfg.id,
+                                 exclude_nonproduction=self.config.exclude_nonproduction)
             if self.config.ignore_patterns:
                 builder.ignore_patterns.extend(self.config.ignore_patterns)
             builder.build()
