@@ -1,6 +1,6 @@
 """Synthetic checks for the opt-in bucketed lookahead ranking."""
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import hashlib
 from io import StringIO
 import json
@@ -60,21 +60,22 @@ def ranked_pair(monkeypatch):
         trace = {}
         result = engine.traverse("query", "root", trace=trace)
         candidates = {row["to_node"]: row for row in trace["steps"][0]["candidates"]}
-        return result, candidates
+        return result, candidates, trace
 
     return run
 
 
 def test_equal_returns_match_plain_when_immediate_means_tie(ranked_pair):
     args = ((0.25, 0.75, 0.5, 0.5), (0.75, 0.25, 0.5, 0.5), (0.4,) * 4, (0.4,) * 4)
-    tiebreak, _ = ranked_pair(*args)
-    plain, _ = ranked_pair(*args, mode="blend")
+    tiebreak, _, tiebreak_trace = ranked_pair(*args)
+    plain, _, plain_trace = ranked_pair(*args, mode="blend")
     assert tiebreak == plain
+    assert tiebreak_trace == plain_trace
     assert tiebreak.visited_order == ["root", "a"]
 
 
 def test_higher_bucket_beats_larger_rollout_on_same_front(ranked_pair):
-    result, rows = ranked_pair((0.5, 0.4, 0.5, 0.5), (0.4, 0.7, 0.5, 0.5), (1.,) * 4, (0.,) * 4)
+    result, rows, _ = ranked_pair((0.5, 0.4, 0.5, 0.5), (0.4, 0.7, 0.5, 0.5), (1.,) * 4, (0.,) * 4)
     assert rows["a"]["front_index"] == rows["z"]["front_index"] == 0
     assert result.visited_order == ["root", "z"]
 
@@ -82,25 +83,36 @@ def test_higher_bucket_beats_larger_rollout_on_same_front(ranked_pair):
 def test_same_bucket_orders_by_mean_rollout(ranked_pair):
     a, z = (0.51, 0.5, 0.5, 0.5), (0.5, 0.52, 0.5, 0.5)
     a_return, z_return = (1., 0., 0., 0.), (0., 1., 1., 1.)
-    result, rows = ranked_pair(a, z, a_return, z_return)
+    result, rows, _ = ranked_pair(a, z, a_return, z_return)
     assert result.visited_order == ["root", "z"]
     assert rows["z"]["lookahead_vector"] == list(z_return)
     assert rows["z"]["final_vector"] == rows["z"]["immediate_vector"] == list(z)
-    result, _ = ranked_pair(a, z, z_return, a_return)
+    result, _, _ = ranked_pair(a, z, z_return, a_return)
     assert result.visited_order == ["root", "a"]
 
 
-def test_same_bucket_and_rollout_fall_back_to_node_id(ranked_pair):
+def test_same_bucket_and_equal_rollouts_match_plain_at_different_means(ranked_pair):
     args = ((0.51, 0.5, 0.5, 0.5), (0.5, 0.52, 0.5, 0.5), (0.,) * 4, (0.,) * 4)
-    tiebreak, _ = ranked_pair(*args)
-    plain, _ = ranked_pair(*args, mode="blend")
-    assert tiebreak.visited_order == ["root", "a"]
-    assert plain.visited_order == ["root", "z"]
+    tiebreak, rows, tiebreak_trace = ranked_pair(*args)
+    plain, _, plain_trace = ranked_pair(*args, mode="blend")
+    assert rows["a"]["front_index"] == rows["z"]["front_index"] == 0
+    assert tiebreak == plain
+    assert tiebreak_trace == plain_trace
+    assert tiebreak.visited_order == ["root", "z"]
+
+
+def test_within_bucket_rollout_beats_exact_mean_and_node_id(ranked_pair):
+    args = ((0.5, 0.53, 0.5, 0.5), (0.51, 0.5, 0.5, 0.5), (0.2,) * 4, (0.8,) * 4)
+    tiebreak, rows, _ = ranked_pair(*args)
+    plain, _, _ = ranked_pair(*args, mode="blend")
+    assert rows["a"]["front_index"] == rows["z"]["front_index"] == 0
+    assert plain.visited_order == ["root", "a"]
+    assert tiebreak.visited_order == ["root", "z"]
 
 
 @pytest.mark.parametrize("a_return,z_return", [((1.,) * 4, (0.,) * 4), ((0.,) * 4, (1.,) * 4)])
 def test_rollouts_cannot_move_candidates_between_fronts(ranked_pair, a_return, z_return):
-    result, rows = ranked_pair((0.5,) * 4, (0.503,) * 4, a_return, z_return)
+    result, rows, _ = ranked_pair((0.5,) * 4, (0.503,) * 4, a_return, z_return)
     assert {node: row["front_index"] for node, row in rows.items()} == {"a": 1, "z": 0}
     assert result.visited_order == ["root", "z"]
 
@@ -112,6 +124,14 @@ def test_seeded_tiebreak_result_and_trace_are_deterministic(branching_graph):
     candidates = json.loads(first)["trace"]["steps"][0]["candidates"]
     assert all(row["rollouts"]["count"] == 16 for row in candidates)
     assert any(any(row["lookahead_vector"]) for row in candidates)
+
+
+def test_equal_returns_match_plain_over_multiple_rounds(branching_graph, monkeypatch):
+    config = EGPOTConfig(node_budget=5, beam_width=2, lookahead_weight=0)
+    tiebreak = EGPOT(branching_graph, replace(config, lookahead_mode="tiebreak"))
+    monkeypatch.setattr(tiebreak, "lookahead_vector",
+                        lambda query, state, step, trace=None: (0.5,) * 4)
+    assert result_bytes(tiebreak) == result_bytes(EGPOT(branching_graph, config))
 
 
 def test_comparison_cli_opts_in_at_both_budgets(branching_graph, monkeypatch, capsys):

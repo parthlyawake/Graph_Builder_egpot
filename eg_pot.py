@@ -509,7 +509,7 @@ class EGPOT:
             step, vector = candidates[i], vectors[i]
             if rollout_means is not None:
                 mean = sum(vector) / len(vector)
-                score_key = (-math.floor(mean / TIEBREAK_BUCKET), -rollout_means[i])
+                score_key = (-math.floor(mean / TIEBREAK_BUCKET), -rollout_means[i], -mean)
             elif self.config.use_pareto:
                 score_key = (-sum(vector) / len(vector),)
             else:
@@ -635,6 +635,10 @@ class EGPOT:
             # that did extend are already represented by their child states.
             finals.extend(entry for entry in previous_beam if id(entry[0]) not in extended)
             if trace is not None:
+                # Equal rollout means leave the round's ordering identical to weight zero.
+                if rollout_means is not None and all(mean == rollout_means[0] for mean in rollout_means):
+                    for detail in details:
+                        detail["vectors"].update(lookahead_vector=None, rollouts=None)
                 trace["steps"].append(self._trace_round(beam_before, candidates, vectors, details,
                                                         chosen_indices, new_nodes, len(selected_order), round_number))
         state, log = min(finals, key=rank)
