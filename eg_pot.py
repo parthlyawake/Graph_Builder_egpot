@@ -83,17 +83,44 @@ def _sort_id(value: Hashable) -> tuple[str, str]:
     return type(value).__name__, str(value)
 
 
+@dataclass(frozen=True)
+class EdgePolicy:
+    """Relation eligibility for traversal, contract scoring, and entropy."""
+
+    excluded_relations: frozenset[str] = frozenset()
+    no_contract_match_relations: frozenset[str] = frozenset()
+    entropy_over_eligible_only: bool = False
+
+
+LEGACY = EdgePolicy()
+CURRENT_V1 = EdgePolicy(
+    excluded_relations=frozenset({"DECLARES_FIELD", "EVALUATES"}),
+    no_contract_match_relations=frozenset({
+        "ACCEPTS_SCHEMA", "RETURNS_SCHEMA", "INVOKES", "POSSIBLE_HTTP_TARGET",
+    }),
+    entropy_over_eligible_only=True,
+)
+
+
 class GraphView:
     """Read-only access to a raw graph; graph mutations require a new scorer.
 
     Set ``use_choke_point=False`` to allow backward DEFINES_RPC expansion.
     """
 
-    def __init__(self, graph: nx.MultiDiGraph, use_choke_point: bool = True):
+    def __init__(self, graph: nx.MultiDiGraph, use_choke_point: bool = True,
+                 *, edge_policy: EdgePolicy = LEGACY):
         if not isinstance(graph, nx.MultiDiGraph):
             raise TypeError("graph must be a networkx.MultiDiGraph")
         self.graph = graph
         self.use_choke_point = use_choke_point
+        self.edge_policy = edge_policy
+
+    def entropy_denominator(self) -> float:
+        relations = {data.get("relation", "LINK") for _, _, data in self.graph.edges(data=True)}
+        if self.edge_policy.entropy_over_eligible_only:
+            relations.difference_update(self.edge_policy.excluded_relations)
+        return math.log(len(relations)) if len(relations) > 1 else 0.0
 
     def node_type(self, n: Hashable) -> str:
         return str(self.graph.nodes[n].get("type") or "")
@@ -136,10 +163,15 @@ class GraphView:
     def neighbors(self, n: Hashable) -> list[tuple[Hashable, str, str, Hashable]]:
         """Both directed incidences, preserving parallel edges, in sorted order."""
         result = []
+        excluded = self.edge_policy.excluded_relations
         for _, v, key, data in self.graph.out_edges(n, keys=True, data=True):
-            result.append((v, data.get("relation", "LINK"), "out", key))
+            relation = data.get("relation", "LINK")
+            if relation not in excluded:
+                result.append((v, relation, "out", key))
         for u, _, key, data in self.graph.in_edges(n, keys=True, data=True):
             relation = data.get("relation", "LINK")
+            if relation in excluded:
+                continue
             # Mirror traversal.py: only incoming DEFINES_RPC at rpc_contract.
             if (self.use_choke_point and relation == "DEFINES_RPC"
                     and self.node_type(n) == "rpc_contract"):
@@ -295,13 +327,12 @@ class PathResult:
 class EGPOT:
     """Four-objective beam traversal; fitted graph snapshot must remain unchanged."""
 
-    def __init__(self, graph: nx.MultiDiGraph, config: EGPOTConfig | None = None):
+    def __init__(self, graph: nx.MultiDiGraph, config: EGPOTConfig | None = None,
+                 *, edge_policy: EdgePolicy = LEGACY):
         self.config = config if config is not None else EGPOTConfig()
-        self.graph_view = GraphView(graph)
+        self.graph_view = GraphView(graph, edge_policy=edge_policy)
         self.scorer = QueryScorer(self.graph_view)
-        relation_count = len({data.get("relation", "LINK")
-                              for _, _, data in graph.edges(data=True)})
-        self._entropy_denominator = math.log(relation_count) if relation_count > 1 else 0.0
+        self._entropy_denominator = self.graph_view.entropy_denominator()
         self._relevance_cache: dict[str, dict[Hashable, float]] = {}
         self._neighbor_cache: dict[str, dict[tuple, tuple[CandidateStep, ...]]] = {}
 
@@ -318,9 +349,9 @@ class EGPOT:
         return float(self.config.hop_gamma ** hops)
 
     def contract_consistency(self, candidate_step: CandidateStep) -> float:
-        """Match score if layer is Lcontract or target is rpc_contract,
-        service_contract, http_endpoint or topic_contract; otherwise mismatch score.
-        """
+        """Match an eligible contract-layer edge or contract target type."""
+        if candidate_step.relation in self.graph_view.edge_policy.no_contract_match_relations:
+            return float(self.config.contract_mismatch_penalty)
         match = (candidate_step.layer == "Lcontract" or
                  self.graph_view.node_type(candidate_step.to_node) in {
                      "rpc_contract", "service_contract", "http_endpoint", "topic_contract"})
@@ -330,7 +361,7 @@ class EGPOT:
     def entropy_gain(self, path_state: PathState, candidate_step: CandidateStep) -> float:
         """Variety times novelty: max(0, H(after)-H(before)) / ln(R),
         where H is Shannon entropy with natural logs, after adds the candidate
-        relation, and R is graph-wide distinct relation count. Novelty is
+        relation, and R is the policy's graph-wide relation count. Novelty is
         1 / (1 + prior uses of that relation). For R <= 1 the gain is zero.
         """
         if not self._entropy_denominator:
@@ -451,6 +482,13 @@ class EGPOT:
         Remaining exact ties use source, relation, direction, key and layer,
         followed by stable input order for identical steps from different paths.
         """
+        indices = self._select_top_indices(candidates, vectors, k)
+        if trace is not None:
+            trace["indices"] = indices
+        return [candidates[i] for i in indices]
+
+    def _select_top_indices(self, candidates: list[CandidateStep],
+                            vectors: list[tuple[float, ...]], k: int) -> list[int]:
         if len(candidates) != len(vectors):
             raise ValueError("each candidate requires one objective vector")
         if type(k) is not int or k < 0:
@@ -465,9 +503,7 @@ class EGPOT:
 
         fronts = non_dominated_sort(vectors) if self.config.use_pareto else [list(range(len(vectors)))]
         indices = [i for front in fronts for i in sorted(front, key=order)]
-        if trace is not None:
-            trace["indices"] = indices[:k]
-        return [candidates[i] for i in indices[:k]]
+        return indices[:k]
 
     def _trace_round(self, beam_before, candidates, vectors, details, selected, new_nodes,
                      collected_size, round_number):
@@ -531,7 +567,7 @@ class EGPOT:
                 finals.extend(beam)
                 stop_reason = "budget"
                 break
-            candidates, vectors, origins = [], [], {}
+            candidates, vectors, origins = [], [], []
             if trace is not None:
                 beam_before = [{"state_id": f"r{round_number}s{i}", "nodes": list(state.ordered_nodes),
                                 "last_node": state.ordered_nodes[-1]} for i, (state, _) in enumerate(beam)]
@@ -547,7 +583,8 @@ class EGPOT:
                         details.append({"state_id": beam_before[beam_idx]["state_id"], "vectors": observed})
                     candidates.append(step)
                     vectors.append(vector)
-                    origins[id(step)] = (state, log, vector)
+                    # A cached step can be scored from multiple paths at the same tip.
+                    origins.append((state, log))
             if not candidates:
                 finals.extend(beam)
                 stop_reason = "no_candidates"
@@ -559,14 +596,11 @@ class EGPOT:
             beam, extended = [], set()
             if trace is not None:
                 chosen_indices, new_nodes = [], []
-                selection_trace = {}
-                choices = self.select_top(candidates, vectors, self.config.beam_width, trace=selection_trace)
-            else:
-                choices = self.select_top(candidates, vectors, self.config.beam_width)
-            for choice_idx, step in enumerate(choices):
-                state, log, vector = origins[id(step)]
+            for index in self._select_top_indices(candidates, vectors, self.config.beam_width):
+                step, vector = candidates[index], vectors[index]
+                state, log = origins[index]
                 if trace is not None:
-                    chosen_indices.append(selection_trace["indices"][choice_idx])
+                    chosen_indices.append(index)
                     if step.to_node not in selected_order:
                         new_nodes.append(step.to_node)
                 selected_order.setdefault(step.to_node, None)

@@ -30,7 +30,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from eg_pot import EGPOT, EGPOTConfig, GraphView, QueryScorer
+from eg_pot import CURRENT_V1, LEGACY, EGPOT, EGPOTConfig, GraphView, QueryScorer
 from eg_pot import CandidateStep, PathState
 
 
@@ -65,8 +65,7 @@ class _SharedScorerEGPOT(EGPOT):
         self.config = config
         self.graph_view = view
         self.scorer = scorer
-        count = len({d.get("relation", "LINK") for _, _, d in view.graph.edges(data=True)})
-        self._entropy_denominator = math.log(count) if count > 1 else 0.0
+        self._entropy_denominator = view.entropy_denominator()
         self._relevance_cache = {}
         self._neighbor_cache = {}
 
@@ -92,7 +91,8 @@ class EGPOTRetriever(_RetrieverBase):
         super().__init__(graph_view, scorer)
         if not use_choke_point:
             # The sole view-setting ablation: same graph and fitted text scorer.
-            self.graph_view = GraphView(graph_view.graph, use_choke_point=False)
+            self.graph_view = GraphView(graph_view.graph, use_choke_point=False,
+                                        edge_policy=graph_view.edge_policy)
         self.config = replace(config)
         self.engine = _SharedScorerEGPOT(self.config, self.graph_view, scorer)
 
@@ -464,9 +464,11 @@ class _NoChokeVariant:
 
     def __init__(self, graph_view, scorer, *args, no_choke_view=None, **kwargs):
         super().__init__(graph_view, scorer, *args, **kwargs)
-        off = no_choke_view if no_choke_view is not None else GraphView(graph_view.graph, use_choke_point=False)
-        if off.graph is not graph_view.graph or off.use_choke_point:
-            raise ValueError("no-choke variants require the same graph with the rule OFF")
+        off = no_choke_view if no_choke_view is not None else GraphView(
+            graph_view.graph, use_choke_point=False, edge_policy=graph_view.edge_policy)
+        if (off.graph is not graph_view.graph or off.use_choke_point
+                or off.edge_policy != graph_view.edge_policy):
+            raise ValueError("no-choke variants require the same graph and policy with the rule OFF")
         self.graph_view = off
         if isinstance(self, PersonalizedPageRank):
             self.move_graph = _move_graph(off)
@@ -516,7 +518,7 @@ def make_fairness_retrievers(view, scorer, *, seed=0, query_ids=None):
     methods["egpot_full_mcts"].config = replace(methods["egpot_full_mcts"].config, seed=seed)
     methods["egpot_no_pareto_mcts"] = EGPOTRetriever(
         EGPOTConfig(use_mcts=True, use_pareto=False, seed=seed), view, scorer)
-    off = GraphView(view.graph, use_choke_point=False)
+    off = GraphView(view.graph, use_choke_point=False, edge_policy=view.edge_policy)
     factories = {
         "bfs_no_choke": lambda: BFSNoChoke(view, scorer, no_choke_view=off),
         "vector_bfs_k2_no_choke": lambda: VectorBFSNoChoke(view, scorer, 2, no_choke_view=off),
@@ -1276,7 +1278,22 @@ def final_deterministic_content(value):
     return value
 
 
+EDGE_POLICIES = {"legacy": LEGACY, "current_v1": CURRENT_V1}
+
+
+def _selected_edge_policy(args):
+    base = EDGE_POLICIES[getattr(args, "edge_policy", "legacy")]
+    return replace(
+        base,
+        excluded_relations=base.excluded_relations.union(getattr(args, "exclude_relation", ())),
+        no_contract_match_relations=base.no_contract_match_relations.union(
+            getattr(args, "no_contract_match_relation", ())),
+    )
+
+
 def run_test_final(args):
+    if _selected_edge_policy(args) != LEGACY:
+        raise ValueError("Non-legacy edge policies are DEV only; no test queries were evaluated")
     commit,path,second,previous = _final_locks(args)
     payload = {"schema":1,"commit":commit,"utc_timestamp":datetime.now(timezone.utc).isoformat(),
         "versions":{"python":platform.python_version(),"networkx":version("networkx"),
@@ -1368,7 +1385,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--confirm-test", action="store_true")
     parser.add_argument("--mode", choices=("all", "ablations", "sweep", "comparison", "fairness", "weights", "test-final"), default="all")
     parser.add_argument("--acknowledge-second-look", action="store_true")
+    parser.add_argument("--edge-policy", choices=tuple(EDGE_POLICIES), default="legacy",
+                        help="Edge policy for development experiments")
+    parser.add_argument("--exclude-relation", action="append", default=[], metavar="RELATION",
+                        help="Exclude an additional relation from development traversal; repeatable")
+    parser.add_argument("--no-contract-match-relation", action="append", default=[], metavar="REL",
+                        help="Withhold the contract-match score for this relation; repeatable")
     args = parser.parse_args(argv)
+    edge_policy = _selected_edge_policy(args)
+    if edge_policy != LEGACY and (args.split == "test" or args.mode == "test-final"):
+        parser.error("Non-legacy edge policies are DEV only; no test queries were evaluated")
     if args.mode == "test-final":
         try:
             return run_test_final(args)
@@ -1399,7 +1425,7 @@ def main(argv: list[str] | None = None) -> int:
     print("VectorTopK reserves start but discovery_order ranks it with the selected nodes; others discover start first.")
     print("Nodes-to-hit and precision-at-hit means exclude misses; hit counts are shown. " +
           ("Fairness experiments 1/2 use seed 0; experiment 3 uses seeds 0 through 4." if args.mode == "fairness" else "All seeds=0."))
-    view = GraphView(graph, use_choke_point=True)
+    view = GraphView(graph, use_choke_point=True, edge_policy=edge_policy)
     scorer = QueryScorer(view)
     if args.mode == "weights":
         run_weights(splits["dev"],view,scorer)
