@@ -23,7 +23,7 @@ from time import perf_counter
 
 import networkx as nx
 
-from eg_pot import EGPOTConfig, GraphView, QueryScorer
+from eg_pot import LEGACY, EGPOTConfig, GraphView, QueryScorer
 from bench import egpot_eval as frozen
 from bench.egpot_eval import (EGPOTRetriever, VectorTopK, BFS, GreedyWalk,
     VectorBFS, StandardMCTS, metrics, evaluate, summarize, split_by_link,
@@ -32,6 +32,12 @@ from bench.egpot_eval import (EGPOTRetriever, VectorTopK, BFS, GreedyWalk,
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = ROOT / "bench/results/test_final_41d61e11.json"
 SCRATCH = Path(r"C:\dev\triage_out\step27")
+DSB_DATASETS = ("dsb_social", "dsb_media")
+DSB_BUDGETS = (20, 40)
+DSB_BASELINES = ("vector_topk", "bfs", "greedy_walk", "vector_bfs_k2", "ppr",
+                 "scalar_beam", "community_graphrag", "mcts_standard")
+DSB_EDGE_POLICY = replace(LEGACY, no_contract_match_relations=frozenset(
+    {"ACCEPTS_SCHEMA", "RETURNS_SCHEMA", "INVOKES", "POSSIBLE_HTTP_TARGET"}))
 
 
 @dataclass(frozen=True)
@@ -55,6 +61,12 @@ REGISTRY = {
         ROOT / "bench/labels/train_ticket_egpot_queries.json",
         ROOT / "bench/labels/train_ticket_egpot_queries.provenance.json",
         ROOT / "bench/preregistration_train_ticket.md"),
+    **{name: Repo(
+        ROOT / f"bench/results/{name}_graph.graphml",
+        ROOT / f"bench/results/{name}_graph.provenance.json",
+        ROOT / f"bench/labels/{name}_egpot_queries.json",
+        ROOT / f"bench/labels/{name}_egpot_queries.provenance.json",
+        ROOT / "bench/preregistration_dsb.md") for name in DSB_DATASETS},
 }
 
 
@@ -129,15 +141,19 @@ def locked_preflight(name, repo, output_dir, *, acknowledge=False, root=ROOT):
     if previous and not acknowledge:
         raise ValueError("Run already consumed: " + ", ".join(p.name for p in previous)
                          + "; --acknowledge-second-look is required (suffix _secondlook)")
-    hashes = verify_inputs(repo)
-    if name == "train_ticket":
-        if repo.preregistration is None or not repo.preregistration.exists():
-            raise ValueError("Missing Train-Ticket preregistration")
+    preregistration_hash = None
+    if name == "train_ticket" or name in DSB_DATASETS:
+        title = "Train-Ticket" if name == "train_ticket" else name
+        if repo.preregistration is None or not repo.preregistration.is_file():
+            raise ValueError(f"Missing {title} preregistration")
         try:
             git("ls-files", "--error-unmatch", str(repo.preregistration), root=root)
         except subprocess.CalledProcessError as exc:
-            raise ValueError("Train-Ticket preregistration must be tracked") from exc
-        hashes["preregistration"] = sha256(repo.preregistration)
+            raise ValueError(f"{title} preregistration must be tracked") from exc
+        preregistration_hash = sha256(repo.preregistration)
+    hashes = verify_inputs(repo)
+    if preregistration_hash is not None:
+        hashes["preregistration"] = preregistration_hash
     suffix = "_secondlook" if previous else ""
     target = Path(output_dir) / f"{name}_final_{commit[:8]}{suffix}.json"
     ordinal = 2
@@ -177,18 +193,44 @@ def plan_locked(labels, configs):
     for name, seeds in configs["seeds"].items():
         for seed, spec in seeds.items():
             add("seeds", name, spec, int(seed))
-    add("pareto_reference", "egpot_full", configs["pareto_reference"])
+    if "pareto_reference" in configs:
+        add("pareto_reference", "egpot_full", configs["pareto_reference"])
     return list(jobs.values()), aliases
+
+
+def dsb_settings(frozen_main):
+    """Build the single whole-set DSB plan using the frozen baseline settings."""
+    full = EGPOTConfig(use_mcts=False)
+    variants = {
+        "egpot_full": full,
+        "egpot_no_pareto": replace(full, use_pareto=False),
+        "egpot_full_mcts": EGPOTConfig(),
+        "egpot_full_tiebreak": EGPOTConfig(lookahead_mode="tiebreak"),
+    }
+    main = {name: {"class": "EGPOTRetriever", "config": asdict(config),
+                   "choke_point": True, "budgets": list(DSB_BUDGETS)}
+            for name, config in variants.items()}
+    for name in DSB_BASELINES:
+        main[name] = {**spec_at(frozen_main[name], 20), "budgets": list(DSB_BUDGETS)}
+    seeds = {
+        name: {str(seed): {**main[name], "config": {**main[name]["config"], "seed": seed}}
+               for seed in range(6)}
+        for name in ("egpot_full_mcts", "egpot_full_tiebreak", "mcts_standard")
+    }
+    return {"main": main, "choke": {}, "weights": {}, "seeds": seeds,
+            "edge_policy": {"excluded_relations": sorted(DSB_EDGE_POLICY.excluded_relations),
+                            "no_contract_match_relations": sorted(DSB_EDGE_POLICY.no_contract_match_relations),
+                            "entropy_over_eligible_only": DSB_EDGE_POLICY.entropy_over_eligible_only}}
 
 
 _VIEW = _SCORER = None
 _ENGINES = {}
 
 
-def initialize_worker(graph_path):
+def initialize_worker(graph_path, edge_policy=LEGACY):
     global _VIEW, _SCORER, _ENGINES
     graph = nx.read_graphml(graph_path, force_multigraph=True)
-    _VIEW = GraphView(graph)
+    _VIEW = GraphView(graph, edge_policy=edge_policy)
     _SCORER = QueryScorer(_VIEW)
     _ENGINES = {}
 
@@ -239,7 +281,7 @@ def atomic_json(path, value):
     os.replace(temporary, path)
 
 
-def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False):
+def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False, edge_policy=LEGACY):
     if type(workers) is not int or workers < 1:
         raise ValueError("workers must be a positive integer")
     checkpoint = Path(checkpoint)
@@ -265,7 +307,8 @@ def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False)
     if pending:
         context = multiprocessing.get_context("spawn")
         with ProcessPoolExecutor(max_workers=workers, mp_context=context,
-                                 initializer=initialize_worker, initargs=(str(graph_path),)) as pool:
+                                 initializer=initialize_worker,
+                                 initargs=(str(graph_path), edge_policy)) as pool:
             futures = [pool.submit(execute_job, task) for task in pending]
             for index, future in enumerate(as_completed(futures), 1):
                 key, result = future.result()
@@ -306,11 +349,17 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
     repo = registry[name]
     output_dir = Path(output_dir) if output_dir else ROOT / "bench/results"
     commit, hashes, target, previous = locked_preflight(name, repo, output_dir, acknowledge=acknowledge)
+    is_dsb = name in DSB_DATASETS
+    if is_dsb:
+        configs = dsb_settings(load_settings()["main"])
     identity = input_identity(repo)
     identity["verified_hashes"] = hashes
+    if is_dsb:
+        identity["protocol_sha256"] = digest(configs)
     labels = read_json(repo.labels)  # locks have passed; whole set, no split
     jobs, aliases = plan_locked(labels, configs)
-    results = run_jobs(repo.graph, jobs, checkpoint, identity, workers=workers, resume=resume)
+    results = run_jobs(repo.graph, jobs, checkpoint, identity, workers=workers, resume=resume,
+                       edge_policy=DSB_EDGE_POLICY if is_dsb else LEGACY)
     rows, latencies = [], []
     for alias in aliases:
         result = results[alias["key"]]
@@ -331,7 +380,8 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
                "second_look": bool(previous), "previous_results": previous,
                "rows": rows, "latencies": latencies, "summary": summary,
                "deterministic_sha256": digest(rows)}
-    if input_identity(repo) != {k: v for k, v in identity.items() if k != "verified_hashes"}:
+    if input_identity(repo) != {k: v for k, v in identity.items()
+                                if k not in {"verified_hashes", "protocol_sha256"}}:
         raise ValueError("Inputs/code/commit changed during run; final result not consumed")
     if verify_inputs(repo) != {k: v for k, v in hashes.items() if k != "preregistration"}:
         raise ValueError("Input provenance changed during run")
@@ -524,6 +574,12 @@ def main(argv=None):
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--acknowledge-second-look", action="store_true")
     args = parser.parse_args(argv)
+    if args.repo in DSB_DATASETS:
+        if args.mode != "run-locked":
+            parser.error(f"{args.repo} is available only in --mode run-locked")
+        run_locked(args.repo, None, workers=args.workers, checkpoint=args.checkpoint,
+                   resume=args.resume, acknowledge=args.acknowledge_second_look)
+        return 0
     configs = load_settings()
     print_settings(configs)
     if args.mode == "regress-ob-dev":

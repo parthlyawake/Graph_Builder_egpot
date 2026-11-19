@@ -56,7 +56,7 @@ def clean_git(*args, **kwargs):
 
 
 def test_registry():
-    assert set(multi.REGISTRY) == {"online_boutique", "train_ticket"}
+    assert set(multi.REGISTRY) == {"online_boutique", "train_ticket", "dsb_social", "dsb_media"}
     assert multi.REGISTRY["train_ticket"].preregistration.name == "preregistration_train_ticket.md"
 
 

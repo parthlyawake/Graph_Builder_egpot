@@ -1,0 +1,43 @@
+{
+  "source_repository": "https://github.com/delimitrou/DeathStarBench",
+  "source_commit": "6ecb09706140f8730b5385c08f1386c654c3c526",
+  "graph_builder_tag": "egpot-bench-builder-v1",
+  "graph_builder_commit": "94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce",
+  "graphml_sha256": "96868d204874b6c2bbbba6c3b0399b45b74857f61e472b0ef19ef7ea23efb671",
+  "nodes": 576,
+  "edges": 2174,
+  "build_date": "2026-11-19",
+  "label_draft_sha256": "2824117d02311d45b8b700c8aa7c93c7c1db20e1b2b04d2cb9e52118803e3945",
+  "query_file": "bench/labels/dsb_media_egpot_queries.json",
+  "query_file_sha256": "7d5dbd5ae2118bca598ae2b5dc35ee86fc53a8861de69ffedea7aa426247a134",
+  "graph_file": "bench/results/dsb_media_graph.graphml",
+  "query_sheet_file": "C:\\dev\\egpot_repos\\labels_draft\\dsb_label_draft_v1.md",
+  "query_sheet_sha256": "2824117d02311d45b8b700c8aa7c93c7c1db20e1b2b04d2cb9e52118803e3945",
+  "label_status": "source_checked_by_second_model_pending_human_review",
+  "source_check": {
+    "unchanged_rows": 20,
+    "replaced_indirect_link_ids": [
+      "sn01",
+      "sn10",
+      "sn13"
+    ],
+    "scope": "both apps, static source and Thrift IDL"
+  },
+  "query_count": 18,
+  "link_count": 9,
+  "counts_by_type": {
+    "explicit": 9,
+    "indirect": 9
+  },
+  "lookalike_links": [
+    "mm01",
+    "mm02",
+    "mm03",
+    "mm04",
+    "mm05",
+    "mm06",
+    "mm07",
+    "mm08",
+    "mm09"
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "name": "dsb_social",
+  "version": "1.0",
+  "base_dir": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork",
+  "repositories": [
+    {
+      "id": "ComposePost",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\ComposePostService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "HomeTimeline",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\HomeTimelineService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "Media",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\MediaService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "PostStorage",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\PostStorageService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "SocialGraph",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\SocialGraphService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "Text",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\TextService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "UniqueId",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\UniqueIdService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "UrlShorten",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\UrlShortenService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "UserMention",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\UserMentionService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "User",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\UserService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "UserTimeline",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\UserTimelineService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "WriteHomeTimeline",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork\\src\\WriteHomeTimelineService",
+      "language": null,
+      "role": null
+    },
+    {
+      "id": "socialNetwork-idl",
+      "path": "C:\\dev\\egpot_repos\\DeathStarBench\\socialNetwork",
+      "language": null,
+      "role": "thrift_idl",
+      "only_files": [
+        "social_network.thrift"
+      ]
+    }
+  ],
+  "shared_contracts": [],
+  "ignore_patterns": [],
+  "strict_http_source_evidence": false,
+  "exclude_nonproduction": true,
+  "source_repository": "https://github.com/delimitrou/DeathStarBench",
+  "source_commit": "6ecb09706140f8730b5385c08f1386c654c3c526",
+  "graph_builder_tag": "egpot-bench-builder-v1",
+  "graph_builder_commit": "94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce",
+  "graphml_sha256": "7a9a9b9941edd62ae8ca78c556ca5361e3a22fd583c2ce61b26833dcb8d00ae9",
+  "nodes": 663,
+  "edges": 2138,
+  "build_date": "2026-11-19",
+  "label_draft_sha256": "2824117d02311d45b8b700c8aa7c93c7c1db20e1b2b04d2cb9e52118803e3945",
+  "flags": {
+    "protobuf": "source_fallback",
+    "python_hash_seed": 0,
+    "omp_num_threads": 1,
+    "audit_guard": [
+      "deny_writes",
+      "deny_subprocesses",
+      "deny_network"
+    ]
+  }
+}

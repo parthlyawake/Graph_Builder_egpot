@@ -1,0 +1,4 @@
+# Keep the locked DeathStarBench input and provenance hashes stable on checkout.
+bench/results/dsb_*_graph.* -text
+bench/labels/dsb_*_egpot_queries*.json -text
+bench/preregistration_dsb.md text eol=lf
