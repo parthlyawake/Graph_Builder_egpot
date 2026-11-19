@@ -1,13 +1,15 @@
 # Preregistration draft for DeathStarBench
 
-- Preregistration date: `<fill at freeze>`
-- Final benchmark commit: `<fill at freeze>`
+- Preregistration date: `2026-11-19`
+- Final benchmark commit: `4eacf342c76731a560419b738c36e9ea6a560643`
 - DeathStarBench source commit: `6ecb09706140f8730b5385c08f1386c654c3c526`
 - Graph builder: `egpot-bench-builder-v1` at `94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce`
 - EG-POT: `egpot-tiebreak-v1` at `f3d3163eec15c3e814302fb8269cd3fbca6430a1`
 - Analysis script: `bench/analyze_dsb_final.py`
-- Analysis script commit: `<fill at freeze>`
+- Analysis script commit: `4eacf342c76731a560419b738c36e9ea6a560643`
 - Source label draft SHA-256: `2824117d02311d45b8b700c8aa7c93c7c1db20e1b2b04d2cb9e52118803e3945`
+
+The freeze commit differs from the final benchmark commit only by the freeze metadata recorded here.
 
 ## Data and coverage
 
