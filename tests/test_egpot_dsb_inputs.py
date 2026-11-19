@@ -112,24 +112,69 @@ def test_locked_run_requires_a_tracked_preregistration_before_inputs(name, untra
 
 
 def test_locked_plan_has_frozen_policy_methods_budgets_and_seeds():
-    configs = multi.dsb_settings(multi.load_settings()["main"])
+    locked = multi.load_settings()
+    configs = multi.dsb_settings(locked)
     assert configs["edge_policy"] == {
         "excluded_relations": [],
         "no_contract_match_relations": ["ACCEPTS_SCHEMA", "INVOKES", "POSSIBLE_HTTP_TARGET", "RETURNS_SCHEMA"],
         "entropy_over_eligible_only": False,
     }
-    assert set(configs["main"]) == {
-        "egpot_full", "egpot_no_pareto", "egpot_full_mcts", "egpot_full_tiebreak", *multi.DSB_BASELINES}
-    assert configs["main"]["egpot_full_mcts"]["config"]["lookahead_mode"] == "blend"
+    assert set(configs["main"]) == {*multi.frozen.FINAL_METHODS, "egpot_full_tiebreak"}
+    assert {name: configs["main"][name] for name in locked["main"]} == locked["main"]
+    assert all(spec["budgets"] == [10, 20, 40] for spec in configs["main"].values())
+    assert configs["main"]["egpot_full_mcts"]["config"].get("lookahead_mode", "blend") == "blend"
     assert configs["main"]["egpot_full_mcts"]["config"]["lookahead_weight"] == 0.5
-    assert configs["main"]["egpot_full_tiebreak"]["config"]["lookahead_mode"] == "tiebreak"
-    stochastic = {"egpot_full_mcts", "egpot_full_tiebreak", "mcts_standard"}
+    for budget in (10, 20, 40):
+        assert multi.spec_at(configs["main"]["egpot_full_tiebreak"], budget)["config"] == {
+            **multi.spec_at(locked["main"]["egpot_full_mcts"], budget)["config"],
+            "lookahead_mode": "tiebreak"}
+    assert configs["choke"] == locked["choke"]
+    assert set(configs["choke"]) == {
+        off for _, off in multi.frozen.CHOKE_PAIRS if off != "egpot_no_choke_point"}
+    assert all(not spec["choke_point"] and spec["budgets"] == [20, 40]
+               for spec in configs["choke"].values())
+    assert configs["weights"] == locked["weights"]
+    assert configs["pareto_reference"] == locked["pareto_reference"]
+    assert len(configs["weights"]) == 55
+    assert set(configs["weights"]) == set(multi.weight_experiment_vectors())
+    for name, weights in multi.weight_experiment_vectors().items():
+        spec = configs["weights"][name]
+        assert spec["budgets"] == [10, 20]
+        for budget in spec["budgets"]:
+            config = multi.spec_at(spec, budget)["config"]
+            assert tuple(config["weights"]) == weights
+            assert not config["use_mcts"] and not config["use_pareto"]
+
+    stochastic = {"egpot_full_mcts", "egpot_full_tiebreak", "egpot_no_pareto_mcts",
+                  "mcts_standard", "mcts_standard_no_choke"}
     assert set(configs["seeds"]) == stochastic
-    for seed_specs in configs["seeds"].values():
+    for name, seed_specs in configs["seeds"].items():
         assert {str(i) for i in range(6)} == set(seed_specs)
-        assert all(spec["config"]["seed"] == int(seed) for seed, spec in seed_specs.items())
+        assert {seed: seed_specs[seed] for seed in locked["seeds"].get(name, {})} == locked["seeds"].get(name, {})
+        for seed, spec in seed_specs.items():
+            assert spec["budgets"] == [20, 40]
+            assert all(multi.spec_at(spec, budget)["config"]["seed"] == int(seed)
+                       for budget in spec["budgets"])
     label = multi.read_json(multi.REGISTRY["dsb_social"].labels)[0]
     jobs, aliases = multi.plan_locked([label], configs)
-    assert len(jobs) == 54  # 12 methods plus five extra seeds for three methods, at both budgets
-    assert {task["budget"] for task in jobs} == {20, 40}
+    # Seed-zero and Pareto-reference rows reuse main or choke jobs.
+    assert len(jobs) == 220
+    assert Counter(alias["experiment"] for alias in aliases) == {
+        "main": 48, "choke": 12, "weights": 110, "seeds": 60, "pareto_reference": 2}
+    assert {task["budget"] for task in jobs} == {10, 20, 40}
     assert {alias["split"] for alias in aliases} == {"all"}
+
+
+def test_seed_summary_reports_median_range_and_defined_seed_count():
+    rows = [
+        {"experiment": "seeds", "method": "mcts_standard", "budget": 40, "seed": seed,
+         "hit_count": seed, "hit": seed / 5, "gold_recall": seed / 5, "precision": seed / 10,
+         "path_coverage": seed / 5, "ordered_path_match": seed / 5, "nodes_returned": 40,
+         "nodes_to_hit": seed + 2 if seed else None,
+         "precision_at_hit": 2 / (seed + 2) if seed else None, "latency_s": seed / 2}
+        for seed in range(6)
+    ]
+    result, = multi.dsb_seed_summary([*rows, {**rows[0], "experiment": "main"}])
+    assert result["primary_seed"] == 0
+    assert result["metrics"]["hit_count"] == {"median": 2.5, "min": 0, "max": 5, "defined_seeds": 6}
+    assert result["metrics"]["nodes_to_hit"] == {"median": 5, "min": 3, "max": 7, "defined_seeds": 5}

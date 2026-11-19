@@ -17,6 +17,7 @@ import multiprocessing
 import os
 from pathlib import Path
 import platform
+from statistics import fmean, median
 import subprocess
 import tempfile
 from time import perf_counter
@@ -33,9 +34,6 @@ ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = ROOT / "bench/results/test_final_41d61e11.json"
 SCRATCH = Path(r"C:\dev\triage_out\step27")
 DSB_DATASETS = ("dsb_social", "dsb_media")
-DSB_BUDGETS = (20, 40)
-DSB_BASELINES = ("vector_topk", "bfs", "greedy_walk", "vector_bfs_k2", "ppr",
-                 "scalar_beam", "community_graphrag", "mcts_standard")
 DSB_EDGE_POLICY = replace(LEGACY, no_contract_match_relations=frozenset(
     {"ACCEPTS_SCHEMA", "RETURNS_SCHEMA", "INVOKES", "POSSIBLE_HTTP_TARGET"}))
 
@@ -198,29 +196,52 @@ def plan_locked(labels, configs):
     return list(jobs.values()), aliases
 
 
-def dsb_settings(frozen_main):
-    """Build the single whole-set DSB plan using the frozen baseline settings."""
-    full = EGPOTConfig(use_mcts=False)
+def _override_config(spec, **changes):
+    updated = {**spec, "config": {**spec["config"], **changes}}
+    if "effective_configs" in spec:
+        updated["effective_configs"] = {
+            budget: {**config, **changes} for budget, config in spec["effective_configs"].items()}
+    return updated
+
+
+def dsb_settings(locked):
+    """Reuse the locked matrix, adding tiebreak and extending the seed sweep."""
+    main = {**locked["main"], "egpot_full_tiebreak": _override_config(
+        locked["main"]["egpot_full_mcts"], lookahead_mode="tiebreak")}
+    seeds = {name: {**specs, "5": _override_config(specs["0"], seed=5)}
+             for name, specs in locked["seeds"].items()}
     variants = {
-        "egpot_full": full,
-        "egpot_no_pareto": replace(full, use_pareto=False),
-        "egpot_full_mcts": EGPOTConfig(),
-        "egpot_full_tiebreak": EGPOTConfig(lookahead_mode="tiebreak"),
+        "egpot_full_tiebreak": _override_config(
+            locked["seeds"]["egpot_full_mcts"]["0"], lookahead_mode="tiebreak"),
+        "mcts_standard_no_choke": locked["choke"]["mcts_standard_no_choke"],
     }
-    main = {name: {"class": "EGPOTRetriever", "config": asdict(config),
-                   "choke_point": True, "budgets": list(DSB_BUDGETS)}
-            for name, config in variants.items()}
-    for name in DSB_BASELINES:
-        main[name] = {**spec_at(frozen_main[name], 20), "budgets": list(DSB_BUDGETS)}
-    seeds = {
-        name: {str(seed): {**main[name], "config": {**main[name]["config"], "seed": seed}}
-               for seed in range(6)}
-        for name in ("egpot_full_mcts", "egpot_full_tiebreak", "mcts_standard")
-    }
-    return {"main": main, "choke": {}, "weights": {}, "seeds": seeds,
+    for name, spec in variants.items():
+        seeds[name] = {str(seed): _override_config(spec, seed=seed) for seed in range(6)}
+    return {"main": main, "choke": locked["choke"], "weights": locked["weights"],
+            "seeds": seeds, "pareto_reference": locked["pareto_reference"],
             "edge_policy": {"excluded_relations": sorted(DSB_EDGE_POLICY.excluded_relations),
                             "no_contract_match_relations": sorted(DSB_EDGE_POLICY.no_contract_match_relations),
                             "entropy_over_eligible_only": DSB_EDGE_POLICY.entropy_over_eligible_only}}
+
+
+def dsb_seed_summary(summary):
+    """Summarize each reported metric over seeds, skipping undefined hit-only means."""
+    groups = defaultdict(list)
+    for row in summary:
+        if row["experiment"] == "seeds":
+            groups[row["method"], row["budget"]].append(row)
+    fields = ("hit_count", "hit", "gold_recall", "precision", "path_coverage",
+              "ordered_path_match", "nodes_returned", "nodes_to_hit", "precision_at_hit", "latency_s")
+    output = []
+    for (method, budget), runs in sorted(groups.items()):
+        stats = {}
+        for field in fields:
+            values = [row[field] for row in runs if row[field] is not None]
+            stats[field] = {"median": median(values) if values else None,
+                            "min": min(values, default=None), "max": max(values, default=None),
+                            "defined_seeds": len(values)}
+        output.append({"method": method, "budget": budget, "primary_seed": 0, "metrics": stats})
+    return output
 
 
 _VIEW = _SCORER = None
@@ -351,7 +372,7 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
     commit, hashes, target, previous = locked_preflight(name, repo, output_dir, acknowledge=acknowledge)
     is_dsb = name in DSB_DATASETS
     if is_dsb:
-        configs = dsb_settings(load_settings()["main"])
+        configs = dsb_settings(load_settings())
     identity = input_identity(repo)
     identity["verified_hashes"] = hashes
     if is_dsb:
@@ -369,9 +390,17 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
     for alias, row in zip(aliases, rows):
         grouped[(row["experiment"], row["method"], row["node_budget"], row["seed"])].append(
             {**row, "latency_s": results[alias["key"]]["latency_s"]})
-    summary = [{"experiment": k[0], "method": k[1], "budget": k[2], "seed": k[3],
-                **{field: value for field, value in summarize(v).items() if field != "latency_s"}}
-               for k, v in sorted(grouped.items())]
+    summary = []
+    for (experiment, method, budget, seed), records in sorted(grouped.items()):
+        stats = summarize(records)
+        if is_dsb:
+            stats["n"] = len(records)
+            for field in ("precision", "ordered_path_match"):
+                stats[field] = fmean(row[field] for row in records)
+        else:
+            del stats["latency_s"]
+        summary.append({"experiment": experiment, "method": method, "budget": budget,
+                        "seed": seed, **stats})
     payload = {"schema": 1, "repo": name, "split": "all", "commit": commit,
                "identity": identity, "configs": configs, "worker_count": workers,
                "utc_timestamp": datetime.now(timezone.utc).isoformat(),
@@ -380,6 +409,8 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
                "second_look": bool(previous), "previous_results": previous,
                "rows": rows, "latencies": latencies, "summary": summary,
                "deterministic_sha256": digest(rows)}
+    if is_dsb:
+        payload["seed_summary"] = dsb_seed_summary(summary)
     if input_identity(repo) != {k: v for k, v in identity.items()
                                 if k not in {"verified_hashes", "protocol_sha256"}}:
         raise ValueError("Inputs/code/commit changed during run; final result not consumed")
