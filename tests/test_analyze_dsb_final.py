@@ -139,7 +139,8 @@ def synthetic(tmp_path):
                    "start_node": "root", "gold_nodes": ["answer"], "gold_path": ["root", "answer"],
                    "lookalike_nodes": lookalikes}
                   for i, (kind, lookalikes) in enumerate(
-                      (("explicit", ["root"]), ("indirect", ["maybe"]), ("explicit", [])))]
+                      (("explicit", ["root"]), ("indirect", ["also", "absent", "maybe"]),
+                       ("explicit", ["absent"])))]
         write(repo.labels, labels)
         graph_hash = locked.sha256(repo.graph)
         label_hash = locked.sha256(repo.labels)
@@ -153,13 +154,15 @@ def synthetic(tmp_path):
             label = job["label"]
             hit = int(job["method"] in {"egpot_full", "egpot_no_entropy"} and label["id"] == "q0")
             row = metric(hit)
+            returned = (["root", "maybe", "also", "filler"] if label["id"] == "q1" else
+                        ["root", "filler", "answer" if hit else "extra", "last"])
             latencies.append({"job": alias["key"], "latency_s": row.pop("latency_s")})
             rows.append({**row, **{key: label[key] for key in ("id", "link_id", "type")},
                          **{key: alias[key] for key in ("experiment", "split", "seed")},
                          "method": job["method"], "node_budget": job["budget"],
-                         "gold_found": ["answer"] if hit else []})
+                         "gold_found": ["answer"] if hit else [], "returned_nodes": returned})
         path = tmp_path / (app + ".result.json")
-        write(path, {"schema": 1, "repo": app, "split": "all", "commit": "fake",
+        write(path, {"schema": locked.DSB_RESULT_SCHEMA, "repo": app, "split": "all", "commit": "fake",
                   "identity": {"commit": "fake", "graph": graph_hash, "labels": label_hash,
                                "protocol_sha256": locked.digest(configs),
                                "verified_hashes": {"graph": graph_hash, "labels": label_hash,
@@ -206,7 +209,9 @@ def test_end_to_end_synthetic_report(synthetic):
         assert all(r["vectors"] == r["below"] == 54 for r in tables["weights"])
         assert len(tables["choke"]) == 14
     assert {r["id"]: r["lookalike_returned"] for r in report["failures"] if r["method"] == "bfs"} == {
-        "q0": True, "q1": None, "q2": False}
+        "q0": True, "q1": True, "q2": False}
+    assert {r["id"]: r["returned_lookalike_nodes"] for r in report["failures"] if r["method"] == "bfs"} == {
+        "q0": ["root"], "q1": ["maybe", "also"], "q2": []}
     json.dumps(report, allow_nan=False)
 
 
@@ -217,6 +222,33 @@ def test_refuses_tampered_inputs(synthetic, which, match):
     paths, registry = synthetic
     getattr(registry["dsb_social"], which).write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match=match):
+        analysis.analyze(*paths, registry=registry)
+
+
+def test_old_schema_is_rejected_before_reading_inputs(synthetic, monkeypatch):
+    paths, registry = synthetic
+    write(paths[0], {"schema": 1, "repo": "dsb_social", "split": "all"})
+    monkeypatch.setattr(locked, "verify_inputs", lambda *args: pytest.fail("read benchmark inputs"))
+    with pytest.raises(ValueError, match="schema 2 with ordered returned_nodes is required"):
+        analysis.analyze(*paths, registry=registry)
+
+
+def test_schema_two_requires_returned_nodes_on_every_row(synthetic):
+    paths, registry = synthetic
+    record = locked.read_json(paths[0])
+    del record["rows"][0]["returned_nodes"]
+    record["deterministic_sha256"] = locked.digest(record["rows"])
+    write(paths[0], record)
+    with pytest.raises(ValueError, match="requires an ordered returned_nodes list"):
+        analysis.analyze(*paths, registry=registry)
+
+
+def test_reordering_returned_nodes_invalidates_the_digest(synthetic):
+    paths, registry = synthetic
+    record = locked.read_json(paths[0])
+    record["rows"][0]["returned_nodes"].reverse()
+    write(paths[0], record)
+    with pytest.raises(ValueError, match="row digest mismatch"):
         analysis.analyze(*paths, registry=registry)
 
 

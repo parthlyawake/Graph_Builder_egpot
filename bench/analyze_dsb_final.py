@@ -41,8 +41,11 @@ def summarize(rows):
 
 def load_record(path, name, repo):
     data = locked.read_json(path)
-    if (data.get("schema"), data.get("repo"), data.get("split")) != (1, name, "all"):
-        raise ValueError(f"{name}: expected a whole-set schema-1 locked record")
+    if data.get("schema") != locked.DSB_RESULT_SCHEMA:
+        raise ValueError(f"{name}: DeathStarBench schema {locked.DSB_RESULT_SCHEMA} with ordered "
+                         "returned_nodes is required")
+    if (data.get("repo"), data.get("split")) != (name, "all"):
+        raise ValueError(f"{name}: expected a whole-set locked record for this dataset")
     identity = data["identity"]
     hashes = locked.verify_inputs(repo)
     hashes["preregistration"] = locked.sha256(repo.preregistration)
@@ -72,6 +75,14 @@ def load_record(path, name, repo):
         if (job_key is None or timing["job"] != job_key or row["split"] != "all"
                 or any(row[field] != label[field] for field in ("type", "link_id"))):
             raise ValueError(f"{name}: row or latency does not match the locked job {key}")
+        returned = row.get("returned_nodes")
+        if not isinstance(returned, list) or not all(isinstance(node, str) for node in returned):
+            raise ValueError(f"{name}: locked job {key} requires an ordered returned_nodes list")
+        node_ids = set(returned)
+        if (len(node_ids) != len(returned) or len(returned) != row["nodes_returned"]
+                or label["start_node"] not in node_ids
+                or node_ids.intersection(label["gold_nodes"]) != set(row["gold_found"])):
+            raise ValueError(f"{name}: returned_nodes are inconsistent for locked job {key}")
         rows.append({**row, "app": name, "latency_s": timing["latency_s"],
                      "label": label_index[row["id"]]})
     if expected_keys:
@@ -178,19 +189,12 @@ def failures(rows):
     for row in rows:
         label = row["label"]
         lookalikes = set(label.get("lookalike_nodes", ()))
-        known = {label["start_node"], *row["gold_found"]}
-        if "returned_nodes" in row:
-            found = bool(lookalikes.intersection(row["returned_nodes"]))
-        elif lookalikes & known:
-            found = True
-        elif not lookalikes or len(known) == row["nodes_returned"]:
-            found = False
-        else:
-            found = None
+        found = [node for node in row["returned_nodes"] if node in lookalikes]
         for node in sorted(set(label["gold_nodes"]) - set(row["gold_found"])):
             output.append({**{key: row[key] for key in ("app", "id", "link_id", "type",
                            "method", "experiment", "node_budget", "seed")},
-                           "missed_gold_node": node, "lookalike_returned": found})
+                           "missed_gold_node": node, "lookalike_returned": bool(found),
+                           "returned_lookalike_nodes": found})
     return output
 
 
@@ -284,7 +288,7 @@ def analyze(social_path, media_path, *, registry=locked.REGISTRY):
             "claims": claims(tables_by_scope),
             "tables": tables_by_scope,
             "failures": failures(pooled),
-            "lookalike_note": "Descriptive only. Null means the record did not identify enough returned nodes."}
+            "lookalike_note": "Descriptive only. Matched lookalike IDs are in discovery order."}
 
 
 def main(argv=None):

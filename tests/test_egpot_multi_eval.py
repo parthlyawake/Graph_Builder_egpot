@@ -204,6 +204,62 @@ def test_synthetic_locked_payload(tiny, monkeypatch, tmp_path):
     assert {"commit", "identity", "configs", "rows", "summary", "latencies", "worker_count"} <= payload.keys()
     assert all("latency_s" not in row for row in payload["rows"])
     assert len(payload["rows"]) == len(multi.plan_locked(labels, configs)[1])
+    assert payload["schema"] == 1
+    assert all("returned_nodes" not in row for row in payload["rows"])
+
+
+def test_dsb_publishes_discovery_order_in_every_deterministic_row(tiny, monkeypatch, tmp_path):
+    repo, _, configs = tiny
+    configs["main"]["vector_topk"] = configs["main"]["bfs"]
+    configs["seeds"] = {"egpot_full_mcts": {"0": configs["main"]["egpot_full_mcts"]}}
+    configs["weights"] = {"equal": configs["main"]["egpot_full"]}
+    configs["choke"] = {"bfs_no_choke": configs["main"]["bfs"]}
+    target = tmp_path / "result.json"
+    hashes = {**multi.verify_inputs(repo), "preregistration": multi.sha256(repo.preregistration)}
+    monkeypatch.setattr(multi, "locked_preflight", lambda *a, **k: ("a" * 40, hashes, target, []))
+    monkeypatch.setattr(multi, "input_identity", lambda *a, **k: {"commit": "a" * 40})
+    monkeypatch.setattr(multi, "load_settings", lambda: {})
+    monkeypatch.setattr(multi, "dsb_settings", lambda _: configs)
+    monkeypatch.setattr(multi, "_ENGINES", {})
+
+    class Stub:
+        discovery = ["s", "handler", "contract"]
+
+        def retrieve(self, *, query, start_node, node_budget):
+            assert start_node == "s" and query.startswith("available inventory")
+            return multi.frozen.RetrievalResult(set(self.discovery), ["s", "contract"], 0.01,
+                                               self.discovery)
+
+    class StubVectorTopK(Stub, multi.VectorTopK):
+        discovery = ["handler", "s", "contract"]
+
+        def __init__(self):
+            pass
+
+    monkeypatch.setattr(multi, "make_engine", lambda method, _: (
+        StubVectorTopK() if method == "vector_topk" else Stub()))
+
+    def run_jobs(graph, jobs, checkpoint, identity, *, include_returned_nodes, **kwargs):
+        assert include_returned_nodes is True
+        return dict(multi.execute_job(job, include_returned_nodes=include_returned_nodes)
+                    for job in jobs)
+
+    monkeypatch.setattr(multi, "run_jobs", run_jobs)
+    payload = multi.run_locked("dsb_social", None, registry={"dsb_social": repo},
+                               output_dir=tmp_path, workers=1, checkpoint=tmp_path / "jobs")
+    published = multi.read_json(target)
+    assert multi.canonical(published) == multi.canonical(payload)
+    assert published["schema"] == multi.DSB_RESULT_SCHEMA == 2
+    assert {row["experiment"] for row in published["rows"]} == {
+        "main", "seeds", "weights", "choke", "pareto_reference"}
+    for row in published["rows"]:
+        expected = StubVectorTopK.discovery if row["method"] == "vector_topk" else Stub.discovery
+        assert row["returned_nodes"] == expected
+        assert "latency_s" not in row
+    assert all("retrieve" not in vars(engine) for engine in multi._ENGINES.values())
+    assert published["deterministic_sha256"] == multi.digest(published["rows"])
+    published["rows"][0]["returned_nodes"].reverse()
+    assert published["deterministic_sha256"] != multi.digest(published["rows"])
 
 
 def test_metrics_and_split_are_original_imports():

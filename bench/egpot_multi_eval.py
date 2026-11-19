@@ -34,6 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = ROOT / "bench/results/test_final_41d61e11.json"
 SCRATCH = Path(r"C:\dev\triage_out\step27")
 DSB_DATASETS = ("dsb_social", "dsb_media")
+DSB_RESULT_SCHEMA = 2
 DSB_BUILDER_TAG = ("egpot-bench-builder-v1", "94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce")
 DSB_EGPOT_TAG = ("egpot-tiebreak-v1", "f3d3163eec15c3e814302fb8269cd3fbca6430a1")
 DSB_BUILDER_PATHS = (":(top,glob)*.py", ":(top,exclude)eg_pot.py", "contracts/",
@@ -299,7 +300,35 @@ def make_engine(name, spec):
     return engine
 
 
-def execute_job(task):
+def evaluate_locked_job(task, engine, *, include_returned_nodes):
+    args = ([task["label"]], {task["method"]: engine}, task["budget"])
+    if not include_returned_nodes:
+        return evaluate(*args, include_found=True)[0]
+
+    # Keep the original engine's type and the frozen evaluator's request
+    # allowlist and validation. Capture the same result used to score the row.
+    retrieve = engine.retrieve
+    instance_retrieve = vars(engine).get("retrieve")
+    returned_nodes = []
+
+    def capture(**request):
+        result = retrieve(**request)
+        returned_nodes.extend(result.discovery_order)
+        return result
+
+    engine.retrieve = capture
+    try:
+        row = evaluate(*args, include_found=True)[0]
+    finally:
+        if instance_retrieve is None:
+            del engine.retrieve
+        else:
+            engine.retrieve = instance_retrieve
+    row["returned_nodes"] = returned_nodes
+    return row
+
+
+def execute_job(task, *, include_returned_nodes=False):
     key = digest({"method": task["method"], "spec": task["spec"]})
     if key not in _ENGINES:
         _ENGINES[key] = make_engine(task["method"], task["spec"])
@@ -307,7 +336,7 @@ def execute_job(task):
     # StandardMCTS hashes query ID, not prose; provide only this job's identity.
     if isinstance(engine, StandardMCTS):
         engine.query_ids = {(task["label"]["query"], task["label"]["start_node"]): task["label"]["id"]}
-    row = evaluate([task["label"]], {task["method"]: engine}, task["budget"], include_found=True)[0]
+    row = evaluate_locked_job(task, engine, include_returned_nodes=include_returned_nodes)
     latency = row.pop("latency_s")
     return task["key"], {"deterministic": row, "latency_s": latency}
 
@@ -319,7 +348,8 @@ def atomic_json(path, value):
     os.replace(temporary, path)
 
 
-def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False, edge_policy=LEGACY):
+def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False, edge_policy=LEGACY,
+             include_returned_nodes=False):
     if type(workers) is not int or workers < 1:
         raise ValueError("workers must be a positive integer")
     checkpoint = Path(checkpoint)
@@ -340,6 +370,8 @@ def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False,
             saved = read_json(path)
             if saved["key"] != task["key"] or saved["identity_sha256"] != digest(identity):
                 raise ValueError("Corrupt checkpoint identity")
+            if include_returned_nodes and "returned_nodes" not in saved["result"]["deterministic"]:
+                raise ValueError("Checkpoint row lacks ordered returned_nodes")
             results[task["key"]] = saved["result"]
     pending = [j for j in jobs if j["key"] not in results]
     if pending:
@@ -347,7 +379,8 @@ def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False,
         with ProcessPoolExecutor(max_workers=workers, mp_context=context,
                                  initializer=initialize_worker,
                                  initargs=(str(graph_path), edge_policy)) as pool:
-            futures = [pool.submit(execute_job, task) for task in pending]
+            futures = [pool.submit(execute_job, task, include_returned_nodes=include_returned_nodes)
+                       for task in pending]
             for index, future in enumerate(as_completed(futures), 1):
                 key, result = future.result()
                 atomic_json(checkpoint / (key + ".json"),
@@ -397,7 +430,8 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
     labels = read_json(repo.labels)  # locks have passed; whole set, no split
     jobs, aliases = plan_locked(labels, configs)
     results = run_jobs(repo.graph, jobs, checkpoint, identity, workers=workers, resume=resume,
-                       edge_policy=DSB_EDGE_POLICY if is_dsb else LEGACY)
+                       edge_policy=DSB_EDGE_POLICY if is_dsb else LEGACY,
+                       include_returned_nodes=is_dsb)
     rows, latencies = [], []
     for alias in aliases:
         result = results[alias["key"]]
@@ -418,7 +452,7 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
             del stats["latency_s"]
         summary.append({"experiment": experiment, "method": method, "budget": budget,
                         "seed": seed, **stats})
-    payload = {"schema": 1, "repo": name, "split": "all", "commit": commit,
+    payload = {"schema": DSB_RESULT_SCHEMA if is_dsb else 1, "repo": name, "split": "all", "commit": commit,
                "identity": identity, "configs": configs, "worker_count": workers,
                "utc_timestamp": datetime.now(timezone.utc).isoformat(),
                "versions": {"python": platform.python_version(), **{p: version(p) for p in
