@@ -1,4 +1,5 @@
 """Analysis checks on synthetic locked records. No graph is parsed or searched."""
+from dataclasses import replace
 import json
 
 import numpy as np
@@ -38,8 +39,10 @@ def test_bootstrap_identical_and_always_winning_methods_are_deterministic():
     first = analysis.bootstrap(*args, seed=0)
     assert first == analysis.bootstrap(*args, seed=0)
     for name in ("hit_rate", "mean_recall"):
-        assert first[0][name] == {"difference": 0, "interval_95": [0, 0]}
-        assert first[1][name] == {"difference": 1, "interval_95": [1, 1]}
+        assert first[0][name] == {"difference": 0, "interval": [0, 0],
+                                  "analysis_type": "exploratory", "confidence_level": 0.95}
+        assert first[1][name]["difference"] == 1
+        assert first[1][name]["interval"] == [1, 1]
 
 
 def test_cluster_resampling_ties_queries_and_stratifies_by_app():
@@ -56,21 +59,51 @@ def test_cluster_resampling_ties_queries_and_stratifies_by_app():
                "baseline": [metric(0)] * 7}
     contrast, _ = analysis.bootstrap(methods, keys, [(analysis.FULL, "baseline")], ["baseline"])
     assert contrast["hit_rate"]["difference"] == pytest.approx(3 / 7)
-    assert contrast["hit_rate"]["interval_95"][0] > 0
-    assert contrast["hit_rate"]["interval_95"][1] < 1
+    assert contrast["hit_rate"]["interval"][0] > 0
+    assert contrast["hit_rate"]["interval"][1] < 1
 
 
-def test_strongest_is_reselected_in_each_draw_using_hit_then_size_then_name():
+def test_strongest_is_reselected_in_each_draw_using_metric_then_size_then_name():
     methods = {analysis.FULL: [metric(1), metric(1)], "a": [metric(1), metric(0)],
                "b": [metric(0), metric(1, nodes_to_hit=2)]}
     fixed, adaptive = analysis.bootstrap(methods, [("social", "a"), ("social", "b")],
                                          [(analysis.FULL, "b")], ["a", "b"])
-    assert adaptive["observed_baseline"] == "b"  # equal hits, lower nodes to hit
-    assert adaptive["hit_rate"] == {"difference": 0.5, "interval_95": [0, 0.5]}
-    assert fixed["hit_rate"]["interval_95"] == [0, 1]
+    assert adaptive["hit_rate"]["observed_baseline"] == "b"  # equal hits, lower nodes to hit
+    assert adaptive["hit_rate"]["difference"] == 0.5
+    assert adaptive["hit_rate"]["interval"] == [0, 0.5]
+    assert fixed["hit_rate"]["interval"] == [0, 1]
     selected = analysis.strongest_baseline(np.array([[1, 2], [2, 2], [2, 2]]),
                                             np.array([[1, 9], [4, 3], [4, 4]]))
     assert selected.tolist() == [1, 1, 0]
+
+
+def test_recall_uses_its_own_strongest_baseline_and_reselects_it():
+    methods = {analysis.FULL: [metric(1)] * 3,
+               "a": [metric(1), metric(1), metric(0)],
+               "b": [{**metric(0), "gold_recall": 0.75}] * 3}
+    fixed, adaptive = analysis.bootstrap(methods, [("social", str(i)) for i in range(3)],
+                                         [(analysis.FULL, "b")], ["a", "b"])
+    assert adaptive["hit_rate"]["observed_baseline"] == "a"
+    assert adaptive["mean_recall"]["observed_baseline"] == "b"
+    assert adaptive["mean_recall"]["difference"] == 0.25
+    assert adaptive["mean_recall"]["interval"] == [0, 0.25]
+    assert fixed["mean_recall"]["interval"] == [0.25, 0.25]
+
+
+def test_bonferroni_tails_only_apply_to_confirmatory_hit_rate(monkeypatch):
+    draws = np.array([[2, 0]] * 10 + [[0, 2]] * 10 + [[1, 1]] * 980)
+    monkeypatch.setattr(analysis, "cluster_weights", lambda *args, **kwargs: draws)
+    ablation = "egpot_no_pareto"
+    methods = {analysis.FULL: [metric(1), metric(0)], ablation: [metric(0)] * 2,
+               "other": [metric(0)] * 2}
+    adjusted, exploratory, _ = analysis.bootstrap(
+        methods, [("a", "x"), ("a", "y")], [(analysis.FULL, ablation), (analysis.FULL, "other")],
+        ["other"], confirmatory=True, resamples=1000)
+    assert adjusted["hit_rate"] == {"difference": 0.5, "interval": [0, 1],
+                                    "confidence_level": 1 - 0.05 / 7, "analysis_type": "confirmatory"}
+    for effect in (adjusted["mean_recall"], exploratory["hit_rate"]):
+        assert effect == {"difference": 0.5, "interval": [0.5, 0.5],
+                          "confidence_level": 0.95, "analysis_type": "exploratory"}
 
 
 def write(path, value):
@@ -118,7 +151,7 @@ def synthetic(tmp_path):
         for alias in aliases:
             job = by_key[alias["key"]]
             label = job["label"]
-            hit = int(job["method"] == "egpot_full" and label["id"] == "q0")
+            hit = int(job["method"] in {"egpot_full", "egpot_no_entropy"} and label["id"] == "q0")
             row = metric(hit)
             latencies.append({"job": alias["key"], "latency_s": row.pop("latency_s")})
             rows.append({**row, **{key: label[key] for key in ("id", "link_id", "type")},
@@ -142,7 +175,25 @@ def test_end_to_end_synthetic_report(synthetic):
     report = analysis.analyze(*paths, registry=registry)
     assert report["bootstrap"]["seed"] == 0
     assert report["bootstrap"]["resamples"] == 10_000
-    assert report["primary"] == {"method": analysis.FULL, "budget": 40, "metric": "hit_count"}
+    assert report["bootstrap"]["confirmatory_tail_probability"] == 0.05 / 14
+    assert report["primary"] == {"method": analysis.FULL, "scope": "pooled", "budget": 40,
+                                 "metric": "hit_count", "rate_field": "hit"}
+    primary, exploratory = report["claims"][:7], report["claims"][7:]
+    assert [row["id"] for row in primary] == [f"C{i}" for i in range(1, 8)]
+    assert [(r["left"], r["right"]) for r in primary] == [
+        ("egpot_full", "strongest_baseline"), ("egpot_full", "egpot_no_pareto"),
+        ("egpot_full", "egpot_no_entropy"), ("egpot_full", "egpot_no_contracts"),
+        ("egpot_full", "egpot_no_choke_point"), ("egpot_full_mcts", "egpot_full"),
+        ("egpot_full_tiebreak", "egpot_full")]
+    assert all(r["scope"] == "pooled" and r["budget"] == 40 and r["metric"] == "hit_rate"
+               and r["analysis_type"] == "confirmatory" for r in primary)
+    assert [r["verdict"] for r in primary] == [
+        "supported", "supported", "not supported", "supported", "supported",
+        "significantly worse", "significantly worse"]
+    assert all(r["analysis_type"] == "exploratory" and r["confidence_level"] == 0.95
+               and "verdict" not in r for r in exploratory)
+    assert any((r["left"], r["right"]) == ("egpot_no_pareto_mcts", "egpot_no_pareto")
+               for r in exploratory)
     for name, n in (("dsb_social", 3), ("dsb_media", 3), ("pooled", 6)):
         tables = report["tables"][name]
         assert len(tables["descriptive"]) == 48
@@ -152,7 +203,6 @@ def test_end_to_end_synthetic_report(synthetic):
         assert len(tables["seeds"]) == 10
         assert all(r["primary_seed"] == 0 and r["metrics"]["hit"]["defined_seeds"] == 6
                    for r in tables["seeds"])
-        assert {r["verdict"] for r in tables["claims"]} == {"supported", "not supported"}
         assert all(r["vectors"] == r["below"] == 54 for r in tables["weights"])
         assert len(tables["choke"]) == 14
     assert {r["id"]: r["lookalike_returned"] for r in report["failures"] if r["method"] == "bfs"} == {
@@ -168,3 +218,34 @@ def test_refuses_tampered_inputs(synthetic, which, match):
     getattr(registry["dsb_social"], which).write_text("tampered", encoding="utf-8")
     with pytest.raises(ValueError, match=match):
         analysis.analyze(*paths, registry=registry)
+
+
+@pytest.mark.parametrize("modified,tag", [
+    ("thrift_bindings.py", locked.DSB_BUILDER_TAG), ("eg_pot.py", locked.DSB_EGPOT_TAG)])
+def test_locked_preflight_refuses_frozen_code_changes_before_inputs(tmp_path, monkeypatch, modified, tag):
+    prereg = tmp_path / "preregistration.md"
+    prereg.touch()
+    repo = replace(locked.REGISTRY["dsb_social"], preregistration=prereg)
+    head = "a" * 40
+    expected_refs = {f"refs/tags/{name}^{{commit}}": pin for name, pin in (
+        locked.DSB_BUILDER_TAG, locked.DSB_EGPOT_TAG)}
+
+    def fake_git(*args, root):
+        if args[0] in {"status", "ls-files"}:
+            return ""
+        if args == ("rev-parse", "HEAD"):
+            return head
+        if args[:2] == ("rev-parse", "--verify"):
+            return expected_refs[args[2]]
+        assert args[0] == "diff"
+        pin, commit = args[5:7]
+        assert commit == head
+        paths = args[8:]
+        assert paths == (locked.DSB_BUILDER_PATHS if pin == locked.DSB_BUILDER_TAG[1]
+                         else ("eg_pot.py",))
+        return modified if pin == tag[1] else ""
+
+    monkeypatch.setattr(locked, "git", fake_git)
+    monkeypatch.setattr(locked, "verify_inputs", lambda *args: pytest.fail("read benchmark inputs"))
+    with pytest.raises(ValueError, match=tag[0]):
+        locked.locked_preflight("dsb_social", repo, tmp_path, root=tmp_path)

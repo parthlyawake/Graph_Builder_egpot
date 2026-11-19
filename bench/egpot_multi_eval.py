@@ -34,6 +34,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = ROOT / "bench/results/test_final_41d61e11.json"
 SCRATCH = Path(r"C:\dev\triage_out\step27")
 DSB_DATASETS = ("dsb_social", "dsb_media")
+DSB_BUILDER_TAG = ("egpot-bench-builder-v1", "94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce")
+DSB_EGPOT_TAG = ("egpot-tiebreak-v1", "f3d3163eec15c3e814302fb8269cd3fbca6430a1")
+DSB_BUILDER_PATHS = (":(top,glob)*.py", ":(top,exclude)eg_pot.py", "contracts/",
+                     "pyproject.toml", ":(top,glob)requirements*.txt")
 DSB_EDGE_POLICY = replace(LEGACY, no_contract_match_relations=frozenset(
     {"ACCEPTS_SCHEMA", "RETURNS_SCHEMA", "INVOKES", "POSSIBLE_HTTP_TARGET"}))
 
@@ -129,6 +133,17 @@ def verify_inputs(repo: Repo, *, labels=True):
     return hashes
 
 
+def verify_dsb_frozen_code(commit, *, root=ROOT):
+    """Compare committed file bytes with the pinned builder and EG-POT trees."""
+    for (tag, pin), paths in ((DSB_BUILDER_TAG, DSB_BUILDER_PATHS), (DSB_EGPOT_TAG, ("eg_pot.py",))):
+        if git("rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}", root=root) != pin:
+            raise ValueError(f"Frozen tag {tag} does not resolve to {pin}")
+        changed = git("diff", "--name-only", "--no-ext-diff", "--no-textconv", "--no-renames",
+                      pin, commit, "--", *paths, root=root)
+        if changed:
+            raise ValueError(f"Frozen code differs from {tag}:\n{changed}")
+
+
 def locked_preflight(name, repo, output_dir, *, acknowledge=False, root=ROOT):
     """All locks precede reading any label queries or building any engine."""
     dirty = git("status", "--porcelain", "--untracked-files=no", root=root)
@@ -149,6 +164,8 @@ def locked_preflight(name, repo, output_dir, *, acknowledge=False, root=ROOT):
         except subprocess.CalledProcessError as exc:
             raise ValueError(f"{title} preregistration must be tracked") from exc
         preregistration_hash = sha256(repo.preregistration)
+    if name in DSB_DATASETS:
+        verify_dsb_frozen_code(commit, root=root)
     hashes = verify_inputs(repo)
     if preregistration_hash is not None:
         hashes["preregistration"] = preregistration_hash

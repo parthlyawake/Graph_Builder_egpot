@@ -15,12 +15,16 @@ from bench.egpot_eval import CHOKE_PAIRS
 
 BOOTSTRAP_SEED = 0
 RESAMPLES = 10_000
+ALPHA = 0.05
 BUDGETS = (10, 20, 40)
 FULL = "egpot_full"
 BASELINES = ("vector_topk", "bfs", "greedy_walk", "vector_bfs_k2", "ppr",
              "scalar_beam", "community_graphrag", "mcts_standard")
 COMPONENTS = ("egpot_no_pareto", "egpot_no_entropy", "egpot_no_contracts", "egpot_no_choke_point")
 LOOKAHEAD = ("egpot_full_mcts", "egpot_full_tiebreak")
+STRONGEST = "strongest_baseline"
+CONFIRMATORY = ((FULL, STRONGEST), *((FULL, method) for method in COMPONENTS),
+                *((method, FULL) for method in LOOKAHEAD))
 HIT_ONLY = ("nodes_to_hit", "precision_at_hit")
 AVERAGES = ("hit", "gold_recall", "precision", "path_coverage", "ordered_path_match",
             "nodes_returned", *HIT_ONLY, "latency_s")
@@ -93,14 +97,14 @@ def cluster_weights(query_starts, *, resamples=RESAMPLES, seed=BOOTSTRAP_SEED):
     return weights
 
 
-def strongest_baseline(hits, nodes_to_hit):
+def strongest_baseline(values, nodes_to_hit):
     """Columns must be in alphabetical method order for the last tie-break."""
-    alphabetical = np.broadcast_to(np.arange(hits.shape[1]), hits.shape)
-    return np.lexsort((alphabetical, nodes_to_hit, -hits), axis=1)[:, 0]
+    alphabetical = np.broadcast_to(np.arange(values.shape[1]), values.shape)
+    return np.lexsort((alphabetical, nodes_to_hit, -values), axis=1)[:, 0]
 
 
 def bootstrap(methods, query_starts, contrasts, baselines, *,
-              resamples=RESAMPLES, seed=BOOTSTRAP_SEED):
+              resamples=RESAMPLES, seed=BOOTSTRAP_SEED, confirmatory=False):
     """Paired contrasts on aligned rows. Row zero is the observed cohort."""
     if not query_starts or any(len(rows) != len(query_starts) for rows in methods.values()):
         raise ValueError("Bootstrap requires a nonempty, aligned query cohort")
@@ -117,19 +121,31 @@ def bootstrap(methods, query_starts, contrasts, baselines, *,
     rank = np.array([[row["nodes_to_hit"] or 0 for row in methods[name]] for name in names]).T
     means = np.divide(weights @ rank, hit_counts, out=np.full(hit_counts.shape, np.inf),
                       where=hit_counts > 0)
-    strongest = np.asarray(baseline_indices)[strongest_baseline(
-        hit_counts[:, baseline_indices], means[:, baseline_indices])]
+    strongest = {metric: np.asarray(baseline_indices)[strongest_baseline(
+        values[:, baseline_indices], means[:, baseline_indices])]
+        for metric, values in rates.items()}
 
     output = []
-    for left, right in (*contrasts, (FULL, "strongest_baseline")):
+    for left, right in (*contrasts, (FULL, STRONGEST)):
         row = {"left": left, "right": right}
         for field, values in rates.items():
-            right_value = values[np.arange(len(weights)), strongest] if right == "strongest_baseline" else values[:, at[right]]
+            if right == STRONGEST:
+                indices = strongest[field]
+                right_value = values[np.arange(len(weights)), indices]
+            else:
+                right_value = values[:, at[right]]
             delta = values[:, at[left]] - right_value
-            row[field] = {"difference": float(delta[0]),
-                          "interval_95": np.percentile(delta[1:], [2.5, 97.5]).tolist()}
-        if right == "strongest_baseline":
-            row["observed_baseline"] = names[strongest[0]]
+            adjusted = confirmatory and field == "hit_rate" and (left, right) in CONFIRMATORY
+            alpha = ALPHA / len(CONFIRMATORY) if adjusted else ALPHA
+            tail = alpha / 2
+            row[field] = {
+                "difference": float(delta[0]),
+                "interval": np.quantile(delta[1:], [tail, 1 - tail]).tolist(),
+                "confidence_level": 1 - alpha,
+                "analysis_type": "confirmatory" if adjusted else "exploratory",
+            }
+            if right == STRONGEST:
+                row[field]["observed_baseline"] = names[indices[0]]
         output.append(row)
     return output
 
@@ -178,16 +194,17 @@ def failures(rows):
     return output
 
 
-def tables(rows):
+def tables(rows, *, scope):
     grouped = defaultdict(list)
     for row in rows:
         grouped[row["experiment"], row["node_budget"], row["method"], row["seed"]].append(row)
     for values in grouped.values():
         values.sort(key=lambda r: (r["app"], r["id"]))
-    output = {key: [] for key in ("descriptive", "seeds", "paired", "claims", "compactness",
+    output = {key: [] for key in ("descriptive", "seeds", "paired", "compactness",
                                   "choke", "weights")}
     contrasts = ([(FULL, method) for method in (*BASELINES, *COMPONENTS, "egpot_no_pareto_mcts")]
-                 + [(method, FULL) for method in LOOKAHEAD])
+                 + [(method, FULL) for method in LOOKAHEAD]
+                 + [("egpot_no_pareto_mcts", "egpot_no_pareto")])
     for budget in BUDGETS:
         main = {method: values for (section, b, method, seed), values in grouped.items()
                 if section == "main" and b == budget and seed == 0}
@@ -202,14 +219,9 @@ def tables(rows):
             if method != FULL:
                 output["compactness"].append({"left": FULL, "right": method, "budget": budget,
                                               **compactness(main[FULL], values)})
-        for comparison in bootstrap(main, starts, contrasts, BASELINES):
+        for comparison in bootstrap(main, starts, contrasts, BASELINES,
+                                    confirmatory=scope == "pooled" and budget == 40):
             output["paired"].append({"budget": budget, **comparison})
-            if comparison["right"] in COMPONENTS or comparison["left"] in LOOKAHEAD:
-                for metric in ("hit_rate", "mean_recall"):
-                    interval = comparison[metric]["interval_95"]
-                    output["claims"].append({"left": comparison["left"], "right": comparison["right"],
-                        "budget": budget, "metric": metric,
-                        "verdict": "supported" if interval[0] > 0 else "not supported"})
 
         if budget in (20, 40):
             for on, off in CHOKE_PAIRS:
@@ -236,18 +248,43 @@ def tables(rows):
     return output
 
 
+def claims(tables_by_scope):
+    confirmatory, exploratory = {}, []
+    for scope, report in tables_by_scope.items():
+        for comparison in report["paired"]:
+            pair = comparison["left"], comparison["right"]
+            for metric in ("hit_rate", "mean_recall"):
+                effect = comparison[metric]
+                row = {"scope": scope, "budget": comparison["budget"], "metric": metric,
+                       "left": pair[0], "right": pair[1], **effect}
+                if effect["analysis_type"] == "exploratory":
+                    exploratory.append(row)
+                    continue
+                index = CONFIRMATORY.index(pair)
+                low, high = effect["interval"]
+                verdict = "supported" if low > 0 else "significantly worse" if high < 0 else "not supported"
+                confirmatory[index] = {"id": f"C{index + 1}", **row, "verdict": verdict}
+    return [confirmatory[index] for index in range(len(CONFIRMATORY))] + exploratory
+
+
 def analyze(social_path, media_path, *, registry=locked.REGISTRY):
     cohorts, provenance = {}, {}
     for name, path in zip(locked.DSB_DATASETS, (social_path, media_path), strict=True):
         cohorts[name], provenance[name] = load_record(path, name, registry[name])
     pooled = [row for cohort in cohorts.values() for row in cohort]
+    tables_by_scope = {name: tables(rows, scope=name) for name, rows in {**cohorts, "pooled": pooled}.items()}
     return {"bootstrap": {"seed": BOOTSTRAP_SEED, "resamples": RESAMPLES,
-                          "interval": "95% percentile", "pooled_strata": "app"},
-            "primary": {"method": FULL, "budget": 40, "metric": "hit_count"},
+                          "interval_method": "percentile", "pooled_strata": "app",
+                          "exploratory_confidence_level": 1 - ALPHA,
+                          "confirmatory_confidence_level": 1 - ALPHA / len(CONFIRMATORY),
+                          "confirmatory_tail_probability": ALPHA / (2 * len(CONFIRMATORY))},
+            "primary": {"method": FULL, "scope": "pooled", "budget": 40,
+                        "metric": "hit_count", "rate_field": "hit"},
             "provenance": provenance,
-            "tables": {name: tables(rows) for name, rows in {**cohorts, "pooled": pooled}.items()},
+            "claims": claims(tables_by_scope),
+            "tables": tables_by_scope,
             "failures": failures(pooled),
-            "lookalike_note": "Null means the locked record did not identify enough returned nodes."}
+            "lookalike_note": "Descriptive only. Null means the record did not identify enough returned nodes."}
 
 
 def main(argv=None):

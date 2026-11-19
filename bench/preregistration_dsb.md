@@ -5,6 +5,8 @@
 - DeathStarBench source commit: `6ecb09706140f8730b5385c08f1386c654c3c526`
 - Graph builder: `egpot-bench-builder-v1` at `94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce`
 - EG-POT: `egpot-tiebreak-v1` at `f3d3163eec15c3e814302fb8269cd3fbca6430a1`
+- Analysis script: `bench/analyze_dsb_final.py`
+- Analysis script commit: `<fill at freeze>`
 - Source label draft SHA-256: `2824117d02311d45b8b700c8aa7c93c7c1db20e1b2b04d2cb9e52118803e3945`
 
 ## Data and coverage
@@ -37,7 +39,7 @@ The binder added three Social and nine Media edges of each type `CONSUMES`, `FLO
 
 Recon pointed an `idl` root at each app directory and applied broad subdirectory ignore globs to the workspace. The committed build uses `socialNetwork-idl` with only `social_network.thrift` and `mediaMicroservices-idl` with only `media_service.thrift`, applying the sidecars' `only_files` during discovery. The namespace change renames one file node per app. Switching to the exact IDL scope and dropping the broad globs each changed neither node nor edge counts. Both layouts use `exclude_nonproduction=True`. Guarded rebuilds from the committed sidecars reproduced both GraphML hashes above.
 
-The following links are excluded from scoring:
+The following links are neither scored nor evaluated:
 
 - Social Network's `WriteHomeTimelineService` worker (`OnReceivedWorker`) to `SocialGraphService.GetFollowers`. The worker is disabled in the default build and Compose configuration.
 - Media's `PageService.ReadPage` to `MovieInfoService.ReadMovieInfo`, `MovieReviewService.ReadMovieReviews`, `CastInfoService.ReadCastInfo`, and `PlotService.ReadPlot`.
@@ -60,18 +62,43 @@ At budgets **10 and 20**, preserve the 54-vector weight study without lookahead.
 
 ## Metrics
 
-The primary metric is **full-hit count at budget 40**, reported per app and pooled. A full hit requires every exact gold node. Accepted alternatives receive no credit, as in the original harness.
+The primary endpoint is **pooled full-hit count at budget 40 and its corresponding rate**, using seed 0 for stochastic methods. Full-hit values by app are descriptive. A full hit requires every exact gold node. Accepted alternatives receive no credit, as in the original harness.
 
 Report all harness metrics as secondary outcomes across the measured budgets, with full hits outside the primary endpoint, gold recall, precision, path coverage, ordered path match, nodes returned, nodes-to-hit, precision-at-hit, and retrieval latency. Give full hits as both count and rate. For compactness report each method's original hits-only mean nodes-to-hit and the paired comparison on the subset both methods hit, with the paired subset size. Report a missing value when that subset is empty.
 
 ## Paired comparisons
 
-At each budget and for each reported set, compare `egpot_full` with every baseline using paired differences in full-hit rate and mean gold recall. Resample start-node clusters with replacement, keeping every query for a sampled start and every paired method result together. Use 10,000 resamples, bootstrap seed 0, and percentile 95% intervals. For the pooled report, identify clusters by dataset and start node and resample within each app. Compute query-weighted metrics in the original and resampled sets. For a component claim, compare full minus the corresponding ablation. For an MCTS claim, compare the pre-declared lookahead method minus its corresponding no-lookahead control. Support a claim only when its paired interval excludes zero in the claimed direction. The old scorecard thresholds, including +4/30 and +6/30, are not used.
+At each budget and for each reported set, compare `egpot_full` with every baseline using paired differences in full-hit rate and mean gold recall. Resample start-node clusters with replacement, keeping every query for a sampled start and every paired method result together. Use 10,000 resamples with NumPy `RandomState(0)`. For the pooled report, identify clusters by dataset and start node and resample within each app. Compute query-weighted metrics in the original and resampled sets.
 
-Also report the comparison against the strongest observed baseline for the metric, budget, and reported set, breaking ties by method name. This is a conservative reference for the observed difference. For its bootstrap interval, recompute the strongest baseline in each resample so the comparison does not treat the data-selected baseline as fixed in advance.
+The confirmatory family has seven comparisons, all on the pooled set at budget 40 using the full-hit-rate difference and seed 0 for stochastic methods.
+
+| ID | Contrast (first minus second) |
+| --- | --- |
+| C1 | `egpot_full` minus the strongest baseline, re-selected in each resample |
+| C2 | `egpot_full` minus `egpot_no_pareto` |
+| C3 | `egpot_full` minus `egpot_no_entropy` |
+| C4 | `egpot_full` minus `egpot_no_contracts` |
+| C5 | `egpot_full` minus `egpot_no_choke_point` |
+| C6 | `egpot_full_mcts` minus `egpot_full` |
+| C7 | `egpot_full_tiebreak` minus `egpot_full` |
+
+Use Bonferroni-adjusted percentile intervals at level `1 - 0.05/7`, with tail probability `0.05/14` on each side. The claimed direction is positive. An interval entirely above zero supports the claim, an interval entirely below zero reports the first-named method as significantly worse, and an interval including zero leaves the claim unsupported. Every other comparison, metric, budget and set is exploratory. Report those intervals at unadjusted 95%, label them exploratory, and draw no supported claims from them.
+
+The no-lookahead control is `egpot_full` for `egpot_full_mcts` and `egpot_full_tiebreak`, and `egpot_no_pareto` for `egpot_no_pareto_mcts`. The last pairing is exploratory.
+
+The strongest baseline has the highest value of the compared metric for that budget and set. Ties go to lower mean nodes-to-hit, then method name. Undefined nodes-to-hit sorts after defined values. Re-select the strongest baseline by that same rule in every bootstrap resample.
+
+## Deviations from earlier benchmarks
+
+- Each app is evaluated as a whole set, without a dev/test split.
+- The old scorecard thresholds, including +4/30 and +6/30, are retired.
+- This is the first use of a bootstrap and a confirmatory comparison family in the locked EG-POT benchmarks.
+- Gateway and Lua roots were omitted by design before any evaluation.
 
 ## Run procedure and limits
 
-Use `bench.egpot_multi_eval --mode run-locked` once for each dataset, `dsb_social` and `dsb_media`. The tracked preregistration, clean Git tree, and frozen input hashes are required. Keep both locked records if a documented harness bug requires an acknowledged rerun and report both runs. Freeze policy, weights, and labels when committing the preregistration. No DeathStarBench retrieval was run during preparation.
+Use `bench.egpot_multi_eval --mode run-locked` once for each dataset, `dsb_social` and `dsb_media`. The tracked preregistration, clean Git tree, and frozen input hashes are required. Keep both locked records if a documented harness bug requires an acknowledged rerun and report both runs. Freeze policy, weights, and labels when committing the preregistration. Any label change after the freeze invalidates the locked run. Report a rerun on changed labels as a separate, new analysis. Lookalike failure analysis is descriptive only and is never used for claims. No DeathStarBench retrieval was run during preparation.
+
+At the final benchmark commit, `eg_pot.py` must be byte-identical to the recorded EG-POT tag, and all builder files must be byte-identical to the recorded builder tag. The runner verifies both tag pins and checks the committed files with `git diff` before loading the inputs. It refuses the run on any difference. The builder check covers all root Python files except `eg_pot.py`, the `contracts/` package, and the root `pyproject.toml` and `requirements*.txt` files.
 
 Labels are pending human review. Evidence comes from static C++ source and Thrift IDL, with no verification of live execution or deployment health. The DeathStarBench LICENSE states Apache-2.0 and its README states GPLv2. Do not redistribute the label and graph files.
