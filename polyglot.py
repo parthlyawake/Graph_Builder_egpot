@@ -545,6 +545,31 @@ class TreeSitterExtractor:
                 name = self._text(name_node, source)
                 self._add_function(builder, value_node, source, name)
                 return
+            if (builder.contract_bindings_v2 and self.extension in {".ts", ".tsx"}
+                    and name_node is not None and name_node.type == "identifier"
+                    and value_node is not None and value_node.type == "call_expression"):
+                from graphql_apollo import react_callback
+                callback = react_callback(node, source)
+                if callback is not None:
+                    name = self._text(name_node, source)
+                    owner = builder.get_current_scope_id()
+                    if builder.graph.nodes.get(owner, {}).get("type") == "function":
+                        variable = f"{owner}.var::{name}"
+                        builder.add_ckg_node(variable, "variable", "Lflow", name, self._line(name_node))
+                        builder.var_defs.setdefault(owner, {})[name] = variable
+                        builder.add_ckg_edge(owner, variable, "DEFINES", "Lflow")
+                    wrapper = value_node.child_by_field_name("function")
+                    args = value_node.child_by_field_name("arguments")
+                    callee = self._text(wrapper, source)
+                    if builder.current_scope:
+                        self._record_call_evidence(builder, value_node, source, callee, args)
+                        builder.calls_to_resolve.append((owner, callee, builder.scope_depth, builder.current_file))
+                    self._visit_children(builder, args, source, skip_nodes=(callback,))
+                    function_id = builder.get_node_id(name)
+                    self._add_function(builder, callback, source, name)
+                    builder.graph.nodes[function_id].update(
+                        line_no=self._line(node), binding_kind="react_use_callback")
+                    return
 
         # Constructor call: new Store(...)
         if node.type == "new_expression":

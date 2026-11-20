@@ -60,6 +60,7 @@ class WorkspaceConfig:
     ignore_patterns: List[str] = field(default_factory=list)
     strict_http_source_evidence: bool = False  # opt-in: disable hostless path-only HTTP matches
     exclude_nonproduction: bool = False
+    contract_bindings_v2: bool = False
 
     @classmethod
     def from_file(cls, config_path: str) -> "WorkspaceConfig":
@@ -103,6 +104,7 @@ class WorkspaceConfig:
             ignore_patterns=data.get("ignore_patterns", []),
             strict_http_source_evidence=data.get("strict_http_source_evidence") is True,
             exclude_nonproduction=data.get("exclude_nonproduction") is True,
+            contract_bindings_v2=data.get("contract_bindings_v2") is True,
         )
 
     @staticmethod
@@ -282,7 +284,8 @@ class WorkspaceCKGBuilder:
                 continue
 
             builder = CKGBuilder(repo_full_path, repo_id=repo_cfg.id,
-                                 exclude_nonproduction=self.config.exclude_nonproduction)
+                                 exclude_nonproduction=self.config.exclude_nonproduction,
+                                 contract_bindings_v2=self.config.contract_bindings_v2)
             if self.config.ignore_patterns:
                 builder.ignore_patterns.extend(self.config.ignore_patterns)
             builder.build()
@@ -355,6 +358,11 @@ class WorkspaceCKGBuilder:
         self._index_openapi_and_graphql()
         self._resolve_graphql_java_bindings()
         self._index_graphql_operations()
+        if self.config.contract_bindings_v2:
+            from graphql_apollo import bind_apollo_operations
+            self.graph.graph['contract_bindings_v2'] = {
+                'apollo': bind_apollo_operations(self),
+            }
 
         # Typed Kafka payload links require unique Avro/PDL schema identities.
         from kafka_schema_links import bind_kafka_payload_schemas

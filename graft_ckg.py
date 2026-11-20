@@ -66,11 +66,13 @@ _GENERATED_SOURCE_HEADER = re.compile(
 
 
 class CKGBuilder(ast.NodeVisitor):
-    def __init__(self, repo_path, repo_id=None, *, exclude_nonproduction=False):
+    def __init__(self, repo_path, repo_id=None, *, exclude_nonproduction=False,
+                 contract_bindings_v2=False):
         self.repo_path = os.path.abspath(repo_path)
         self.repo_id = repo_id
         self.repo_prefix = f"{repo_id}/" if repo_id else ""
         self.exclude_nonproduction = exclude_nonproduction
+        self.contract_bindings_v2 = contract_bindings_v2
         self.graph = nx.MultiDiGraph()
         self.current_file = None
         self.current_scope = []
@@ -1381,6 +1383,11 @@ class CKGBuilder(ast.NodeVisitor):
             key = (caller_id, callee_name, scope_depth, id_ctx)
             call_counts[key] = call_counts.get(key, 0) + 1
 
+        evidence_by_call = {}
+        for entry in self.callsite_evidence:
+            key = entry.get("caller"), entry.get("callee"), entry.get("file")
+            evidence_by_call.setdefault(key, []).append(entry)
+
         def emit_call(source, target, relation, metadata, spelling, file):
             self.add_ckg_edge(source, target, relation, "Ldep", metadata)
             edge_key = f"e{self.edge_counter - 1}"
@@ -1393,12 +1400,7 @@ class CKGBuilder(ast.NodeVisitor):
             caller_file = id_ctx
             target_ids = []
             from static_dispatch import select_overloads
-            callsites = [
-                entry for entry in self.callsite_evidence
-                if entry.get("caller") == caller_id
-                and entry.get("callee") == callee_name
-                and entry.get("file") == caller_file
-            ]
+            callsites = evidence_by_call.get((caller_id, callee_name, caller_file), [])
             resolved_overloads = [
                 select_overloads(self, caller_id, callee_name, caller_file,
                                  records=[entry])
@@ -1470,12 +1472,6 @@ class CKGBuilder(ast.NodeVisitor):
                             continue
 
             if not target_ids and getattr(self, "lsp_provider", None):
-                callsites = [
-                    evidence for evidence in self.callsite_evidence
-                    if evidence.get("caller") == caller_id
-                    and evidence.get("callee") == callee_name
-                    and evidence.get("file") == caller_file
-                ]
                 resolved_locations = set()
                 if callsites:
                     for evidence in callsites:

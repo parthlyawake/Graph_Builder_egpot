@@ -257,12 +257,17 @@ def inspect_links(graph, evidence, source=SOURCE):
 
 
 @contextmanager
-def source_scope(source):
+def source_scope(source, files=None):
     """Constrain discovery only. Keep all builder parsers and passes intact."""
     targets = [source / rel for rel in ROOTS.values()]
+    if files is not None:
+        files = {source / name for name in files}
+        ancestors = {parent for file in files for parent in file.parents}
     original_walk, original_rglob = os.walk, Path.rglob
 
     def allowed(path):
+        if files is not None and path not in files and path not in ancestors:
+            return False
         if not any(path.is_relative_to(root) or root.is_relative_to(path) for root in targets):
             return False
         return (not (set(part.lower() for part in path.relative_to(source).parts) & EXCLUDED)
