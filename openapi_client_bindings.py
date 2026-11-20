@@ -1,13 +1,65 @@
 """Bind unique OpenAPI and Spring route signatures from Python HTTP calls."""
 from collections import defaultdict
+from functools import lru_cache
 import re
 
 from java_contract_declarations import annotation_string, workspace_java_declarations
-from python_contract_requests import VERBS, workspace_python_requests
-from restli_bindings import route_matches
+from openapi_request_origins import workspace_sdk_requests
+from python_contract_requests import VERBS
 
 
 MAPPING = {name.title() + 'Mapping': name for name in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE')}
+
+
+@lru_cache(maxsize=1024)
+def _template_segments(template):
+    if not template.startswith('/'):
+        return ()
+    parts, start, depth = [], 1, 0
+    escaped = in_class = False
+    for i, char in enumerate(template[1:], 1):
+        if escaped:
+            escaped = False
+        elif char == '\\' and depth:
+            escaped = True
+        elif char in '[]' and depth:
+            in_class = char == '['
+        elif not in_class:
+            if char == '{':
+                depth += 1
+            elif char == '}':
+                depth -= 1
+            elif char == '/' and not depth:
+                parts.append(template[start:i])
+                start = i + 1
+        if depth < 0:
+            return ()
+    return (*parts, template[start:]) if depth == 0 else ()
+
+
+def route_specificity(template, request):
+    declared = _template_segments(template)
+    segments = request.split('/')[1:] if request.startswith('/') else []
+    if not declared or len(declared) != len(segments):
+        return None
+    literals = 0
+    for expected, given in zip(declared, segments):
+        parameter = re.fullmatch(r'\{([\w-]+)(?::(.+))?\}', expected)
+        if not parameter:
+            if expected != given or '{' in expected or '}' in expected:
+                return None
+            literals += bool(expected)
+            continue
+        if not given:
+            return None
+        if constraint := parameter[2]:
+            # Unknown dynamic values cannot prove a constrained match.
+            try:
+                if given == '{*}' or re.fullmatch(constraint, given) is None:
+                    return None
+            except re.error:
+                return None
+    return literals or None
 
 
 def _annotations(declaration, names):
@@ -82,6 +134,7 @@ def _inherited_routes(workspace, declarations):
 def bind_openapi_clients(workspace):
     graph = workspace.graph
     counts = {'inherited_contract_nodes': 0, 'implements_edges': 0, 'produces_edges': 0, 'consumes_edges': 0}
+    ambiguities = graph.graph['openapi_ambiguous_requests'] = []
     declarations = workspace_java_declarations(workspace)
     for (repo, verb, path), candidates in sorted(_inherited_routes(workspace, declarations).items()):
         if len({method.id for _, method in candidates}) != 1:
@@ -114,24 +167,28 @@ def bind_openapi_clients(workspace):
             routes[verb].append((node, path))
     if not routes:
         return counts
-    for caller, verb, path, selectors, evidence in workspace_python_requests(workspace):
+    for caller, verb, path, selectors, evidence, server_base in workspace_sdk_requests(workspace):
         if any(key == 'action' for key, _ in selectors):
             continue
-        matches = [(sum(not part.startswith('{') for part in template.split('/')), n)
-                   for n, template in routes[verb] if route_matches(template, path)]
+        matches = [(rank, n, template) for n, template in routes[verb]
+                   if (rank := route_specificity(template, path)) is not None]
         if not matches:
             continue
         # A literal route takes precedence over one that treats that same
         # segment as a path parameter. Preserve ambiguity among equal matches.
-        specificity = max(rank for rank, _ in matches)
-        candidates = [n for rank, n in matches if rank == specificity]
+        specificity = max(rank for rank, _, _ in matches)
+        candidates = [n for rank, n, _ in matches if rank == specificity]
         if len(candidates) != 1:
+            ambiguities.append(dict(caller=caller, verb=verb, path=path, source_evidence=evidence,
+                                    server_base=server_base, candidates=sorted(candidates),
+                                    matches=sorted(matches)))
             continue
         target = candidates[0]
         key = f'openapi_suffix::{target}'
         if not graph.has_edge(caller, target, key):
             # The contract signature is known. The server's deployment identity is still unknown.
             graph.add_edge(caller, target, key=key, relation='CONSUMES', layer='Lcontract',
-                           source_evidence=evidence, binding_kind='openapi_static_route_suffix')
+                           source_evidence=evidence, binding_kind='openapi_static_route_suffix',
+                           request_verb=verb, request_path=path, server_base=server_base)
             counts['consumes_edges'] += 1
     return counts

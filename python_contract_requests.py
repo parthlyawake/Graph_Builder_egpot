@@ -30,7 +30,9 @@ def concatenate(left, right):
     return alternatives(a + b for a, b in product(left, right))
 
 
-def expression(node, values):
+def expression(node, values, base_expression=None):
+    if base_expression is not None and (base := base_expression(node)) is not None:
+        return ((base,),)
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return ((node.value,),)
     if isinstance(node, ast.Name):
@@ -38,17 +40,18 @@ def expression(node, values):
     if isinstance(node, ast.JoinedStr):
         result = ((),)
         for item in node.values:
-            result = concatenate(result, expression(item.value if isinstance(item, ast.FormattedValue) else item, values))
+            result = concatenate(result, expression(item.value if isinstance(item, ast.FormattedValue) else item,
+                                                    values, base_expression))
         return result
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
-        return concatenate(expression(node.left, values), expression(node.right, values))
+        return concatenate(expression(node.left, values, base_expression), expression(node.right, values, base_expression))
     if isinstance(node, ast.IfExp):
-        return alternatives((*expression(node.body, values), *expression(node.orelse, values)))
+        return alternatives((*expression(node.body, values, base_expression), *expression(node.orelse, values, base_expression)))
     if isinstance(node, ast.Call):
         if isinstance(node.func, ast.Name) and node.func.id == 'str' and len(node.args) == 1:
-            return expression(node.args[0], values)
+            return expression(node.args[0], values, base_expression)
         if isinstance(node.func, ast.Attribute) and node.func.attr in {'lower', 'upper'} and not node.args:
-            return expression(node.func.value, values)
+            return expression(node.func.value, values, base_expression)
     return UNKNOWN
 
 
@@ -95,15 +98,15 @@ def _merge(states):
     return {key: alternatives(value for state in states for value in state.get(key, UNKNOWN)) for key in settings}
 
 
-def _bindings(callee, call, values, bound):
+def _bindings(callee, call, values, bound, evaluate=expression):
     positions = [a.arg for a in (*callee.args.posonlyargs, *callee.args.args)]
     if bound:
         positions = positions[1:]
     if any(isinstance(arg, ast.Starred) for arg in call.args):
         return None
     result = _defaults(callee)
-    result.update((name, expression(arg, values)) for name, arg in zip(positions, call.args))
-    result.update((kw.arg, expression(kw.value, values)) for kw in call.keywords if kw.arg)
+    result.update((name, evaluate(arg, values)) for name, arg in zip(positions, call.args))
+    result.update((kw.arg, evaluate(kw.value, values)) for kw in call.keywords if kw.arg)
     return result
 
 
@@ -178,6 +181,8 @@ class PythonRequests:
         for owner, parents in self.bases.items():
             for parent in parents:
                 self.children[parent].add(owner)
+
+    evaluate = staticmethod(expression)
 
     def _bases(self, owner, node):
         file, _ = owner
@@ -260,21 +265,21 @@ class PythonRequests:
                     url = node.args[0] if node.args else None
                 elif attr == 'REQUEST':
                     method = next((kw.value for kw in node.keywords if kw.arg == 'method'), node.args[0] if node.args else None)
-                    verb = expression(method, state)
+                    verb = self.evaluate(method, state)
                     url = node.args[1] if len(node.args) >= 2 else None
             elif isinstance(node.func, ast.Name) and node.func.id in dynamic:
-                verb = expression(dynamic[node.func.id], state)
+                verb = self.evaluate(dynamic[node.func.id], state)
                 url = node.args[0] if node.args else None
             if verb is not None:
                 url = next((kw.value for kw in node.keywords if kw.arg == 'url'), url)
-                for v, p in product(verb, expression(url, state)):
+                for v, p in product(verb, self.evaluate(url, state)):
                     found.add((v, p, node.lineno))
                 return
             bound = isinstance(node.func, ast.Attribute) and _spelling(node.func.value) == 'self'
             callee = self._method(owner, node.func.attr) if bound else (file, '', _spelling(node.func))
             if callee not in self.functions:
                 return
-            passed = _bindings(self.functions[callee], node, state, bound)
+            passed = _bindings(self.functions[callee], node, state, bound, self.evaluate)
             if passed is not None:
                 for v, p, _ in self._summarize(callee, remaining - 1):
                     for verb_part, path in product(_substitute(v, passed), _substitute(p, passed)):
@@ -304,7 +309,7 @@ class PythonRequests:
                         name = annotate_name(target)
                         if not name:
                             continue
-                        value = expression(item.value, state)
+                        value = self.evaluate(item.value, state)
                         if isinstance(item, ast.AugAssign) and isinstance(item.op, ast.Add):
                             value = concatenate(state.get(name, UNKNOWN), value)
                         state[name] = value
@@ -322,7 +327,7 @@ class PythonRequests:
         self.summaries[key, remaining] = result
         return result
 
-    def requests(self):
+    def request_values(self):
         for key, fn in self.functions.items():
             file, clazz, name = key
             endpoint = f'{self.builder.repo_prefix}{file}:' + (f'{clazz}.' if clazz else '') + name
@@ -334,9 +339,13 @@ class PythonRequests:
                     if not all(isinstance(bit, str) for bit in verb_bits):
                         continue
                     verb = ''.join(verb_bits).upper()
-                    route = _route(path)
-                    if verb in VERBS and route:
-                        yield endpoint, verb, *route, f'{self.builder.repo_prefix}{file}:{line}'
+                    if verb in VERBS:
+                        yield endpoint, verb, path, f'{self.builder.repo_prefix}{file}:{line}'
+
+    def requests(self):
+        for endpoint, verb, path, origin in self.request_values():
+            if route := _route(path):
+                yield endpoint, verb, *route, origin
 
 
 def workspace_python_requests(workspace):

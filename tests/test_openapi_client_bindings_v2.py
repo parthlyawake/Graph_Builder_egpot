@@ -15,17 +15,18 @@ class Second extends SharedController {}
 ''')
     (tmp_path / 'sdk.py').write_text('''from requests import Session
 class Common:
-    http: Session
+    _session: Session
     def send(self, url): ...
     def update(self, key):
-        return self.send(f"{self.base}/second/values/{key}")
+        base = self._gms_server.rstrip('/')
+        return self.send(f"{base}/second/values/{key}")
     def read(self, key):
-        return self.http.get(f"{self.base}/first/values/{key}")
+        return self._session.get(f"{self.gms_server}/first/values/{key}")
     def bulk(self):
-        return self.send(f"{self.base}/second/values/bulk")
+        return self.send(f"{self.config.gms_server}/second/values/bulk")
 class SDK(Common):
     def send(self, url):
-        return self.http.post(url)
+        return self._session.post(url)
 ''')
     graph = WorkspaceCKGBuilder(WorkspaceConfig(base_dir=str(tmp_path),
         repositories=[RepoConfig('service', '.')], contract_bindings_v2=True)).build()
@@ -51,14 +52,17 @@ def test_signature_ambiguity_does_not_create_a_binding(tmp_path):
 }''')
     (tmp_path / 'client').mkdir()
     (tmp_path / 'client' / 'sdk.py').write_text('''import requests
-def read(base, key):
-    return requests.get(f"{base}/values/{key}")
+class SDK:
+    def read(self, key):
+        return requests.get(f"{self._gms_server}/values/{key}")
 ''')
     graph = WorkspaceCKGBuilder(WorkspaceConfig(base_dir=str(tmp_path), repositories=[
         RepoConfig(name, name) for name in ('client', 'a', 'b')], contract_bindings_v2=True)).build()
-    caller = 'client/sdk.py:read'
+    caller = 'client/sdk.py:SDK.read'
     assert not any(d.get('binding_kind') == 'openapi_static_route_suffix'
                    for _, _, d in graph.out_edges(caller, data=True))
+    assert graph.graph['openapi_ambiguous_requests'][0]['candidates'] == [
+        'http::a/GET:/values/{key}', 'http::b/GET:/values/{key}']
 
 
 def test_http_source_index_preserves_name_ambiguity_and_line_ties():
