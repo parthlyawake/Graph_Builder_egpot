@@ -76,10 +76,36 @@ def explicit_datafetchers(source):
             yield schema_type, field, class_name, line
 
 
+def _get_implementation(graph, resolver):
+    """Use the unique nearest get(DataFetchingEnvironment) declaration."""
+    layer = {resolver}
+    seen = set(layer)
+    while layer:
+        methods, bases = set(), set()
+        for owner in sorted(layer):
+            for _, child, edge in graph.out_edges(owner, data=True):
+                node = graph.nodes[child]
+                rel = edge.get('relation')
+                if rel == 'EXTENDS' and node.get('type') == 'class':
+                    bases.add(child)
+                if rel != 'CONTAINS' or node.get('type') != 'function' or node.get('name') != 'get':
+                    continue
+                parameters = node.get('param_types', ())
+                if len(parameters) == 1 and parameters[0].rsplit('.', 1)[-1] == 'DataFetchingEnvironment':
+                    methods.add(child)
+        if methods:
+            return next(iter(methods)) if len(methods) == 1 else None
+        layer = bases - seen
+        seen.update(layer)
+    return None
+
+
 def bind_java_graphql_datafetchers(workspace):
     """Attach uniquely resolved Java DataFetchers to indexed GraphQL fields."""
     graph = workspace.graph
     bindings = 0
+    method_bindings = 0
+    v2 = workspace.config.contract_bindings_v2
     for repo_id, builder in sorted(workspace.repo_builders.items()):
         for rel_file, lines in sorted(builder.raw_file_lines.items()):
             if not rel_file.endswith(".java"):
@@ -98,18 +124,25 @@ def bind_java_graphql_datafetchers(workspace):
                 if len(set(candidates)) != 1:
                     continue
                 source_id = candidates[0]
-                if any(
+                origin = f"{repo_id}/{rel_file}:{line}"
+                if not any(
                     v == target and data.get("relation") == "IMPLEMENTS"
                     for _, v, data in graph.out_edges(source_id, data=True)
                 ):
-                    continue
-                origin = f"{repo_id}/{rel_file}:{line}"
-                graph.add_edge(
-                    source_id, target,
-                    key=f"graphql_impl::{source_id}::{target}::{origin}",
-                    relation="IMPLEMENTS", layer="Lcontract",
-                    source_evidence=origin,
-                    binding_kind="explicit_java_datafetcher",
-                )
-                bindings += 1
+                    graph.add_edge(
+                        source_id, target,
+                        key=f"graphql_impl::{source_id}::{target}::{origin}",
+                        relation="IMPLEMENTS", layer="Lcontract",
+                        source_evidence=origin,
+                        binding_kind="explicit_java_datafetcher",
+                    )
+                    bindings += 1
+                if v2 and (method := _get_implementation(graph, source_id)) is not None:
+                    key = f'graphql_method_impl::{method}::{target}'
+                    if not graph.has_edge(method, target, key):
+                        graph.add_edge(method, target, key=key, relation='IMPLEMENTS', layer='Lcontract',
+                                       source_evidence=origin, binding_kind='java_datafetcher_method')
+                        method_bindings += 1
+    if v2:
+        graph.graph['contract_bindings_v2']['graphql_java'] = {'implements_edges': method_bindings}
     return bindings

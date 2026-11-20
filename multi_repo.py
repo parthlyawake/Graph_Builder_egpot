@@ -356,13 +356,13 @@ class WorkspaceCKGBuilder:
 
         # Step 10: Index OpenAPI and GraphQL contract specs (P5)
         self._index_openapi_and_graphql()
+        if self.config.contract_bindings_v2:
+            self.graph.graph['contract_bindings_v2'] = {}
         self._resolve_graphql_java_bindings()
         self._index_graphql_operations()
         if self.config.contract_bindings_v2:
             from graphql_apollo import bind_apollo_operations
-            self.graph.graph['contract_bindings_v2'] = {
-                'apollo': bind_apollo_operations(self),
-            }
+            self.graph.graph['contract_bindings_v2']['apollo'] = bind_apollo_operations(self)
 
         # Typed Kafka payload links require unique Avro/PDL schema identities.
         from kafka_schema_links import bind_kafka_payload_schemas
