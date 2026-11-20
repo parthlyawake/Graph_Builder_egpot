@@ -3,7 +3,7 @@ import json
 import pytest
 
 from bench import egpot_multi_eval as locked
-from bench.datahub_inputs import LABELS, identifier_leaks, sha, validate_labels
+from bench.datahub_inputs import GRAPH, GRAPH_SHA, LABELS, identifier_leaks, sha, validate_labels
 from bench.datahub_protocol import settings
 
 
@@ -12,6 +12,8 @@ def test_paired_source_labels_have_no_edge_derived_fields_or_identifier_leaks():
     meta = json.loads(LABELS.with_suffix('.provenance.json').read_text(encoding='utf8'))
     assert len(labels) == len({r['id'] for r in labels}) == 52
     assert sha(LABELS) == meta['query_file_sha256']
+    assert locked.REGISTRY['datahub'].graph == GRAPH
+    assert meta['graphml_sha256'] == GRAPH_SHA
     expected = {'id', 'link_id', 'type', 'query', 'start_node', 'gold_nodes', 'gold_path',
                 'lookalike_ids', 'module_pair', 'guard_class', 'label_status'}
     for row in labels:

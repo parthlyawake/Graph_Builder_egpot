@@ -10,7 +10,8 @@ from time import perf_counter
 import networkx as nx
 
 from bench import egpot_eval as ev
-from bench.datahub_inputs import GRAPH, ROOT, graph_records, write_json
+from bench.datahub_inputs import V2_GRAPH as GRAPH
+from bench.datahub_inputs import ROOT, graph_records, write_json
 from bench.egpot_multi_eval import DSB_EDGE_POLICY
 from bench.egpot_width_sweep_dev import guard
 from eg_pot import EGPOTConfig, GraphView, QueryScorer

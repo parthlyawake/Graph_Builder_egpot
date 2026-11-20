@@ -10,8 +10,9 @@ from bench.map_datahub_coverage import CITATION, SourceIndex, read_evidence
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GRAPH = ROOT / 'bench/results/datahub_graph_v2.graphml'
-GRAPH_SHA = '71067cb3598e40b2be00c3a4f8b3f3557f03172a3dcd9b9a462cba59894dd162'
+V2_GRAPH = ROOT / 'bench/results/datahub_graph_v2.graphml'
+GRAPH = ROOT / 'bench/results/datahub_graph_v3.graphml'
+GRAPH_SHA = '041015fba8ab3baa7cc883955fcc700e344839b50d72359e072b2bcf43ebfeb0'
 LABELS = ROOT / 'bench/labels/datahub_egpot_queries.json'
 SOURCE = Path('C:/dev/egpot_repos/datahub')
 DRAFTS = SOURCE.parent / 'labels_draft'

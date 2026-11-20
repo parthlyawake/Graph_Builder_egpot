@@ -9,7 +9,8 @@ import re
 
 import networkx as nx
 
-from bench.datahub_inputs import GRAPH, LABELS, NODE_FIELDS, ROOT, SOURCE, graph_records, write_json
+from bench.datahub_inputs import V2_GRAPH as GRAPH
+from bench.datahub_inputs import LABELS, NODE_FIELDS, ROOT, SOURCE, graph_records, write_json
 from bench.map_datahub_coverage import ROOTS, source_path
 
 

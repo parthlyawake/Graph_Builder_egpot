@@ -6,16 +6,16 @@ Draft date `2026-11-20`. Freeze date, final benchmark commit, and analysis-scrip
 
 ## Data and coverage
 
-Use DataHub source `c2a82c97f0faf73c266d6525aead90557615147f`, builder `egpot-bench-builder-v2` at `fb55db870727cbba3fa32208aa1db9213b83b5a0`, and engine `egpot-tiebreak-v1` at `f3d3163eec15c3e814302fb8269cd3fbca6430a1`. The graph has 314,219 nodes and 1,032,920 edges. The v2 coverage sidecar records the guarded production workspace and build revision.
+Use DataHub source `c2a82c97f0faf73c266d6525aead90557615147f`, builder `egpot-bench-builder-v3` at `ea3f50e25f22e141495569207a8b16cbbd79e319`, and engine `egpot-tiebreak-v1` at `f3d3163eec15c3e814302fb8269cd3fbca6430a1`. The graph has 314,219 nodes and 1,032,832 edges. The v3 coverage sidecar records the guarded production workspace and build revision.
 
 | Input | SHA-256 |
 |---|---|
-| `bench/results/datahub_graph_v2.graphml` | `71067cb3598e40b2be00c3a4f8b3f3557f03172a3dcd9b9a462cba59894dd162` |
+| `bench/results/datahub_graph_v3.graphml` | `041015fba8ab3baa7cc883955fcc700e344839b50d72359e072b2bcf43ebfeb0` |
 | `bench/labels/datahub_egpot_queries.json` | `69e72fde97c6d7c32fc1809f74b45d960af11ac1566da57059a783af25bde6e0` |
 
 The whole set comprises 26 links and 52 queries, one explicit and one indirect per link. There is no dev split. Report the pooled cohort and descriptive results for React → GraphQL (14 links), Python → OpenAPI (5), and Python → Rest.li (7). Labels and lookalikes were verified through second-model checks and pinned source citations, without human review. Exact IDs came from cited file, line and qualified declaration name. Report builder-coverage failures separately and exclude them from the denominators of every method. Excluded links receive no evaluation or score.
 
-The builder was modified after the 26 links were identified, with those links in view. The four rules apply across the production workspace. Their repo-wide additions and independent source audit are documented in `datahub_edge_audit.md`. The labeled cohort was unseen by retrieval during preparation. Confirmatory inference is conditional on the eventual frozen cohort and graph. The audit found false OpenAPI edges outside the labeled links. Resolve that issue and review the resulting graph and input hashes before freezing this draft.
+The builder was modified after the 26 links were identified, with those links in view. The four rules apply across the production workspace. Their repo-wide additions and independent source audits are documented in `datahub_edge_audit.md` and `datahub_edge_audit_v3.md`. The labeled cohort was unseen by retrieval during preparation. Confirmatory inference is conditional on the eventual frozen cohort and graph. All 52 required edges verified again after the rebuild and the label bytes stayed the same.
 
 ## Evaluation plan
 
@@ -41,6 +41,8 @@ The four confirmatory contrasts use pooled full-hit-rate differences at seed 0. 
 
 Use 10,000 paired cluster bootstrap resamples over start nodes with NumPy `RandomState(0)`. Keep all queries and paired method outcomes for a sampled start together. Compute query-weighted rates. In C1 and C2, re-select the strongest baseline in every resample by highest full-hit rate, then lowest mean nodes-to-hit, then name. Undefined nodes-to-hit sorts last. Apply Bonferroni-adjusted percentile intervals at `1 − 0.05/4` with `0.05/8` in each tail. An interval above zero supports the specified direction, one below zero indicates the first method was significantly worse, and one including zero leaves the claim unsupported. Label every other analysis exploratory and use unadjusted 95% intervals where reported.
 
+For an exploratory sensitivity check on C1–C4, repeat the paired bootstrap with clusters keyed by the source-qualified Java handler class. Keep every query whose gold handler belongs to the sampled class together, including both wordings and all links sharing that class. Use 10,000 resamples and a fresh NumPy `RandomState(0)`, with the same query weights and strongest-baseline selection rule. Report unadjusted 95% intervals and cluster counts. The sensitivity check has no role in confirmatory verdicts.
+
 ## Predictions made before the run
 
 PPR will lose ground because 40 nodes cover a tiny share of this graph. Width-4 EG-POT will retain its tight-budget advantage. Width 12 will cost hits at budget 10. Contract consistency will matter at budget 40. Report failed predictions as plainly as successful ones.
@@ -50,3 +52,7 @@ PPR will lose ground because 40 nodes cover a tiny share of this graph. Width-4 
 Use the DataHub-only locked runner. It must verify a clean Git state, a tracked frozen preregistration and its tag, the input hashes, and the pinned engine and builder code. Any label change after freeze invalidates the locked run. A run on changed labels is a separate new analysis.
 
 The whole cohort has no dev/test split. This draft uses two widths and four adjusted comparisons and retires the earlier scorecard thresholds. The builder changes and lack of human label review are disclosed above. Three off-cohort synthetic probes were used for timing only, with returned results discarded.
+
+The v2 audit found 21 incorrect edges in a sample of 30 OpenAPI edges. The later census identified 88 incorrect v2 client `CONSUMES` bindings, including calls to external services. V3 requires provenance from the configured DataHub SDK server base, at least one matching literal route segment, an exact verb and segment match, and a unique most-specific route. It respects Spring parameter constraints and retains separate inherited prefixes. One guarded rebuild produced graph SHA-256 `041015fba8ab3baa7cc883955fcc700e344839b50d72359e072b2bcf43ebfeb0`.
+
+The client census found 88 incorrect `CONSUMES` edges before the fix and zero after it. The broader OpenAPI census found 102 incorrect edges in v2 and 14 in v3. The remaining 14 are pre-existing native Spring `IMPLEMENTS` edges, outside the client-binding change. Review those remaining edges before freezing. The earlier off-cohort method timings used v2. The v3 timing check measured graph loading and TF-IDF setup only.

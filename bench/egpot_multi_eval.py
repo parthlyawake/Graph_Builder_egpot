@@ -36,7 +36,7 @@ SETTINGS = ROOT / "bench/results/test_final_41d61e11.json"
 SCRATCH = Path(r"C:\dev\triage_out\step27")
 DSB_DATASETS = ("dsb_social", "dsb_media")
 DATAHUB = "datahub"
-DATAHUB_BUILDER_TAG = ("egpot-bench-builder-v2", "fb55db870727cbba3fa32208aa1db9213b83b5a0")
+DATAHUB_BUILDER_TAG = ("egpot-bench-builder-v3", "ea3f50e25f22e141495569207a8b16cbbd79e319")
 DATAHUB_PLAN_TAG = "egpot-datahub-prereg-v1"
 DSB_RESULT_SCHEMA = 2
 DSB_BUILDER_TAG = ("egpot-bench-builder-v1", "94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce")
@@ -67,8 +67,8 @@ class Repo:
 
 
 REGISTRY = {
-    DATAHUB: Repo(ROOT / "bench/results/datahub_graph_v2.graphml",
-                 ROOT / "bench/results/datahub_coverage_v2.json",
+    DATAHUB: Repo(ROOT / "bench/results/datahub_graph_v3.graphml",
+                 ROOT / "bench/results/datahub_coverage_v3.json",
                  ROOT / "bench/labels/datahub_egpot_queries.json",
                  ROOT / "bench/labels/datahub_egpot_queries.provenance.json",
                  ROOT / "bench/preregistration_datahub.md"),
