@@ -1,0 +1,1146 @@
+[
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::createDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/CreateDomainResolver.java:CreateDomainResolver.get"
+    ],
+    "gold_path": [
+      "web/app/domainV2/CreateDomainModal.tsx:CreateDomainModal.onCreateDomain",
+      "contract::graphql::Mutation::createDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/CreateDomainResolver.java:CreateDomainResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH01-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH01",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::deleteDomain"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.createDomain` for the request made by `onCreateDomain` in `CreateDomainModal.tsx`?",
+    "start_node": "web/app/domainV2/CreateDomainModal.tsx:CreateDomainModal.onCreateDomain",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::createDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/CreateDomainResolver.java:CreateDomainResolver.get"
+    ],
+    "gold_path": [
+      "web/app/domainV2/CreateDomainModal.tsx:CreateDomainModal.onCreateDomain",
+      "contract::graphql::Mutation::createDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/CreateDomainResolver.java:CreateDomainResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH01-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH01",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::deleteDomain"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "When a person saves a new grouping for catalog assets, which backend routine creates that grouping and returns its identifier?",
+    "start_node": "web/app/domainV2/CreateDomainModal.tsx:CreateDomainModal.onCreateDomain",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/DeleteDomainResolver.java:DeleteDomainResolver.get"
+    ],
+    "gold_path": [
+      "web/app/domainV2/DomainItemMenu.tsx:DomainItemMenu.deleteDomain",
+      "contract::graphql::Mutation::deleteDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/DeleteDomainResolver.java:DeleteDomainResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH02-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH02",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::moveDomain"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.deleteDomain` for the request made by `deleteDomain` in `DomainItemMenu.tsx`?",
+    "start_node": "web/app/domainV2/DomainItemMenu.tsx:DomainItemMenu.deleteDomain",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/DeleteDomainResolver.java:DeleteDomainResolver.get"
+    ],
+    "gold_path": [
+      "web/app/domainV2/DomainItemMenu.tsx:DomainItemMenu.deleteDomain",
+      "contract::graphql::Mutation::deleteDomain",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/DeleteDomainResolver.java:DeleteDomainResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH02-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH02",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::moveDomain"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "After someone confirms permanent removal of a catalog grouping, which backend routine erases it rather than relocating it?",
+    "start_node": "web/app/domainV2/DomainItemMenu.tsx:DomainItemMenu.deleteDomain",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listDomains",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/ListDomainsResolver.java:ListDomainsResolver.get"
+    ],
+    "gold_path": [
+      "web/app/domainV2/DomainsList.tsx:DomainsList",
+      "contract::graphql::Query::listDomains",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/ListDomainsResolver.java:ListDomainsResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH03-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH03",
+    "lookalike_ids": [
+      "contract::graphql::Query::domain"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Query.listDomains` for the request made by `DomainsList` in `DomainsList.tsx`?",
+    "start_node": "web/app/domainV2/DomainsList.tsx:DomainsList",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listDomains",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/ListDomainsResolver.java:ListDomainsResolver.get"
+    ],
+    "gold_path": [
+      "web/app/domainV2/DomainsList.tsx:DomainsList",
+      "contract::graphql::Query::listDomains",
+      "graphql/com/linkedin/datahub/graphql/resolvers/domain/ListDomainsResolver.java:ListDomainsResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH03-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH03",
+    "lookalike_ids": [
+      "contract::graphql::Query::domain"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine supplies the paginated collection of catalog groupings when its management screen opens?",
+    "start_node": "web/app/domainV2/DomainsList.tsx:DomainsList",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::createTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/CreateTagResolver.java:CreateTagResolver.get"
+    ],
+    "gold_path": [
+      "web/app/tags/CreateNewTagModal/CreateNewTagModal.tsx:CreateNewTagModal.onOk",
+      "contract::graphql::Mutation::createTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/CreateTagResolver.java:CreateTagResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH04-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH04",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updateTag"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.createTag` for the request made by `onOk` in `CreateNewTagModal.tsx`?",
+    "start_node": "web/app/tags/CreateNewTagModal/CreateNewTagModal.tsx:CreateNewTagModal.onOk",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::createTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/CreateTagResolver.java:CreateTagResolver.get"
+    ],
+    "gold_path": [
+      "web/app/tags/CreateNewTagModal/CreateNewTagModal.tsx:CreateNewTagModal.onOk",
+      "contract::graphql::Mutation::createTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/CreateTagResolver.java:CreateTagResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH04-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH04",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updateTag"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine creates the reusable label itself when someone submits the new-label form, before it is attached to any assets?",
+    "start_node": "web/app/tags/CreateNewTagModal/CreateNewTagModal.tsx:CreateNewTagModal.onOk",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/DeleteTagResolver.java:DeleteTagResolver.get"
+    ],
+    "gold_path": [
+      "web/app/tags/TagsTable.tsx:TagsTable.handleDeleteTag",
+      "contract::graphql::Mutation::deleteTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/DeleteTagResolver.java:DeleteTagResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH05-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH05",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::removeTag"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.deleteTag` for the request made by `handleDeleteTag` in `TagsTable.tsx`?",
+    "start_node": "web/app/tags/TagsTable.tsx:TagsTable.handleDeleteTag",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/DeleteTagResolver.java:DeleteTagResolver.get"
+    ],
+    "gold_path": [
+      "web/app/tags/TagsTable.tsx:TagsTable.handleDeleteTag",
+      "contract::graphql::Mutation::deleteTag",
+      "graphql/com/linkedin/datahub/graphql/resolvers/tag/DeleteTagResolver.java:DeleteTagResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH05-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH05",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::removeTag"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine removes a reusable label from the catalog when its management dialog is confirmed, rather than just detaching it from one asset?",
+    "start_node": "web/app/tags/TagsTable.tsx:TagsTable.handleDeleteTag",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listRoles",
+      "graphql/com/linkedin/datahub/graphql/resolvers/role/ListRolesResolver.java:ListRolesResolver.get"
+    ],
+    "gold_path": [
+      "web/app/permissions/roles/ManageRoles.tsx:ManageRoles",
+      "contract::graphql::Query::listRoles",
+      "graphql/com/linkedin/datahub/graphql/resolvers/role/ListRolesResolver.java:ListRolesResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH06-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH06",
+    "lookalike_ids": [
+      "contract::graphql::Query::listPolicies"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Query.listRoles` for the request made by `ManageRoles` in `ManageRoles.tsx`?",
+    "start_node": "web/app/permissions/roles/ManageRoles.tsx:ManageRoles",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listRoles",
+      "graphql/com/linkedin/datahub/graphql/resolvers/role/ListRolesResolver.java:ListRolesResolver.get"
+    ],
+    "gold_path": [
+      "web/app/permissions/roles/ManageRoles.tsx:ManageRoles",
+      "contract::graphql::Query::listRoles",
+      "graphql/com/linkedin/datahub/graphql/resolvers/role/ListRolesResolver.java:ListRolesResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH06-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH06",
+    "lookalike_ids": [
+      "contract::graphql::Query::listPolicies"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine populates the administration screen with the available permission bundles?",
+    "start_node": "web/app/permissions/roles/ManageRoles.tsx:ManageRoles",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deletePolicy",
+      "graphql/com/linkedin/datahub/graphql/resolvers/policy/DeletePolicyResolver.java:DeletePolicyResolver.get"
+    ],
+    "gold_path": [
+      "web/app/permissions/policy/usePolicy.ts:usePolicy.handleDeleteConfirm",
+      "contract::graphql::Mutation::deletePolicy",
+      "graphql/com/linkedin/datahub/graphql/resolvers/policy/DeletePolicyResolver.java:DeletePolicyResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH07-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH07",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updatePolicy"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.deletePolicy` for the request made by `handleDeleteConfirm` in `usePolicy.ts`?",
+    "start_node": "web/app/permissions/policy/usePolicy.ts:usePolicy.handleDeleteConfirm",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deletePolicy",
+      "graphql/com/linkedin/datahub/graphql/resolvers/policy/DeletePolicyResolver.java:DeletePolicyResolver.get"
+    ],
+    "gold_path": [
+      "web/app/permissions/policy/usePolicy.ts:usePolicy.handleDeleteConfirm",
+      "contract::graphql::Mutation::deletePolicy",
+      "graphql/com/linkedin/datahub/graphql/resolvers/policy/DeletePolicyResolver.java:DeletePolicyResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH07-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH07",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updatePolicy"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "After an administrator confirms removal of an access rule, which backend routine erases that rule?",
+    "start_node": "web/app/permissions/policy/usePolicy.ts:usePolicy.handleDeleteConfirm",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::searchUsers",
+      "graphql/com/linkedin/datahub/graphql/resolvers/user/SearchUsersResolver.java:SearchUsersResolver.get"
+    ],
+    "gold_path": [
+      "web/app/identity/user/UserListV2.hooks.ts:useUserListData",
+      "contract::graphql::Query::searchUsers",
+      "graphql/com/linkedin/datahub/graphql/resolvers/user/SearchUsersResolver.java:SearchUsersResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH08-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH08",
+    "lookalike_ids": [
+      "contract::graphql::Query::listUsers"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Query.searchUsers` for the request made by `useUserListData` in `UserListV2.hooks.ts`?",
+    "start_node": "web/app/identity/user/UserListV2.hooks.ts:useUserListData",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::searchUsers",
+      "graphql/com/linkedin/datahub/graphql/resolvers/user/SearchUsersResolver.java:SearchUsersResolver.get"
+    ],
+    "gold_path": [
+      "web/app/identity/user/UserListV2.hooks.ts:useUserListData",
+      "contract::graphql::Query::searchUsers",
+      "graphql/com/linkedin/datahub/graphql/resolvers/user/SearchUsersResolver.java:SearchUsersResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH08-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH08",
+    "lookalike_ids": [
+      "contract::graphql::Query::listUsers"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine finds people for the account table using the typed search and status choices?",
+    "start_node": "web/app/identity/user/UserListV2.hooks.ts:useUserListData",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listIngestionSources",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/ListIngestionSourcesResolver.java:ListIngestionSourcesResolver.get"
+    ],
+    "gold_path": [
+      "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList",
+      "contract::graphql::Query::listIngestionSources",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/ListIngestionSourcesResolver.java:ListIngestionSourcesResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH09-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH09",
+    "lookalike_ids": [
+      "contract::graphql::Query::listExecutionRequests"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Query.listIngestionSources` for the request made by `IngestionSourceList` in `IngestionSourceList.tsx`?",
+    "start_node": "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listIngestionSources",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/ListIngestionSourcesResolver.java:ListIngestionSourcesResolver.get"
+    ],
+    "gold_path": [
+      "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList",
+      "contract::graphql::Query::listIngestionSources",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/ListIngestionSourcesResolver.java:ListIngestionSourcesResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH09-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH09",
+    "lookalike_ids": [
+      "contract::graphql::Query::listExecutionRequests"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine supplies the management screen with configured metadata collection jobs, rather than their history of executions?",
+    "start_node": "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteIngestionSource",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/DeleteIngestionSourceResolver.java:DeleteIngestionSourceResolver.get"
+    ],
+    "gold_path": [
+      "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList.handleConfirmDelete",
+      "contract::graphql::Mutation::deleteIngestionSource",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/DeleteIngestionSourceResolver.java:DeleteIngestionSourceResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH10-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH10",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::cancelIngestionExecutionRequest"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.deleteIngestionSource` for the request made by `handleConfirmDelete` in `IngestionSourceList.tsx`?",
+    "start_node": "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList.handleConfirmDelete",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteIngestionSource",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/DeleteIngestionSourceResolver.java:DeleteIngestionSourceResolver.get"
+    ],
+    "gold_path": [
+      "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList.handleConfirmDelete",
+      "contract::graphql::Mutation::deleteIngestionSource",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ingest/source/DeleteIngestionSourceResolver.java:DeleteIngestionSourceResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH10-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH10",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::cancelIngestionExecutionRequest"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine erases a configured metadata collection job when its removal is confirmed, rather than stopping an active execution?",
+    "start_node": "web/app/ingestV2/source/IngestionSourceList.tsx:IngestionSourceList.handleConfirmDelete",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::createView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/CreateViewResolver.java:CreateViewResolver.get"
+    ],
+    "gold_path": [
+      "web/app/entityV2/view/builder/ViewBuilder.tsx:ViewBuilder.upsertView",
+      "contract::graphql::Mutation::createView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/CreateViewResolver.java:CreateViewResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH11-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH11",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updateView"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.createView` for the request made by `upsertView` in `ViewBuilder.tsx`?",
+    "start_node": "web/app/entityV2/view/builder/ViewBuilder.tsx:ViewBuilder.upsertView",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::createView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/CreateViewResolver.java:CreateViewResolver.get"
+    ],
+    "gold_path": [
+      "web/app/entityV2/view/builder/ViewBuilder.tsx:ViewBuilder.upsertView",
+      "contract::graphql::Mutation::createView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/CreateViewResolver.java:CreateViewResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH11-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH11",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updateView"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine saves a new reusable filter for the catalog when the editor is in its new-item mode?",
+    "start_node": "web/app/entityV2/view/builder/ViewBuilder.tsx:ViewBuilder.upsertView",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/DeleteViewResolver.java:DeleteViewResolver.get"
+    ],
+    "gold_path": [
+      "web/app/entityV2/view/menu/ViewDropdownMenu.tsx:ViewDropdownMenu.deleteView",
+      "contract::graphql::Mutation::deleteView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/DeleteViewResolver.java:DeleteViewResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH12-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH12",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updateView"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.deleteView` for the request made by `deleteView` in `ViewDropdownMenu.tsx`?",
+    "start_node": "web/app/entityV2/view/menu/ViewDropdownMenu.tsx:ViewDropdownMenu.deleteView",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::deleteView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/DeleteViewResolver.java:DeleteViewResolver.get"
+    ],
+    "gold_path": [
+      "web/app/entityV2/view/menu/ViewDropdownMenu.tsx:ViewDropdownMenu.deleteView",
+      "contract::graphql::Mutation::deleteView",
+      "graphql/com/linkedin/datahub/graphql/resolvers/view/DeleteViewResolver.java:DeleteViewResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH12-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH12",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::updateView"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine removes a saved catalog filter when someone confirms removal from its menu?",
+    "start_node": "web/app/entityV2/view/menu/ViewDropdownMenu.tsx:ViewDropdownMenu.deleteView",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listOwnershipTypes",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ownership/ListOwnershipTypesResolver.java:ListOwnershipTypesResolver.get"
+    ],
+    "gold_path": [
+      "web/app/sharedV2/owners/useOwnershipTypes.ts:useOwnershipTypes",
+      "contract::graphql::Query::listOwnershipTypes",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ownership/ListOwnershipTypesResolver.java:ListOwnershipTypesResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH13-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH13",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::createOwnershipType"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Query.listOwnershipTypes` for the request made by `useOwnershipTypes` in `useOwnershipTypes.ts`?",
+    "start_node": "web/app/sharedV2/owners/useOwnershipTypes.ts:useOwnershipTypes",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Query::listOwnershipTypes",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ownership/ListOwnershipTypesResolver.java:ListOwnershipTypesResolver.get"
+    ],
+    "gold_path": [
+      "web/app/sharedV2/owners/useOwnershipTypes.ts:useOwnershipTypes",
+      "contract::graphql::Query::listOwnershipTypes",
+      "graphql/com/linkedin/datahub/graphql/resolvers/ownership/ListOwnershipTypesResolver.java:ListOwnershipTypesResolver.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH13-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH13",
+    "lookalike_ids": [
+      "contract::graphql::Mutation::createOwnershipType"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine provides the available categories of responsibility for the asset-owner picker?",
+    "start_node": "web/app/sharedV2/owners/useOwnershipTypes.ts:useOwnershipTypes",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::updateLineage",
+      "graphql/com/linkedin/datahub/graphql/resolvers/lineage/UpdateLineageResolver.java:UpdateLineageResolver.get"
+    ],
+    "gold_path": [
+      "web/app/lineageV3/manualLineage/ManageLineageModal.tsx:ManageLineageModal.saveLineageChanges",
+      "contract::graphql::Mutation::updateLineage",
+      "graphql/com/linkedin/datahub/graphql/resolvers/lineage/UpdateLineageResolver.java:UpdateLineageResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH14-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH14",
+    "lookalike_ids": [
+      "contract::graphql::Query::searchAcrossLineage"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which server handler implements `Mutation.updateLineage` for the request made by `saveLineageChanges` in `ManageLineageModal.tsx`?",
+    "start_node": "web/app/lineageV3/manualLineage/ManageLineageModal.tsx:ManageLineageModal.saveLineageChanges",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "contract::graphql::Mutation::updateLineage",
+      "graphql/com/linkedin/datahub/graphql/resolvers/lineage/UpdateLineageResolver.java:UpdateLineageResolver.get"
+    ],
+    "gold_path": [
+      "web/app/lineageV3/manualLineage/ManageLineageModal.tsx:ManageLineageModal.saveLineageChanges",
+      "contract::graphql::Mutation::updateLineage",
+      "graphql/com/linkedin/datahub/graphql/resolvers/lineage/UpdateLineageResolver.java:UpdateLineageResolver.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH14-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH14",
+    "lookalike_ids": [
+      "contract::graphql::Query::searchAcrossLineage"
+    ],
+    "module_pair": "React → GraphQL",
+    "query": "Which backend routine applies additions and removals in the dependency editor when a person saves changes to the connections around an asset?",
+    "start_node": "web/app/lineageV3/manualLineage/ManageLineageModal.tsx:ManageLineageModal.saveLineageChanges",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/entity/{entityName}/batchGet",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.get_entities",
+      "http::openapi/POST:/openapi/v3/entity/{entityName}/batchGet",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH15-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH15",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.scrollEntities"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which server handler implements `POST /openapi/v3/entity/{entityName}/batchGet` for the request made by `get_entities` in `openapi.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.get_entities",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/entity/{entityName}/batchGet",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.get_entities",
+      "http::openapi/POST:/openapi/v3/entity/{entityName}/batchGet",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH15-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH15",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.scrollEntities"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which backend routine returns a batch of records for a supplied asset category and list of identifiers?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.get_entities",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/entity/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.scrollEntities"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_entities",
+      "http::openapi/POST:/openapi/v3/entity/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.scrollEntities"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH16-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH16",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which server handler implements `POST /openapi/v3/entity/scroll` for the request made by `scroll_entities` in `openapi.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_entities",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/entity/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.scrollEntities"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_entities",
+      "http::openapi/POST:/openapi/v3/entity/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.scrollEntities"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH16-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH16",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which backend routine serves the next page of catalog records using a continuation cursor and optional filters?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_entities",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/relationship/scroll",
+      "openapi/io/datahubproject/openapi/controller/GenericRelationshipController.java:GenericRelationshipController.scrollRelationships"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_relationships",
+      "http::openapi/POST:/openapi/v3/relationship/scroll",
+      "openapi/io/datahubproject/openapi/controller/GenericRelationshipController.java:GenericRelationshipController.scrollRelationships"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH17-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH17",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/LineageController.java:LineageController.scrollLineage"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which server handler implements `POST /openapi/v3/relationship/scroll` for the request made by `scroll_relationships` in `openapi.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_relationships",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/relationship/scroll",
+      "openapi/io/datahubproject/openapi/controller/GenericRelationshipController.java:GenericRelationshipController.scrollRelationships"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_relationships",
+      "http::openapi/POST:/openapi/v3/relationship/scroll",
+      "openapi/io/datahubproject/openapi/controller/GenericRelationshipController.java:GenericRelationshipController.scrollRelationships"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH17-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH17",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/LineageController.java:LineageController.scrollLineage"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which backend routine pages generic links between assets with optional restrictions on either end, without following a dependency chain?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_relationships",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/lineage/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/LineageController.java:LineageController.scrollLineage"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_lineage",
+      "http::openapi/POST:/openapi/v3/lineage/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/LineageController.java:LineageController.scrollLineage"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH18-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH18",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/controller/GenericRelationshipController.java:GenericRelationshipController.scrollRelationships"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which server handler implements `POST /openapi/v3/lineage/scroll` for the request made by `scroll_lineage` in `openapi.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_lineage",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/POST:/openapi/v3/lineage/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/LineageController.java:LineageController.scrollLineage"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_lineage",
+      "http::openapi/POST:/openapi/v3/lineage/scroll",
+      "openapi/io/datahubproject/openapi/v3/controller/LineageController.java:LineageController.scrollLineage"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH18-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH18",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/controller/GenericRelationshipController.java:GenericRelationshipController.scrollRelationships"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which backend routine pages the upstream or downstream dependency connections around an anchor asset?",
+    "start_node": "ingestion/datahub/ingestion/graph/openapi.py:OpenApiAPI.scroll_lineage",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/GET:/openapi/v1/registry/models/entity/specifications",
+      "openapi/io/datahubproject/openapi/v1/registry/EntityRegistryController.java:EntityRegistryController.getEntitySpecs"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_aspect_specs",
+      "http::openapi/GET:/openapi/v1/registry/models/entity/specifications",
+      "openapi/io/datahubproject/openapi/v1/registry/EntityRegistryController.java:EntityRegistryController.getEntitySpecs"
+    ],
+    "guard_class": "guarded",
+    "id": "DH19-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH19",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v1/registry/EntityRegistryController.java:EntityRegistryController.getAspectSpecs"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which server handler implements `GET /openapi/v1/registry/models/entity/specifications` for the request made by `get_entity_aspect_specs` in `client.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_aspect_specs",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "http::openapi/GET:/openapi/v1/registry/models/entity/specifications",
+      "openapi/io/datahubproject/openapi/v1/registry/EntityRegistryController.java:EntityRegistryController.getEntitySpecs"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_aspect_specs",
+      "http::openapi/GET:/openapi/v1/registry/models/entity/specifications",
+      "openapi/io/datahubproject/openapi/v1/registry/EntityRegistryController.java:EntityRegistryController.getEntitySpecs"
+    ],
+    "guard_class": "guarded",
+    "id": "DH19-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH19",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v1/registry/EntityRegistryController.java:EntityRegistryController.getAspectSpecs"
+    ],
+    "module_pair": "Python → OpenAPI",
+    "query": "Which backend routine supplies paginated definitions of the supported catalog record types when the ingestion client needs to consult the server registry?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_aspect_specs",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/aspects::method::get",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.get"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_aspect",
+      "restli::com.linkedin.entity::/aspects::method::get",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH20-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH20",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.getTimeseriesAspectValues"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which server handler implements `GET /aspects/{urn}` for the request made by `get_aspect` in `client.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_aspect",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/aspects::method::get",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.get"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_aspect",
+      "restli::com.linkedin.entity::/aspects::method::get",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.get"
+    ],
+    "guard_class": "guarded",
+    "id": "DH20-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH20",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.getTimeseriesAspectValues"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which backend routine retrieves a requested version of one metadata component for a single asset through the older component endpoint?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_aspect",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/aspects::action::getTimeseriesAspectValues",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.getTimeseriesAspectValues"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_usage_aspects_from_urn",
+      "restli::com.linkedin.entity::/aspects::action::getTimeseriesAspectValues",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.getTimeseriesAspectValues"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH21-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH21",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.get"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which server handler implements `POST /aspects?action=getTimeseriesAspectValues` for the request made by `get_usage_aspects_from_urn` in `client.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_usage_aspects_from_urn",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/aspects::action::getTimeseriesAspectValues",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.getTimeseriesAspectValues"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_usage_aspects_from_urn",
+      "restli::com.linkedin.entity::/aspects::action::getTimeseriesAspectValues",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.getTimeseriesAspectValues"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH21-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH21",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.get"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which backend routine returns an asset's historical usage measurements for the supplied time window?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_usage_aspects_from_urn",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/entities::action::listUrns",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.listUrns"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.list_all_entity_urns",
+      "restli::com.linkedin.entity::/entities::action::listUrns",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.listUrns"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH22-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH22",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which server handler implements `POST /entities?action=listUrns` for the request made by `list_all_entity_urns` in `client.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.list_all_entity_urns",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/entities::action::listUrns",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.listUrns"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.list_all_entity_urns",
+      "restli::com.linkedin.entity::/entities::action::listUrns",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.listUrns"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH22-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH22",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which backend routine pages the identifiers of records in one asset category without loading the records themselves?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.list_all_entity_urns",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/entitiesV2::method::get",
+      "restli/com/linkedin/metadata/resources/entity/EntityV2Resource.java:EntityV2Resource.get"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_raw",
+      "restli::com.linkedin.entity::/entitiesV2::method::get",
+      "restli/com/linkedin/metadata/resources/entity/EntityV2Resource.java:EntityV2Resource.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH23-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH23",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which server handler implements `GET /entitiesV2/{urn}` for the request made by `get_entity_raw` in `client.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_raw",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/entitiesV2::method::get",
+      "restli/com/linkedin/metadata/resources/entity/EntityV2Resource.java:EntityV2Resource.get"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_raw",
+      "restli::com.linkedin.entity::/entitiesV2::method::get",
+      "restli/com/linkedin/metadata/resources/entity/EntityV2Resource.java:EntityV2Resource.get"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH23-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH23",
+    "lookalike_ids": [
+      "openapi/io/datahubproject/openapi/v3/controller/EntityController.java:EntityController.getEntityBatch"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which backend routine returns the raw record for one encoded identifier, optionally limited to named metadata components?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.get_entity_raw",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/entities::action::deleteReferences",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.deleteReferencesTo"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.delete_references_to_urn",
+      "restli::com.linkedin.entity::/entities::action::deleteReferences",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.deleteReferencesTo"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH24-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH24",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.deleteEntity"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which server handler implements `POST /entities?action=deleteReferences` for the request made by `delete_references_to_urn` in `client.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.delete_references_to_urn",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/entities::action::deleteReferences",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.deleteReferencesTo"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.delete_references_to_urn",
+      "restli::com.linkedin.entity::/entities::action::deleteReferences",
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.deleteReferencesTo"
+    ],
+    "guard_class": "unconditional",
+    "id": "DH24-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH24",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/EntityResource.java:EntityResource.deleteEntity"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which backend routine finds references to a target asset and, outside preview mode, removes those references from other records?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph.delete_references_to_urn",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.operations::/operations::action::restoreIndices",
+      "restli/com/linkedin/metadata/resources/operations/OperationsResource.java:OperationsResource.restoreIndices"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph._restore_index_call",
+      "restli::com.linkedin.operations::/operations::action::restoreIndices",
+      "restli/com/linkedin/metadata/resources/operations/OperationsResource.java:OperationsResource.restoreIndices"
+    ],
+    "guard_class": "guarded",
+    "id": "DH25-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH25",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.restoreIndices"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which server handler implements `POST /operations?action=restoreIndices` for the request made by `_restore_index_call` in `client.py`?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph._restore_index_call",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.operations::/operations::action::restoreIndices",
+      "restli/com/linkedin/metadata/resources/operations/OperationsResource.java:OperationsResource.restoreIndices"
+    ],
+    "gold_path": [
+      "ingestion/datahub/ingestion/graph/client.py:DataHubGraph._restore_index_call",
+      "restli::com.linkedin.operations::/operations::action::restoreIndices",
+      "restli/com/linkedin/metadata/resources/operations/OperationsResource.java:OperationsResource.restoreIndices"
+    ],
+    "guard_class": "guarded",
+    "id": "DH25-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH25",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.restoreIndices"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which backend routine repopulates the search indexes from stored metadata when an operator requests recovery?",
+    "start_node": "ingestion/datahub/ingestion/graph/client.py:DataHubGraph._restore_index_call",
+    "type": "indirect"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/aspects::action::ingestProposalBatch",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.ingestProposalBatch"
+    ],
+    "gold_path": [
+      "ingestion/datahub/emitter/rest_emitter.py:DataHubRestEmitter._emit_restli_mcps",
+      "restli::com.linkedin.entity::/aspects::action::ingestProposalBatch",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.ingestProposalBatch"
+    ],
+    "guard_class": "guarded",
+    "id": "DH26-explicit",
+    "label_status": "source_verified",
+    "link_id": "DH26",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.ingestProposal"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which server handler implements `POST /aspects?action=ingestProposalBatch` for the request made by `_emit_restli_mcps` in `rest_emitter.py`?",
+    "start_node": "ingestion/datahub/emitter/rest_emitter.py:DataHubRestEmitter._emit_restli_mcps",
+    "type": "explicit"
+  },
+  {
+    "gold_nodes": [
+      "restli::com.linkedin.entity::/aspects::action::ingestProposalBatch",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.ingestProposalBatch"
+    ],
+    "gold_path": [
+      "ingestion/datahub/emitter/rest_emitter.py:DataHubRestEmitter._emit_restli_mcps",
+      "restli::com.linkedin.entity::/aspects::action::ingestProposalBatch",
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.ingestProposalBatch"
+    ],
+    "guard_class": "guarded",
+    "id": "DH26-indirect",
+    "label_status": "source_verified",
+    "link_id": "DH26",
+    "lookalike_ids": [
+      "restli/com/linkedin/metadata/resources/entity/AspectResource.java:AspectResource.ingestProposal"
+    ],
+    "module_pair": "Python → Rest.li",
+    "query": "Which backend routine accepts a group of submitted metadata changes in one request on the older transport?",
+    "start_node": "ingestion/datahub/emitter/rest_emitter.py:DataHubRestEmitter._emit_restli_mcps",
+    "type": "indirect"
+  }
+]
