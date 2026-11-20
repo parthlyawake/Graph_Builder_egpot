@@ -105,7 +105,8 @@ def bind_java_graphql_datafetchers(workspace):
     graph = workspace.graph
     bindings = 0
     method_bindings = 0
-    v2 = workspace.config.contract_bindings_v2
+    # Standalone spec discovery also calls this binder with a graph-only proxy.
+    v2 = getattr(getattr(workspace, 'config', None), 'contract_bindings_v2', False)
     for repo_id, builder in sorted(workspace.repo_builders.items()):
         for rel_file, lines in sorted(builder.raw_file_lines.items()):
             if not rel_file.endswith(".java"):

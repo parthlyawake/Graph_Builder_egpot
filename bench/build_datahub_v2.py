@@ -128,6 +128,7 @@ def main():
             'datahub_coverage_v2.json', 'datahub_coverage_v2.md')]
         if any(path.exists() for path in targets):
             parser.error('refusing to overwrite a DataHub v2 artifact')
+        builder_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     git = ['git', '-c', f'safe.directory={SOURCE.as_posix()}', '-C', str(SOURCE)]
     if (subprocess.check_output([*git, 'rev-parse', 'HEAD'], text=True).strip() != REVISION or
             subprocess.check_output([*git, 'status', '--porcelain'], text=True).strip()):
@@ -157,7 +158,7 @@ def main():
     report['scoped_file_count'] = len(scoped['scoped_files'])
     report['fixture_verification'] = fixtures
     report['evidence_sha256'] = hashlib.sha256(EVIDENCE.read_bytes()).hexdigest()
-    report['builder_commit'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+    report['builder_commit'] = builder_commit
     report['graphml_xml_replacements'] = write_graphml(graph, targets[0])
     report['graphml_bytes'] = targets[0].stat().st_size
     with targets[0].open('rb') as stream:

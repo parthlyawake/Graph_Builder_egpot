@@ -28,3 +28,20 @@ class StatusResolver implements DataFetcher<String> {
                if attr.get('binding_kind') == 'java_datafetcher_method']
     assert len(methods) == 1 and methods[0].startswith(owner + '.get@overload:')
     assert methods[0] in old and not old.has_edge(methods[0], contract)
+
+
+def test_standalone_specs_keep_the_existing_class_binding(tmp_path):
+    from graft_ckg import CKGBuilder
+
+    (tmp_path / 'schema.graphql').write_text('type Query { status: String }')
+    (tmp_path / 'Resolver.java').write_text('''
+class Resolver {
+  String get(DataFetchingEnvironment env) { return "ok"; }
+  void register() { wiring.type("Query", b -> b.dataFetcher("status", new Resolver())); }
+}
+''')
+    graph = CKGBuilder(tmp_path).build()
+    owner = 'Resolver.java:Resolver'
+    contract = 'contract::graphql::Query::status'
+    assert graph.has_edge(owner, contract)
+    assert not graph.has_edge(owner + '.get', contract)
