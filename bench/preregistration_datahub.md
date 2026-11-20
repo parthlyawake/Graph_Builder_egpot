@@ -1,8 +1,8 @@
 # DataHub preregistration draft
 
-Status: DRAFT
+Status: FROZEN
 
-Draft date `2026-11-20`. Freeze date, final benchmark commit, and analysis-script path and commit are fill-at-freeze fields. This draft authorizes no retrieval on the labeled cohort.
+Draft date `2026-11-20`. Freeze date `2026-11-20`. Final benchmark commit `c15abdcb7b990c94223670d45119eb59b6218b7e`. Analysis script `bench/analyze_datahub_final.py` at commit `c15abdcb7b990c94223670d45119eb59b6218b7e`. This draft authorizes no retrieval on the labeled cohort.
 
 ## Data and coverage
 
