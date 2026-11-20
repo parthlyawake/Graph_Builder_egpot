@@ -51,6 +51,14 @@ EXTENSIONS = {".ts":"TypeScript", ".tsx":"TypeScript", ".java":"Java", ".py":"Py
 CITATION = re.compile(r"`([^\x60]+):(\d+)`")
 
 
+def canonical_contract_name(name):
+    # Interface files and callers can name the same path variable differently.
+    if name and " /" in name:
+        path, mark, query = name.partition("?")
+        return re.sub(r"(?<=/)\{[^/{}]+\}(?=/|$)", "{param}", path) + mark + query
+    return name
+
+
 def read_evidence(path):
     entries = []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -104,7 +112,7 @@ class SourceIndex:
                     name = f"{attrs['method']} {attrs['path']}"
                 else:
                     name = attrs.get("name")
-                self.contracts[name].append((node, file))
+                self.contracts[canonical_contract_name(name)].append((node, file))
 
     def declaration(self, evidence, kind="function"):
         file, line, qualified = evidence
@@ -144,7 +152,7 @@ class SourceIndex:
         return ids[0] if len(ids) == 1 else None
 
     def contract(self, name, citations):
-        candidates = self.contracts.get(name, [])
+        candidates = self.contracts.get(canonical_contract_name(name), [])
         exact_files = {p for p, _ in citations}
         exact = [n for n, f in candidates if f in exact_files]
         if not exact:

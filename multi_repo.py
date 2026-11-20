@@ -272,6 +272,8 @@ class WorkspaceCKGBuilder:
         self.edge_counter = 0
         self.vectorizer = self.tfidf_matrix = self.bm25_index = None
         self.indexed_node_ids = []
+        self._java_contract_declarations = None
+        self._python_contract_requests = None
 
         t0 = time.perf_counter()
 
@@ -362,7 +364,9 @@ class WorkspaceCKGBuilder:
         self._index_graphql_operations()
         if self.config.contract_bindings_v2:
             from graphql_apollo import bind_apollo_operations
+            from restli_bindings import bind_restli
             self.graph.graph['contract_bindings_v2']['apollo'] = bind_apollo_operations(self)
+            self.graph.graph['contract_bindings_v2']['restli'] = bind_restli(self)
 
         # Typed Kafka payload links require unique Avro/PDL schema identities.
         from kafka_schema_links import bind_kafka_payload_schemas
