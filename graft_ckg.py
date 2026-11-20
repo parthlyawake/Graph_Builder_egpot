@@ -583,7 +583,8 @@ class CKGBuilder(ast.NodeVisitor):
         for rel_path, full_path in source_files:
             spec = spec_for(rel_path)
             counters = self.language_report["languages"][spec.name]
-            before = set(self.graph.nodes)
+            # Extractors only add to the graph while discovering a source file.
+            before = self.graph.number_of_nodes()
             try:
                 outcome = adapter_for(rel_path).extract(self, rel_path, full_path)
                 if outcome.get("parser_projection"):
@@ -598,7 +599,7 @@ class CKGBuilder(ast.NodeVisitor):
                     self.language_report["parse_errors"].append(entry)
                     self.skipped_files.append({"repo": self.repo_id or "", "file": rel_path,
                                                "language": spec.name, "reason": entry["error"]})
-                elif not (set(self.graph.nodes) - before):
+                elif self.graph.number_of_nodes() == before:
                     counters["partial"] += 1
                     entry = {"file": rel_path, "language": spec.name,
                              "error": "no graph nodes emitted"}

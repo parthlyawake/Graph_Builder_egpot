@@ -130,6 +130,9 @@ def deployment_context(workspace):
 
 
 def _caller(builder, file, line):
+    index = getattr(builder, '_http_source_index', None)
+    if index is not None and file.endswith(('.py', '.java')):
+        return index.caller(file, line)
     candidates = [
         (int(d.get("line_no", 0)), node)
         for node, d in builder.graph.nodes(data=True)

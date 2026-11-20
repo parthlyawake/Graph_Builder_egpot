@@ -13,6 +13,7 @@ class Declaration:
     annotations: dict
     constants: dict
     methods: tuple = ()
+    base: str | None = None
 
 
 def _text(node, source):
@@ -46,7 +47,10 @@ def annotation_string(arguments, constants, key=None, *, positional=False):
 def java_declarations(workspace):
     from polyglot import TreeSitterExtractor
 
-    parser = TreeSitterExtractor('.java').parser
+    try:
+        parser = TreeSitterExtractor('.java').parser
+    except RuntimeError:
+        return
     for builder in workspace.repo_builders.values():
         methods = defaultdict(list)
         for n, attrs in builder.graph.nodes(data=True):
@@ -61,6 +65,12 @@ def java_declarations(workspace):
             root = parser.parse(source).root_node
             package = next((_text(n, source).split()[1].rstrip(';') for n in root.named_children
                             if n.type == 'package_declaration'), '')
+            imports = {}
+            for entry in root.named_children:
+                if entry.type == 'import_declaration':
+                    match = re.fullmatch(r'\s*import\s+([\w.]+)\s*;\s*', _text(entry, source))
+                    if match:
+                        imports[match[1].rsplit('.', 1)[-1]] = match[1]
             graph_file = builder.repo_prefix + file
 
             def walk(node, scope=()):
@@ -90,8 +100,14 @@ def java_declarations(workspace):
                             yield from walk(entry, qualified)
                     if owner in workspace.graph:
                         canonical = '.'.join(part for part in (package, *qualified) if part)
+                        superclass = next((child for child in node.named_children if child.type == 'superclass'), None)
+                        base = re.match(r'extends\s+([\w.$]+)', _text(superclass, source))
+                        parent = None
+                        if base:
+                            parent = imports.get(base[1], '.'.join(filter(None, (package, base[1])))
+                                                 if '.' not in base[1] else base[1])
                         yield canonical, Declaration(owner, name, graph_file, node.start_point.row + 1,
-                                                     _annotations(node, source), constants, tuple(functions))
+                                                     _annotations(node, source), constants, tuple(functions), parent)
                 elif node.type == 'program':
                     for child in node.named_children:
                         yield from walk(child)

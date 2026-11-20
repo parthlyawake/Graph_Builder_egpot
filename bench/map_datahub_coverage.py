@@ -151,13 +151,15 @@ class SourceIndex:
                if attrs.get("type") == kind and attrs.get("name") == name]
         return ids[0] if len(ids) == 1 else None
 
-    def contract(self, name, citations):
+    def contract(self, name, citations, *, allow_other_files=False):
         candidates = self.contracts.get(canonical_contract_name(name), [])
         exact_files = {p for p, _ in citations}
         exact = [n for n, f in candidates if f in exact_files]
         if not exact:
             # Canonical SDL / endpoint nodes often have no file attribute.
             exact = [n for n, f in candidates if not f]
+        if not exact and allow_other_files and len(candidates) == 1:
+            exact = [candidates[0][0]]
         return {"id": exact[0] if len(exact) == 1 else None, "candidates": candidates,
                 "file_provenance": "node attribute" if exact and any(f in exact_files for _, f in candidates)
                 else "unique canonical name" if len(exact) == 1 else None}
@@ -252,7 +254,8 @@ def inspect_links(graph, evidence, source=SOURCE):
             names = ("POST /openapi/v2/relationship/scroll", "POST /openapi/v3/relationship/scroll")
             result["routes_to_same_handler"] = [
                 {"name": name, "id": target, "handler_to_contract": relation_list(graph, h, target)}
-                for name in names for target in [index.contract(name, row["contract_citations"])["id"]]]
+                for name in names for target in [index.contract(
+                    name, row["contract_citations"], allow_other_files=True)["id"]]]
             result["unprefixed_route_candidates"] = index.contract(
                 "POST /scroll", row["contract_citations"])["candidates"]
         full = all((s, c, h)) and "CONSUMES" in consumes and "IMPLEMENTS" in implements

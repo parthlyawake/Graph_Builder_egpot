@@ -180,8 +180,10 @@ def bind_apollo_operations(workspace):
             if HOOK.fullmatch(hook):
                 operations[hook].append(node)
     parsers = {}
-    counts = {"callback_nodes": sum(a.get("binding_kind") == "react_use_callback"
-                                    for _, a in graph.nodes(data=True)),
+    callbacks = [n for n, a in graph.nodes(data=True) if a.get("binding_kind") == "react_use_callback"]
+    counts = {"callback_nodes": len(callbacks),
+              "callback_contains_edges": sum(a.get('relation') == 'CONTAINS' for n in callbacks
+                                             for _, _, a in graph.in_edges(n, data=True)),
               "operation_edges": 0, "consumes_edges": 0}
     if not operations:
         return counts

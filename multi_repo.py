@@ -364,9 +364,11 @@ class WorkspaceCKGBuilder:
         self._index_graphql_operations()
         if self.config.contract_bindings_v2:
             from graphql_apollo import bind_apollo_operations
+            from openapi_client_bindings import bind_openapi_clients
             from restli_bindings import bind_restli
             self.graph.graph['contract_bindings_v2']['apollo'] = bind_apollo_operations(self)
             self.graph.graph['contract_bindings_v2']['restli'] = bind_restli(self)
+            self.graph.graph['contract_bindings_v2']['openapi'] = bind_openapi_clients(self)
 
         # Typed Kafka payload links require unique Avro/PDL schema identities.
         from kafka_schema_links import bind_kafka_payload_schemas
@@ -707,7 +709,16 @@ class WorkspaceCKGBuilder:
     def _resolve_cross_repo_http_calls(self):
         """Resolve source-evidenced and unique cross-repository HTTP calls."""
         from graph_builder_http import resolve_workspace_http
-        return resolve_workspace_http(self)
+        if not self.config.contract_bindings_v2:
+            return resolve_workspace_http(self)
+        from http_extended import HTTPSourceIndex
+        try:
+            for builder in self.repo_builders.values():
+                builder._http_source_index = HTTPSourceIndex(builder)
+            return resolve_workspace_http(self)
+        finally:
+            for builder in self.repo_builders.values():
+                builder._http_source_index = None
 
     def _resolve_cross_repo_grpc_calls(self):
         """Binds stub calls in Repo A to contracts declared in Repo B or shared contracts."""

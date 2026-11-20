@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from collections import Counter
 import hashlib
 import json
+from pathlib import Path
 import re
 import subprocess
 import sys
@@ -89,9 +90,18 @@ def summary(before, after):
     lines += ['## Repo-wide additions', '']
     lines += markdown_table(['Rule', 'Counted additions', 'Count'], (
         (rule, field, value) for rule, values in sorted(after['rules'].items()) for field,value in sorted(values.items())))
+    lines += ['Callback counts include new function nodes and their containment edges. The graph also reflects '
+              'the normal extraction of callback bodies under their new function scopes.', '']
+    if after.get('fixture_verification'):
+        lines += ['## Existing source fixture identity', '',
+                  'The frozen v1 and enabled v2 builds had identical digests over attributed nodes and keyed edges.', '']
+        lines += markdown_table(['Fixture', 'Nodes', 'Edges', 'Graph digest'], (
+            (name, row['nodes'], row['edges'], row['sha256'])
+            for name, row in sorted(after['fixture_verification'].items())))
+    same = not after['scoped_differences']
     lines += ['## Build verification', '',
               f"GraphML SHA-256 `{after['graphml_sha256']}` ({after['graphml_bytes']:,} bytes).", '',
-              f"Scoped and full builds agreed on all {len(after['links'])} coverage classes. "
+              f"Scoped and full builds {'agreed' if same else 'differed'} on the coverage classes. "
               f"Scoped build {after['scoped_build_seconds']:.2f} s. Full build {after['build_seconds']:.2f} s, "
               f"peak working set {after['build_peak_rss_bytes']/2**30:.2f} GiB.", '',
               f"Nodes {before['inventory']['nodes']:,} → {after['inventory']['nodes']:,}. "
@@ -105,12 +115,15 @@ def main():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--full', action='store_true')
     parser.add_argument('--scoped-reference', type=str)
+    parser.add_argument('--fixture-reference', type=str)
     args = parser.parse_args()
     if args.full and not args.scoped_reference:
         parser.error('--full requires the final scoped coverage JSON via --scoped-reference')
     if args.full:
-        from pathlib import Path
         scoped = json.loads(Path(args.scoped_reference).read_text(encoding='utf8'))
+        if not scoped.get('scoped') or scoped.get('source') != REVISION or len(coverage_signature(scoped)) != 26:
+            parser.error('the scoped reference must cover the 26 pinned links')
+        fixtures = json.loads(Path(args.fixture_reference).read_text(encoding='utf8')) if args.fixture_reference else None
         targets = [RESULTS / name for name in ('datahub_graph_v2.graphml',
             'datahub_coverage_v2.json', 'datahub_coverage_v2.md')]
         if any(path.exists() for path in targets):
@@ -134,12 +147,15 @@ def main():
         sys.stdout.reconfigure(encoding='utf8')
         print('SCOPED_COVERAGE_JSON=' + json.dumps(report, ensure_ascii=True, sort_keys=True, allow_nan=False))
         return
-    if coverage_signature(scoped) != coverage_signature(report):
-        differences = {key: (value, coverage_signature(report).get(key))
-                       for key, value in coverage_signature(scoped).items()
-                       if value != coverage_signature(report).get(key)}
-        raise ValueError(f'Scoped and full coverage differ: {differences}')
+    full_classes = coverage_signature(report)
+    scoped_classes = coverage_signature(scoped)
+    differences = {key: (scoped_classes.get(key), full_classes.get(key))
+                   for key in sorted(full_classes.keys() | scoped_classes.keys())
+                   if scoped_classes.get(key) != full_classes.get(key)}
+    report['scoped_differences'] = differences
     report['scoped_build_seconds'] = scoped['build_seconds']
+    report['scoped_file_count'] = len(scoped['scoped_files'])
+    report['fixture_verification'] = fixtures
     report['evidence_sha256'] = hashlib.sha256(EVIDENCE.read_bytes()).hexdigest()
     report['builder_commit'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     report['graphml_xml_replacements'] = write_graphml(graph, targets[0])
@@ -151,7 +167,9 @@ def main():
                                             summary(before, report)), strict=True):
         with path.open('x', encoding='utf8', newline='\n') as stream:
             stream.write(contents)
-    print(report['graphml_sha256'], report['graphml_bytes'], coverage_signature(report), flush=True)
+    print(report['graphml_sha256'], report['graphml_bytes'], full_classes, flush=True)
+    if differences:
+        raise ValueError(f'Scoped and full coverage differ: {differences}')
 
 
 if __name__ == '__main__':

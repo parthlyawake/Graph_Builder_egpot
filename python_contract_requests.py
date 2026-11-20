@@ -3,8 +3,6 @@ import ast
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import product
-import posixpath
-import re
 from urllib.parse import parse_qsl, urlsplit
 
 
@@ -240,10 +238,10 @@ class PythonRequests:
             pending.extend(self.bases.get(current, ()))
         return False
 
-    def _summarize(self, key, active=()):
-        if key in self.summaries:
-            return self.summaries[key]
-        if key in active or len(active) >= LIMIT:
+    def _summarize(self, key, remaining=LIMIT):
+        if (key, remaining) in self.summaries:
+            return self.summaries[key, remaining]
+        if not remaining:
             return ()
         file, clazz, _ = key
         owner = file, clazz
@@ -278,7 +276,7 @@ class PythonRequests:
                 return
             passed = _bindings(self.functions[callee], node, state, bound)
             if passed is not None:
-                for v, p, _ in self._summarize(callee, (*active, key)):
+                for v, p, _ in self._summarize(callee, remaining - 1):
                     for verb_part, path in product(_substitute(v, passed), _substitute(p, passed)):
                         found.add((verb_part, path, node.lineno))
 
@@ -321,9 +319,7 @@ class PythonRequests:
 
         scan(fn.body, values)
         result = tuple(sorted(found, key=repr))
-        # A recursive call can be cut at a different point in another traversal.
-        if not active:
-            self.summaries[key] = result
+        self.summaries[key, remaining] = result
         return result
 
     def requests(self):
