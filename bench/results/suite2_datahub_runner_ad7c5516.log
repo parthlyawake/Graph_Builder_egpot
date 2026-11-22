@@ -1,0 +1,154 @@
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=4 calls=6780 resume=False
+RESUME_GUARD protected_completed_calls=0
+RESUME_GUARD_PASS protected=0 pending_submitted=6780
+WORKER_SETUP_BEGIN pid=11828 monotonic_s=370218.403
+WORKER_SETUP_END pid=11828 monotonic_s=370260.669
+WORKER_SETUP_BEGIN pid=30508 monotonic_s=370260.669
+WORKER_SETUP_END pid=30508 monotonic_s=370294.138
+WORKER_SETUP_BEGIN pid=16856 monotonic_s=370294.138
+WORKER_SETUP_END pid=16856 monotonic_s=370323.583
+WORKER_SETUP_BEGIN pid=12108 monotonic_s=370323.584
+WORKER_SETUP_END pid=12108 monotonic_s=370351.243
+CHECKPOINT 100/6780 jobs
+CHECKPOINT 200/6780 jobs
+CHECKPOINT 300/6780 jobs
+CHECKPOINT 400/6780 jobs
+CHECKPOINT 500/6780 jobs
+CHECKPOINT 600/6780 jobs
+CHECKPOINT 700/6780 jobs
+CHECKPOINT 800/6780 jobs
+CHECKPOINT 900/6780 jobs
+CHECKPOINT 1000/6780 jobs
+CHECKPOINT 1100/6780 jobs
+SNAPSHOT_VERIFIED calls=1140 sha256=a48321022d680fb07f3d74a45b2426b4745e2f12fdc2bcc51334ae8fce3db69a
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=3 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=1140
+RESUME_GUARD_PASS protected=1140 pending_submitted=5640
+WORKER_SETUP_BEGIN pid=50400 monotonic_s=373218.581
+WORKER_SETUP_END pid=50400 monotonic_s=373251.236
+WORKER_SETUP_BEGIN pid=8044 monotonic_s=373251.237
+WORKER_SETUP_END pid=8044 monotonic_s=373280.391
+WORKER_SETUP_BEGIN pid=3696 monotonic_s=373280.391
+WORKER_SETUP_END pid=3696 monotonic_s=373308.534
+CHECKPOINT 1240/6780 jobs
+SNAPSHOT_VERIFIED calls=1281 sha256=0260f116227bdc8df29f6df964a9056434d20347aa21c750724884a92ab77575
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=2 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=1281
+RESUME_GUARD_PASS protected=1281 pending_submitted=5499
+WORKER_SETUP_BEGIN pid=68884 monotonic_s=386818.239
+SNAPSHOT_VERIFIED calls=1281 sha256=0260f116227bdc8df29f6df964a9056434d20347aa21c750724884a92ab77575
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=1 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=1281
+RESUME_GUARD_PASS protected=1281 pending_submitted=5499
+WORKER_SETUP_BEGIN pid=62300 monotonic_s=386866.981
+WORKER_SETUP_END pid=62300 monotonic_s=386907.113
+CHECKPOINT 1381/6780 jobs
+CHECKPOINT 1481/6780 jobs
+CHECKPOINT 1581/6780 jobs
+CHECKPOINT 1681/6780 jobs
+CHECKPOINT 1781/6780 jobs
+CHECKPOINT 1881/6780 jobs
+CHECKPOINT 1981/6780 jobs
+CHECKPOINT 2081/6780 jobs
+CHECKPOINT 2181/6780 jobs
+CHECKPOINT 2281/6780 jobs
+CHECKPOINT 2381/6780 jobs
+CHECKPOINT 2481/6780 jobs
+CHECKPOINT 2581/6780 jobs
+CHECKPOINT 2681/6780 jobs
+CHECKPOINT 2781/6780 jobs
+CHECKPOINT 2881/6780 jobs
+CHECKPOINT 2981/6780 jobs
+CHECKPOINT 3081/6780 jobs
+CHECKPOINT 3181/6780 jobs
+CHECKPOINT 3281/6780 jobs
+CHECKPOINT 3381/6780 jobs
+CHECKPOINT 3481/6780 jobs
+CHECKPOINT 3581/6780 jobs
+CHECKPOINT 3681/6780 jobs
+CHECKPOINT 3781/6780 jobs
+CHECKPOINT 3881/6780 jobs
+CHECKPOINT 3981/6780 jobs
+CHECKPOINT 4081/6780 jobs
+CHECKPOINT 4181/6780 jobs
+CHECKPOINT 4281/6780 jobs
+CHECKPOINT 4381/6780 jobs
+CHECKPOINT 4481/6780 jobs
+CHECKPOINT 4581/6780 jobs
+CHECKPOINT 4681/6780 jobs
+CHECKPOINT 4781/6780 jobs
+CHECKPOINT 4881/6780 jobs
+CHECKPOINT 4981/6780 jobs
+SNAPSHOT_VERIFIED calls=4982 sha256=604252483a2dd568c81f426abc30bd2829b8d6dfd7d9947aa695a02eb200af5c
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=4 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=4982
+RESUME_GUARD_PASS protected=4982 pending_submitted=1798
+WORKER_SETUP_BEGIN pid=48360 monotonic_s=393623.058
+WORKER_SETUP_END pid=48360 monotonic_s=393663.849
+WORKER_SETUP_BEGIN pid=64860 monotonic_s=393663.849
+WORKER_SETUP_END pid=64860 monotonic_s=393696.698
+WORKER_SETUP_BEGIN pid=67124 monotonic_s=393696.698
+WORKER_SETUP_END pid=67124 monotonic_s=393726.407
+WORKER_SETUP_BEGIN pid=53092 monotonic_s=393726.407
+SNAPSHOT_VERIFIED calls=4983 sha256=70cb3cc548ea48a54ab33b2aaf53adf88dbb47db5b76af2b04bc2138c52b1a76
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=3 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=4983
+RESUME_GUARD_PASS protected=4983 pending_submitted=1797
+WORKER_SETUP_BEGIN pid=65296 monotonic_s=393745.234
+WORKER_SETUP_END pid=65296 monotonic_s=393783.223
+WORKER_SETUP_BEGIN pid=53880 monotonic_s=393783.223
+WORKER_SETUP_END pid=53880 monotonic_s=393816.655
+WORKER_SETUP_BEGIN pid=18168 monotonic_s=393816.655
+WORKER_SETUP_END pid=18168 monotonic_s=393845.767
+SNAPSHOT_VERIFIED calls=4989 sha256=7720e1c832a1e6ae8b9f2593aba86eefae3d7eee69f1c394de0b356c530af4a2
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=2 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=4989
+RESUME_GUARD_PASS protected=4989 pending_submitted=1791
+WORKER_SETUP_BEGIN pid=3004 monotonic_s=393948.753
+WORKER_SETUP_END pid=3004 monotonic_s=393987.153
+WORKER_SETUP_BEGIN pid=17388 monotonic_s=393987.153
+WORKER_SETUP_END pid=17388 monotonic_s=394020.201
+CHECKPOINT 5089/6780 jobs
+CHECKPOINT 5189/6780 jobs
+SNAPSHOT_VERIFIED calls=5275 sha256=bdf750db2deef4527968b67df8c64f20ab51c5ea985d5cd2ccca8c598a601147
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=1 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=5275
+RESUME_GUARD_PASS protected=5275 pending_submitted=1505
+WORKER_SETUP_BEGIN pid=8492 monotonic_s=399773.928
+WORKER_SETUP_END pid=8492 monotonic_s=399810.339
+SNAPSHOT_VERIFIED calls=5327 sha256=29a20d7e27c3f4e1272c776bbbd1dfe57e02155c8ca26a839c6443d63d460648
+warning: in the working copy of 'bench/results/suite2_deviations_ad7c5516.jsonl', LF will be replaced by CRLF the next time Git touches it
+SUITE2 datahub workers=4 calls=6780 resume=True
+RESUME_GUARD protected_completed_calls=5327
+RESUME_GUARD_PASS protected=5327 pending_submitted=1453
+WORKER_SETUP_BEGIN pid=65008 monotonic_s=405668.661
+WORKER_SETUP_END pid=65008 monotonic_s=405707.342
+WORKER_SETUP_BEGIN pid=64656 monotonic_s=405707.343
+WORKER_SETUP_END pid=64656 monotonic_s=405739.447
+WORKER_SETUP_BEGIN pid=64648 monotonic_s=405739.447
+WORKER_SETUP_END pid=64648 monotonic_s=405768.714
+WORKER_SETUP_BEGIN pid=65076 monotonic_s=405768.714
+WORKER_SETUP_END pid=65076 monotonic_s=405796.141
+CHECKPOINT 5427/6780 jobs
+CHECKPOINT 5527/6780 jobs
+CHECKPOINT 5627/6780 jobs
+CHECKPOINT 5727/6780 jobs
+CHECKPOINT 5827/6780 jobs
+CHECKPOINT 5927/6780 jobs
+CHECKPOINT 6027/6780 jobs
+CHECKPOINT 6127/6780 jobs
+CHECKPOINT 6227/6780 jobs
+CHECKPOINT 6327/6780 jobs
+CHECKPOINT 6427/6780 jobs
+CHECKPOINT 6527/6780 jobs
+CHECKPOINT 6627/6780 jobs
+CHECKPOINT 6727/6780 jobs
+CHECKPOINT 6780/6780 jobs

@@ -1,0 +1,359 @@
+[
+  {
+    "link_id": "C01",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Query::getRootGlossaryNodes",
+    "gold_ids": [
+      "web/app/glossaryV2/BusinessGlossaryPage.tsx:BusinessGlossaryPage",
+      "web/app/glossaryV2/GlossaryBrowser/GlossaryBrowser.tsx:GlossaryBrowserInner",
+      "web/app/glossaryV2/GlossarySidebar.tsx:GlossarySidebarInner",
+      "web/app/homeV3/modules/hierarchyViewModule/components/glossary/hooks/useRootGlossaryNodes.ts:useRootGlossaryNodes",
+      "web/app/sharedV2/tags/useGlossaryTreeEntities.ts:useGlossaryTreeEntities"
+    ],
+    "explicit_query": "Which frontend scopes send the getRootGlossaryNodes GraphQL query?",
+    "indirect_query": "Find every sending scope that requests top-level folders in the business vocabulary.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C02",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Query::getRootGlossaryTerms",
+    "gold_ids": [
+      "web/app/glossaryV2/BusinessGlossaryPage.tsx:BusinessGlossaryPage",
+      "web/app/glossaryV2/GlossaryBrowser/GlossaryBrowser.tsx:GlossaryBrowserInner",
+      "web/app/glossaryV2/GlossarySidebar.tsx:GlossarySidebarInner",
+      "web/app/homeV3/modules/hierarchyViewModule/components/glossary/hooks/useRootGlossaryTerms.ts:useRootGlossaryTerms",
+      "web/app/sharedV2/tags/useGlossaryTreeEntities.ts:useGlossaryTreeEntities"
+    ],
+    "explicit_query": "Which frontend scopes send the getRootGlossaryTerms GraphQL query?",
+    "indirect_query": "Find every sending scope that requests vocabulary entries at the top level, with no parent folder.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C03",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Query::listGlobalViews",
+    "gold_ids": [
+      "web/app/entityV2/view/ViewsList.tsx:ViewsList",
+      "web/app/entityV2/view/select/ViewSelectContext.tsx:ViewSelectContextProvider",
+      "web/app/homeV2/introduce/IntroduceYourselfMainContent.tsx:IntroduceYourselfMainContent",
+      "web/app/identity/serviceAccount/ServiceAccountList.hooks.tsx:useServiceAccountViewOptions",
+      "web/app/search/view/select/ViewSelect.tsx:ViewSelect"
+    ],
+    "explicit_query": "Which frontend scopes send the listGlobalViews GraphQL query?",
+    "indirect_query": "Find every sending scope that requests catalog display presets shared across users.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C04",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Query::listPosts",
+    "gold_ids": [
+      "web/app/homeV2/action/announcement/useGetUnseenAnnouncements.tsx:useGetUnseenAnnouncements",
+      "web/app/homeV2/content/tabs/announcements/useGetAnnouncements.tsx:useGetAnnouncements",
+      "web/app/homeV2/content/tabs/useGetVisibleTabs.tsx:useGetAnnouncementsExists",
+      "web/app/homeV2/reference/sections/pinned/useGetPinnedLinks.tsx:useGetPinnedLinks",
+      "web/app/homeV3/announcements/useGetAnnouncementsForUser.ts:useGetAnnouncementsForUser",
+      "web/app/settingsV2/posts/PostsList.tsx:PostList"
+    ],
+    "explicit_query": "Which frontend scopes send the listPosts GraphQL query?",
+    "indirect_query": "Find every sending scope that requests the collection of announcements for display.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C05",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Query::listRecommendations",
+    "gold_ids": [
+      "web/app/homeV2/introduce/IntroduceYourselfMainContent.tsx:IntroduceYourselfMainContent",
+      "web/app/homeV2/useHomeRecommendations.ts:useHomeRecommendations",
+      "web/app/search/SearchBar.tsx:SearchBar",
+      "web/app/searchV2/SearchBar.tsx:SearchBar",
+      "web/app/searchV2/searchBarV2/hooks/useRecentlySearchedQueries.ts:useRecentlySearchedQueries",
+      "web/app/searchV2/searchBarV2/hooks/useRecentlyViewedEntities.ts:useRecentlyViewedEntities"
+    ],
+    "explicit_query": "Which frontend scopes send the listRecommendations GraphQL query?",
+    "indirect_query": "Find every sending scope that requests suggested items for a particular display scenario.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C06",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Query::searchDocuments",
+    "gold_ids": [
+      "web/app/document/hooks/useDocumentGroupDocuments.ts:useDocumentGroupDocuments",
+      "web/app/document/hooks/useDocumentGroupRoots.ts:useDocumentGroupRoots",
+      "web/app/document/hooks/useDocumentSidebarSearch.ts:useDocumentSidebarSearch",
+      "web/app/document/hooks/useSearchDocuments.ts:useSearchDocuments"
+    ],
+    "explicit_query": "Which frontend scopes send the searchDocuments GraphQL query?",
+    "indirect_query": "Find every sending scope that searches the knowledge documents with a text query.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C07",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Query::listDataProductAssets",
+    "gold_ids": [
+      "web/app/entityV2/dataProduct/AssetsSections.tsx:AssetsSection",
+      "web/app/entityV2/dataProduct/OutputPortsSection.tsx:OutputPortsSection",
+      "web/app/entityV2/dataProduct/generateUseListDataProductAssets.ts:generateUseListDataProductAssets",
+      "web/app/entityV2/summary/modules/assets/useGetDataProductAssets.ts:useGetDataProductAssets",
+      "web/app/entityV2/summary/modules/outputPorts/useGetOutputPorts.ts:useGetOutputPorts"
+    ],
+    "explicit_query": "Which frontend scopes send the listDataProductAssets GraphQL query?",
+    "indirect_query": "Find every sending scope that lists the assets grouped into one curated offering.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C08",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Mutation::updateDescription",
+    "gold_ids": [
+      "web/app/businessAttribute/utils/useDescriptionRenderer.tsx:useDescriptionRenderer",
+      "web/app/entityV2/mlFeatureTable/profile/features/TableOfMlFeatures.tsx:TableOfMlFeatures",
+      "web/app/entityV2/shared/EntityDropdown/EditGlossaryEntityModal.tsx:EditGlossaryEntityModal.onSave",
+      "web/app/entityV2/shared/tabs/Dataset/Schema/components/SchemaFieldDrawer/FieldDescription.tsx:FieldDescription",
+      "web/app/entityV2/shared/tabs/Dataset/Schema/utils/useDescriptionRenderer.tsx:useDescriptionRenderer",
+      "web/app/entityV2/shared/tabs/Documentation/components/DescriptionEditor.tsx:DescriptionEditor.updateDescription",
+      "web/app/entityV2/summary/documentation/useDescriptionUtils.ts:useDescriptionUtils.updateDescription",
+      "web/app/sharedV2/TagStyleEntity.tsx:TagStyleEntity.updateDescriptionValue"
+    ],
+    "explicit_query": "Which frontend scopes send the updateDescription GraphQL mutation?",
+    "indirect_query": "Find every sending scope that saves a change to the explanatory text on a catalog asset.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C09",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Mutation::batchSetDataProduct",
+    "gold_ids": [
+      "web/app/entityV2/shared/components/styled/search/action/DataProductsDropdown.tsx:DataProductsDropdown.batchUnsetDataProducts",
+      "web/app/entityV2/shared/containers/profile/sidebar/DataProduct/DataProductSection.tsx:DataProductSection.removeDataProduct",
+      "web/app/entityV2/shared/containers/profile/sidebar/DataProduct/SetDataProductModal.tsx:SetDataProductModal.onOk",
+      "web/app/entityV2/shared/entity/EntityActions.tsx:EntityActions.batchSetDataProduct",
+      "web/app/entityV2/summary/modules/assets/AddAssetsModal.tsx:AddAssetsModal.batchSetDataProduct",
+      "web/app/previewV2/utils.ts:useRemoveDataProductAssets.handleDataProduct"
+    ],
+    "explicit_query": "Which frontend scopes send the batchSetDataProduct GraphQL mutation?",
+    "indirect_query": "Find every sending scope that assigns or clears the same curated grouping for several selected assets in one request.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "C10",
+    "repo": "DataHub",
+    "type": "blast_radius",
+    "start_id": "contract::graphql::Mutation::batchUpdateDeprecation",
+    "gold_ids": [
+      "web/app/entityV2/shared/EntityDropdown/UpdateDeprecationModal.tsx:UpdateDeprecationModal.handleSubmit",
+      "web/app/entityV2/shared/EntityDropdown/useUndeprecateResource.ts:useUndeprecateResource",
+      "web/app/entityV2/shared/components/styled/search/action/DeprecationDropdown.tsx:DeprecationDropdown.batchUndeprecate",
+      "web/app/tags/TagsTableColumns.tsx:handleUndeprecate"
+    ],
+    "explicit_query": "Which frontend scopes send the batchUpdateDeprecation GraphQL mutation?",
+    "indirect_query": "Find every sending scope that changes the retirement flag on several assets in one request.",
+    "budgets": [
+      10,
+      20,
+      40
+    ]
+  },
+  {
+    "link_id": "DSB-B01",
+    "repo": "DSB Media",
+    "type": "lookalike",
+    "start_id": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+    "gold_ids": [
+      "Rating/RatingHandler.h:media_service.UploadRating"
+    ],
+    "decoy_id": "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating",
+    "explicit_query": "Find the UploadRating operation in the Rating service.",
+    "indirect_query": "Locate the operation, called directly from the film-key resolver, that takes the resolved film key together with a numeric score.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-B02",
+    "repo": "DSB Media",
+    "type": "lookalike",
+    "start_id": "MovieId/MovieIdService.cpp:main",
+    "gold_ids": [
+      "MovieId/MovieIdHandler.h:media_service.UploadMovieId"
+    ],
+    "decoy_id": "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId",
+    "explicit_query": "Find the UploadMovieId operation in the MovieId service.",
+    "indirect_query": "Locate the operation that receives a film title and a score and resolves the title to a key for downstream use.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-B03",
+    "repo": "DSB Media",
+    "type": "lookalike",
+    "start_id": "Page/PageHandler.h:media_service.ReadPage",
+    "gold_ids": [
+      "MovieReview/MovieReviewHandler.h:media_service.ReadMovieReviews"
+    ],
+    "decoy_id": "UserReview/UserReviewHandler.h:media_service.ReadUserReviews",
+    "explicit_query": "Find the ReadMovieReviews operation in the MovieReview service.",
+    "indirect_query": "Locate the operation that fetches feedback indexed by a film key for a detail page.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-B05",
+    "repo": "DSB Social",
+    "type": "lookalike",
+    "start_id": "ComposePost/ComposePostHandler.h:social_network.ComposePost",
+    "gold_ids": [
+      "ComposePost/ComposePostHandler.h:social_network._UploadUserTimelineHelper"
+    ],
+    "decoy_id": "ComposePost/ComposePostHandler.h:social_network._UploadHomeTimelineHelper",
+    "explicit_query": "Find the _UploadUserTimelineHelper in the ComposePost handler.",
+    "indirect_query": "Locate the helper that writes the new item to the author's own history.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-B07",
+    "repo": "DSB Social",
+    "type": "lookalike",
+    "start_id": "SocialGraph/SocialGraphService.cpp:main",
+    "gold_ids": [
+      "SocialGraph/SocialGraphHandler.h:social_network.FollowWithUsername"
+    ],
+    "decoy_id": "SocialGraph/SocialGraphHandler.h:social_network.UnfollowWithUsername",
+    "explicit_query": "Find the FollowWithUsername operation in the SocialGraph service.",
+    "indirect_query": "Locate the operation that adds a subscription between accounts given their handles.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-A05",
+    "repo": "DSB Social",
+    "type": "chain",
+    "start_id": "ComposePost/ComposePostHandler.h:social_network._ComposeTextHelper",
+    "gold_ids": [
+      "Text/TextHandler.h:social_network.ComposeText",
+      "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls"
+    ],
+    "explicit_query": "Follow _ComposeTextHelper in ComposePost to ComposeText in the Text service and on to ComposeUrls in the UrlShorten service.",
+    "indirect_query": "Follow the message-body processing step into the operation that shortens links extracted from the body.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-A06",
+    "repo": "DSB Media",
+    "type": "chain",
+    "start_id": "Page/PageHandler.h:media_service.ReadPage",
+    "gold_ids": [
+      "MovieReview/MovieReviewHandler.h:media_service.ReadMovieReviews",
+      "ReviewStorage/ReviewStorageHandler.h:media_service.ReadReviews"
+    ],
+    "explicit_query": "Follow ReadPage in the Page service to ReadMovieReviews in the MovieReview service and on to ReadReviews in the ReviewStorage service.",
+    "indirect_query": "Follow the page's film-keyed feedback request into the storage read for the selected feedback records.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-A07",
+    "repo": "DSB Media",
+    "type": "chain",
+    "start_id": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+    "gold_ids": [
+      "Rating/RatingHandler.h:media_service.UploadRating",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating"
+    ],
+    "explicit_query": "Follow UploadMovieId in the MovieId service to UploadRating in the Rating service and on to UploadRating in the ComposeReview service.",
+    "indirect_query": "Follow the resolved film key and score downstream, then follow the score payload into the pending feedback record.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  },
+  {
+    "link_id": "DSB-A08",
+    "repo": "DSB Media",
+    "type": "chain",
+    "start_id": "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId",
+    "gold_ids": [
+      "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "ReviewStorage/ReviewStorageHandler.h:media_service.StoreReview"
+    ],
+    "explicit_query": "Follow UploadMovieId in the ComposeReview service to _ComposeAndUpload and on to StoreReview in the ReviewStorage service.",
+    "indirect_query": "When the draft has enough components, follow the assembly step into persistent storage.",
+    "budgets": [
+      20,
+      40,
+      80
+    ]
+  }
+]
