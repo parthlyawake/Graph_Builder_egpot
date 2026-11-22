@@ -1,0 +1,7606 @@
+{
+  "analysis_type": "post-hoc exploratory",
+  "definitions": {
+    "gold_depth": "Maximum of the two raw undirected GraphML shortest-path distances.",
+    "gold_structure": "CONSUMES forward, then IMPLEMENTS against its raw arrow.",
+    "degree": "Raw undirected multigraph degree. Unique-neighbor counts are separate.",
+    "seed_median": "Median of the six per-seed hit counts where the seed study exists.",
+    "nearest": "Raw undirected shortest distance from missing gold. Ties use earliest discovery rank.",
+    "frontier_or_pruned": "Eligible start neighbors are candidates in round one. A gold with no allowed move from any returned node was beyond the returned frontier. Later candidate selection cannot be recovered without a beam trace.",
+    "within_two_hops": "Includes the start at distance zero."
+  },
+  "bootstrap": {
+    "analysis_type": "post-hoc exploratory",
+    "seed": 0,
+    "resamples": 10000,
+    "minimum_queries": 8,
+    "interval": "unadjusted percentile 95%",
+    "cluster": "start_node within app"
+  },
+  "queries": [
+    {
+      "app": "dsb_social",
+      "id": "sn01_explicit",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeCreaterHelper",
+      "type": "explicit",
+      "link_id": "sn01",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 15,
+      "contract_degree": 9,
+      "start_unique_neighbors": 13,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 73,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          null
+        ],
+        "20": [
+          2,
+          11
+        ],
+        "40": [
+          2,
+          11
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn01_indirect",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeCreaterHelper",
+      "type": "indirect",
+      "link_id": "sn01",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 15,
+      "contract_degree": 9,
+      "start_unique_neighbors": 13,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 73,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          null
+        ],
+        "20": [
+          2,
+          11
+        ],
+        "40": [
+          2,
+          11
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn02_explicit",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeTextHelper",
+      "type": "explicit",
+      "link_id": "sn02",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 16,
+      "contract_degree": 10,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 100,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          2
+        ],
+        "20": [
+          3,
+          2
+        ],
+        "40": [
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn02_indirect",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeTextHelper",
+      "type": "indirect",
+      "link_id": "sn02",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 16,
+      "contract_degree": 10,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 100,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          2
+        ],
+        "20": [
+          3,
+          2
+        ],
+        "40": [
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn03_explicit",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeMediaHelper",
+      "type": "explicit",
+      "link_id": "sn03",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 16,
+      "contract_degree": 9,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 77,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          3
+        ],
+        "20": [
+          2,
+          3
+        ],
+        "40": [
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn03_indirect",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeMediaHelper",
+      "type": "indirect",
+      "link_id": "sn03",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 16,
+      "contract_degree": 9,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 77,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          3
+        ],
+        "20": [
+          2,
+          3
+        ],
+        "40": [
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn04_explicit",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeUniqueIdHelper",
+      "type": "explicit",
+      "link_id": "sn04",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 16,
+      "contract_degree": 10,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 85,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          3
+        ],
+        "20": [
+          2,
+          3
+        ],
+        "40": [
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn04_indirect",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeUniqueIdHelper",
+      "type": "indirect",
+      "link_id": "sn04",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 16,
+      "contract_degree": 10,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 85,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          3
+        ],
+        "20": [
+          2,
+          3
+        ],
+        "40": [
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn05_explicit",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadPostHelper",
+      "type": "explicit",
+      "link_id": "sn05",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 15,
+      "contract_degree": 9,
+      "start_unique_neighbors": 13,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 73,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          3
+        ],
+        "20": [
+          2,
+          3
+        ],
+        "40": [
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn05_indirect",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadPostHelper",
+      "type": "indirect",
+      "link_id": "sn05",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 15,
+      "contract_degree": 9,
+      "start_unique_neighbors": 13,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 73,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          3
+        ],
+        "20": [
+          2,
+          3
+        ],
+        "40": [
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn06_explicit",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadUserTimelineHelper",
+      "type": "explicit",
+      "link_id": "sn06",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 16,
+      "contract_degree": 10,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 79,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          10
+        ],
+        "20": [
+          2,
+          10
+        ],
+        "40": [
+          2,
+          10
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn06_indirect",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadUserTimelineHelper",
+      "type": "indirect",
+      "link_id": "sn06",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 16,
+      "contract_degree": 10,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 79,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          10
+        ],
+        "20": [
+          2,
+          10
+        ],
+        "40": [
+          2,
+          10
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn07_explicit",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadHomeTimelineHelper",
+      "type": "explicit",
+      "link_id": "sn07",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 17,
+      "contract_degree": 9,
+      "start_unique_neighbors": 15,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 114,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          2
+        ],
+        "20": [
+          3,
+          2
+        ],
+        "40": [
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn07_indirect",
+      "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadHomeTimelineHelper",
+      "type": "indirect",
+      "link_id": "sn07",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        1
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 1,
+      "start_degree": 17,
+      "contract_degree": 9,
+      "start_unique_neighbors": 15,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 114,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          2
+        ],
+        "20": [
+          3,
+          2
+        ],
+        "40": [
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn08_explicit",
+      "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+      "type": "explicit",
+      "link_id": "sn08",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 47,
+      "contract_degree": 11,
+      "start_unique_neighbors": 43,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 130,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 1,
+            "2": 0,
+            "3": 1,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          8
+        ],
+        "20": [
+          3,
+          8
+        ],
+        "40": [
+          3,
+          8
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn08_indirect",
+      "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+      "type": "indirect",
+      "link_id": "sn08",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 47,
+      "contract_degree": 11,
+      "start_unique_neighbors": 43,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 130,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          8
+        ],
+        "20": [
+          3,
+          8
+        ],
+        "40": [
+          3,
+          8
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn09_explicit",
+      "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+      "type": "explicit",
+      "link_id": "sn09",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 29,
+      "contract_degree": 11,
+      "start_unique_neighbors": 25,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 90,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          5
+        ],
+        "20": [
+          3,
+          5
+        ],
+        "40": [
+          3,
+          5
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn09_indirect",
+      "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+      "type": "indirect",
+      "link_id": "sn09",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 29,
+      "contract_degree": 11,
+      "start_unique_neighbors": 25,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 90,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 1,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 1,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          5
+        ],
+        "20": [
+          3,
+          5
+        ],
+        "40": [
+          3,
+          5
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn10_explicit",
+      "start_node": "Text/TextHandler.h:social_network.ComposeText",
+      "type": "explicit",
+      "link_id": "sn10",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "start_unique_neighbors": 35,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 99,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          6
+        ],
+        "20": [
+          3,
+          6
+        ],
+        "40": [
+          3,
+          6
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn10_indirect",
+      "start_node": "Text/TextHandler.h:social_network.ComposeText",
+      "type": "indirect",
+      "link_id": "sn10",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "start_unique_neighbors": 35,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 99,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 0,
+            "4": 1,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          6
+        ],
+        "20": [
+          3,
+          6
+        ],
+        "40": [
+          3,
+          6
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn11_explicit",
+      "start_node": "Text/TextHandler.h:social_network.ComposeText",
+      "type": "explicit",
+      "link_id": "sn11",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "start_unique_neighbors": 35,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 99,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          5,
+          8
+        ],
+        "20": [
+          5,
+          8
+        ],
+        "40": [
+          5,
+          8
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn11_indirect",
+      "start_node": "Text/TextHandler.h:social_network.ComposeText",
+      "type": "indirect",
+      "link_id": "sn11",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "start_unique_neighbors": 35,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 99,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 0,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          5,
+          8
+        ],
+        "20": [
+          5,
+          8
+        ],
+        "40": [
+          5,
+          8
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn12_explicit",
+      "start_node": "SocialGraph/SocialGraphHandler.h:social_network.FollowWithUsername",
+      "type": "explicit",
+      "link_id": "sn12",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 24,
+      "contract_degree": 12,
+      "start_unique_neighbors": 20,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 106,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          null
+        ],
+        "20": [
+          3,
+          13
+        ],
+        "40": [
+          3,
+          13
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn12_indirect",
+      "start_node": "SocialGraph/SocialGraphHandler.h:social_network.FollowWithUsername",
+      "type": "indirect",
+      "link_id": "sn12",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 24,
+      "contract_degree": 12,
+      "start_unique_neighbors": 20,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 106,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          3,
+          null
+        ],
+        "20": [
+          3,
+          13
+        ],
+        "40": [
+          3,
+          13
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn13_explicit",
+      "start_node": "UserTimeline/UserTimelineHandler.h:social_network.ReadUserTimeline",
+      "type": "explicit",
+      "link_id": "sn13",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 61,
+      "contract_degree": 11,
+      "start_unique_neighbors": 57,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 122,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 1,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          8,
+          3
+        ],
+        "20": [
+          8,
+          3
+        ],
+        "40": [
+          8,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn13_indirect",
+      "start_node": "UserTimeline/UserTimelineHandler.h:social_network.ReadUserTimeline",
+      "type": "indirect",
+      "link_id": "sn13",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 61,
+      "contract_degree": 11,
+      "start_unique_neighbors": 57,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 122,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          8,
+          3
+        ],
+        "20": [
+          8,
+          3
+        ],
+        "40": [
+          8,
+          3
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn14_explicit",
+      "start_node": "User/UserHandler.h:social_network.RegisterUser",
+      "type": "explicit",
+      "link_id": "sn14",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 55,
+      "contract_degree": 12,
+      "start_unique_neighbors": 50,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 116,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          7,
+          null
+        ],
+        "20": [
+          7,
+          null
+        ],
+        "40": [
+          7,
+          24
+        ]
+      }
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn14_indirect",
+      "start_node": "User/UserHandler.h:social_network.RegisterUser",
+      "type": "indirect",
+      "link_id": "sn14",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 55,
+      "contract_degree": 12,
+      "start_unique_neighbors": 50,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 116,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 0,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          7,
+          null
+        ],
+        "20": [
+          7,
+          null
+        ],
+        "40": [
+          7,
+          24
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm01_explicit",
+      "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "type": "explicit",
+      "link_id": "mm01",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 9,
+      "start_unique_neighbors": 47,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 127,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          13,
+          null
+        ],
+        "40": [
+          13,
+          22
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm01_indirect",
+      "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "type": "indirect",
+      "link_id": "mm01",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 9,
+      "start_unique_neighbors": 47,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 127,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          13,
+          null
+        ],
+        "40": [
+          13,
+          22
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm02_explicit",
+      "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "type": "explicit",
+      "link_id": "mm02",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 9,
+      "start_unique_neighbors": 47,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 127,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          12,
+          20
+        ],
+        "40": [
+          12,
+          20
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm02_indirect",
+      "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "type": "indirect",
+      "link_id": "mm02",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 9,
+      "start_unique_neighbors": 47,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 127,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          12,
+          20
+        ],
+        "40": [
+          12,
+          20
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm03_explicit",
+      "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "type": "explicit",
+      "link_id": "mm03",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 10,
+      "start_unique_neighbors": 47,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 127,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          11,
+          14
+        ],
+        "40": [
+          11,
+          14
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm03_indirect",
+      "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "type": "indirect",
+      "link_id": "mm03",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 10,
+      "start_unique_neighbors": 47,
+      "contract_unique_neighbors": 4,
+      "within_two_hops": 127,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          11,
+          14
+        ],
+        "40": [
+          11,
+          14
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm04_explicit",
+      "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "type": "explicit",
+      "link_id": "mm04",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 56,
+      "contract_degree": 10,
+      "start_unique_neighbors": 49,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 108,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          9,
+          4
+        ],
+        "20": [
+          9,
+          4
+        ],
+        "40": [
+          9,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm04_indirect",
+      "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "type": "indirect",
+      "link_id": "mm04",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 56,
+      "contract_degree": 10,
+      "start_unique_neighbors": 49,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 108,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 1,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          9,
+          4
+        ],
+        "20": [
+          9,
+          4
+        ],
+        "40": [
+          9,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm05_explicit",
+      "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "type": "explicit",
+      "link_id": "mm05",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 56,
+      "contract_degree": 12,
+      "start_unique_neighbors": 49,
+      "contract_unique_neighbors": 6,
+      "within_two_hops": 108,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          12,
+          13
+        ],
+        "40": [
+          12,
+          13
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm05_indirect",
+      "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "type": "indirect",
+      "link_id": "mm05",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 56,
+      "contract_degree": 12,
+      "start_unique_neighbors": 49,
+      "contract_unique_neighbors": 6,
+      "within_two_hops": 108,
+      "main_hits": {
+        "10": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 0,
+          "egpot_no_pareto": 0,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          null,
+          null
+        ],
+        "20": [
+          12,
+          13
+        ],
+        "40": [
+          12,
+          13
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm06_explicit",
+      "start_node": "Rating/RatingHandler.h:media_service.UploadRating",
+      "type": "explicit",
+      "link_id": "mm06",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 30,
+      "contract_degree": 12,
+      "start_unique_neighbors": 24,
+      "contract_unique_neighbors": 6,
+      "within_two_hops": 86,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          4
+        ],
+        "20": [
+          2,
+          4
+        ],
+        "40": [
+          2,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm06_indirect",
+      "start_node": "Rating/RatingHandler.h:media_service.UploadRating",
+      "type": "indirect",
+      "link_id": "mm06",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 30,
+      "contract_degree": 12,
+      "start_unique_neighbors": 24,
+      "contract_unique_neighbors": 6,
+      "within_two_hops": 86,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          4
+        ],
+        "20": [
+          2,
+          4
+        ],
+        "40": [
+          2,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm07_explicit",
+      "start_node": "Text/TextHandler.h:media_service.UploadText",
+      "type": "explicit",
+      "link_id": "mm07",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 20,
+      "contract_degree": 12,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 6,
+      "within_two_hops": 76,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          4
+        ],
+        "20": [
+          2,
+          4
+        ],
+        "40": [
+          2,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm07_indirect",
+      "start_node": "Text/TextHandler.h:media_service.UploadText",
+      "type": "indirect",
+      "link_id": "mm07",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 20,
+      "contract_degree": 12,
+      "start_unique_neighbors": 14,
+      "contract_unique_neighbors": 6,
+      "within_two_hops": 76,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          2,
+          4
+        ],
+        "20": [
+          2,
+          4
+        ],
+        "40": [
+          2,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm08_explicit",
+      "start_node": "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+      "type": "explicit",
+      "link_id": "mm08",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 32,
+      "contract_degree": 10,
+      "start_unique_neighbors": 27,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 91,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 1,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          5,
+          4
+        ],
+        "20": [
+          5,
+          4
+        ],
+        "40": [
+          5,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm08_indirect",
+      "start_node": "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+      "type": "indirect",
+      "link_id": "mm08",
+      "undirected_hops": [
+        1,
+        1
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 1,
+      "forward_graph_depth": 2,
+      "start_degree": 32,
+      "contract_degree": 10,
+      "start_unique_neighbors": 27,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 91,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 1,
+          "vector_topk": 0,
+          "mcts_standard": 1
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          5,
+          4
+        ],
+        "20": [
+          5,
+          4
+        ],
+        "40": [
+          5,
+          4
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm09_explicit",
+      "start_node": "User/UserHandler.h:media_service.UploadUserWithUsername",
+      "type": "explicit",
+      "link_id": "mm09",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 45,
+      "contract_degree": 12,
+      "start_unique_neighbors": 40,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 92,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          7,
+          null
+        ],
+        "20": [
+          7,
+          11
+        ],
+        "40": [
+          7,
+          11
+        ]
+      }
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm09_indirect",
+      "start_node": "User/UserHandler.h:media_service.UploadUserWithUsername",
+      "type": "indirect",
+      "link_id": "mm09",
+      "undirected_hops": [
+        1,
+        2
+      ],
+      "forward_graph_hops": [
+        1,
+        2
+      ],
+      "gold_structure_forward_hops": [
+        1,
+        null
+      ],
+      "gold_structure_walk_hops": [
+        1,
+        2
+      ],
+      "gold_depth": 2,
+      "forward_graph_depth": 2,
+      "start_degree": 45,
+      "contract_degree": 12,
+      "start_unique_neighbors": 40,
+      "contract_unique_neighbors": 5,
+      "within_two_hops": 92,
+      "main_hits": {
+        "10": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 0,
+          "ppr": 0,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "20": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        },
+        "40": {
+          "egpot_full": 1,
+          "egpot_no_pareto": 1,
+          "egpot_full_mcts": 1,
+          "ppr": 1,
+          "bfs": 0,
+          "vector_topk": 1,
+          "mcts_standard": 0
+        }
+      },
+      "seed_hits": {
+        "10": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {},
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {}
+        },
+        "20": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 0
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        },
+        "40": {
+          "egpot_full": {},
+          "egpot_no_pareto": {},
+          "egpot_full_mcts": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1
+          },
+          "ppr": {},
+          "bfs": {},
+          "vector_topk": {},
+          "mcts_standard": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 0,
+            "5": 0
+          }
+        }
+      },
+      "ppr_ranks": {
+        "10": [
+          7,
+          null
+        ],
+        "20": [
+          7,
+          11
+        ],
+        "40": [
+          7,
+          11
+        ]
+      }
+    }
+  ],
+  "distributions": [
+    {
+      "scope": "dsb_social",
+      "type": "all",
+      "gold_depth": {
+        "1": 8,
+        "2": 20
+      },
+      "start_degree": {
+        "15": 4,
+        "16": 8,
+        "17": 2,
+        "24": 2,
+        "29": 2,
+        "42": 4,
+        "47": 2,
+        "55": 2,
+        "61": 2
+      },
+      "contract_degree": {
+        "9": 8,
+        "10": 10,
+        "11": 6,
+        "12": 4
+      },
+      "start_unique_neighbors": {
+        "13": 4,
+        "14": 8,
+        "15": 2,
+        "20": 2,
+        "25": 2,
+        "35": 4,
+        "43": 2,
+        "50": 2,
+        "57": 2
+      },
+      "contract_unique_neighbors": {
+        "4": 14,
+        "5": 14
+      }
+    },
+    {
+      "scope": "dsb_social",
+      "type": "explicit",
+      "gold_depth": {
+        "1": 4,
+        "2": 10
+      },
+      "start_degree": {
+        "15": 2,
+        "16": 4,
+        "17": 1,
+        "24": 1,
+        "29": 1,
+        "42": 2,
+        "47": 1,
+        "55": 1,
+        "61": 1
+      },
+      "contract_degree": {
+        "9": 4,
+        "10": 5,
+        "11": 3,
+        "12": 2
+      },
+      "start_unique_neighbors": {
+        "13": 2,
+        "14": 4,
+        "15": 1,
+        "20": 1,
+        "25": 1,
+        "35": 2,
+        "43": 1,
+        "50": 1,
+        "57": 1
+      },
+      "contract_unique_neighbors": {
+        "4": 7,
+        "5": 7
+      }
+    },
+    {
+      "scope": "dsb_social",
+      "type": "indirect",
+      "gold_depth": {
+        "1": 4,
+        "2": 10
+      },
+      "start_degree": {
+        "15": 2,
+        "16": 4,
+        "17": 1,
+        "24": 1,
+        "29": 1,
+        "42": 2,
+        "47": 1,
+        "55": 1,
+        "61": 1
+      },
+      "contract_degree": {
+        "9": 4,
+        "10": 5,
+        "11": 3,
+        "12": 2
+      },
+      "start_unique_neighbors": {
+        "13": 2,
+        "14": 4,
+        "15": 1,
+        "20": 1,
+        "25": 1,
+        "35": 2,
+        "43": 1,
+        "50": 1,
+        "57": 1
+      },
+      "contract_unique_neighbors": {
+        "4": 7,
+        "5": 7
+      }
+    },
+    {
+      "scope": "dsb_media",
+      "type": "all",
+      "gold_depth": {
+        "1": 8,
+        "2": 10
+      },
+      "start_degree": {
+        "20": 2,
+        "30": 2,
+        "32": 2,
+        "45": 2,
+        "53": 6,
+        "56": 4
+      },
+      "contract_degree": {
+        "9": 4,
+        "10": 6,
+        "12": 8
+      },
+      "start_unique_neighbors": {
+        "14": 2,
+        "24": 2,
+        "27": 2,
+        "40": 2,
+        "47": 6,
+        "49": 4
+      },
+      "contract_unique_neighbors": {
+        "4": 6,
+        "5": 6,
+        "6": 6
+      }
+    },
+    {
+      "scope": "dsb_media",
+      "type": "explicit",
+      "gold_depth": {
+        "1": 4,
+        "2": 5
+      },
+      "start_degree": {
+        "20": 1,
+        "30": 1,
+        "32": 1,
+        "45": 1,
+        "53": 3,
+        "56": 2
+      },
+      "contract_degree": {
+        "9": 2,
+        "10": 3,
+        "12": 4
+      },
+      "start_unique_neighbors": {
+        "14": 1,
+        "24": 1,
+        "27": 1,
+        "40": 1,
+        "47": 3,
+        "49": 2
+      },
+      "contract_unique_neighbors": {
+        "4": 3,
+        "5": 3,
+        "6": 3
+      }
+    },
+    {
+      "scope": "dsb_media",
+      "type": "indirect",
+      "gold_depth": {
+        "1": 4,
+        "2": 5
+      },
+      "start_degree": {
+        "20": 1,
+        "30": 1,
+        "32": 1,
+        "45": 1,
+        "53": 3,
+        "56": 2
+      },
+      "contract_degree": {
+        "9": 2,
+        "10": 3,
+        "12": 4
+      },
+      "start_unique_neighbors": {
+        "14": 1,
+        "24": 1,
+        "27": 1,
+        "40": 1,
+        "47": 3,
+        "49": 2
+      },
+      "contract_unique_neighbors": {
+        "4": 3,
+        "5": 3,
+        "6": 3
+      }
+    },
+    {
+      "scope": "pooled",
+      "type": "all",
+      "gold_depth": {
+        "1": 16,
+        "2": 30
+      },
+      "start_degree": {
+        "15": 4,
+        "16": 8,
+        "17": 2,
+        "20": 2,
+        "24": 2,
+        "29": 2,
+        "30": 2,
+        "32": 2,
+        "42": 4,
+        "45": 2,
+        "47": 2,
+        "53": 6,
+        "55": 2,
+        "56": 4,
+        "61": 2
+      },
+      "contract_degree": {
+        "9": 12,
+        "10": 16,
+        "11": 6,
+        "12": 12
+      },
+      "start_unique_neighbors": {
+        "13": 4,
+        "14": 10,
+        "15": 2,
+        "20": 2,
+        "24": 2,
+        "25": 2,
+        "27": 2,
+        "35": 4,
+        "40": 2,
+        "43": 2,
+        "47": 6,
+        "49": 4,
+        "50": 2,
+        "57": 2
+      },
+      "contract_unique_neighbors": {
+        "4": 20,
+        "5": 20,
+        "6": 6
+      }
+    },
+    {
+      "scope": "pooled",
+      "type": "explicit",
+      "gold_depth": {
+        "1": 8,
+        "2": 15
+      },
+      "start_degree": {
+        "15": 2,
+        "16": 4,
+        "17": 1,
+        "20": 1,
+        "24": 1,
+        "29": 1,
+        "30": 1,
+        "32": 1,
+        "42": 2,
+        "45": 1,
+        "47": 1,
+        "53": 3,
+        "55": 1,
+        "56": 2,
+        "61": 1
+      },
+      "contract_degree": {
+        "9": 6,
+        "10": 8,
+        "11": 3,
+        "12": 6
+      },
+      "start_unique_neighbors": {
+        "13": 2,
+        "14": 5,
+        "15": 1,
+        "20": 1,
+        "24": 1,
+        "25": 1,
+        "27": 1,
+        "35": 2,
+        "40": 1,
+        "43": 1,
+        "47": 3,
+        "49": 2,
+        "50": 1,
+        "57": 1
+      },
+      "contract_unique_neighbors": {
+        "4": 10,
+        "5": 10,
+        "6": 3
+      }
+    },
+    {
+      "scope": "pooled",
+      "type": "indirect",
+      "gold_depth": {
+        "1": 8,
+        "2": 15
+      },
+      "start_degree": {
+        "15": 2,
+        "16": 4,
+        "17": 1,
+        "20": 1,
+        "24": 1,
+        "29": 1,
+        "30": 1,
+        "32": 1,
+        "42": 2,
+        "45": 1,
+        "47": 1,
+        "53": 3,
+        "55": 1,
+        "56": 2,
+        "61": 1
+      },
+      "contract_degree": {
+        "9": 6,
+        "10": 8,
+        "11": 3,
+        "12": 6
+      },
+      "start_unique_neighbors": {
+        "13": 2,
+        "14": 5,
+        "15": 1,
+        "20": 1,
+        "24": 1,
+        "25": 1,
+        "27": 1,
+        "35": 2,
+        "40": 1,
+        "43": 1,
+        "47": 3,
+        "49": 2,
+        "50": 1,
+        "57": 1
+      },
+      "contract_unique_neighbors": {
+        "4": 10,
+        "5": 10,
+        "6": 3
+      }
+    }
+  ],
+  "buckets": {
+    "dsb_social": [
+      {
+        "depth": 1,
+        "budget": 10,
+        "n": 8,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 7,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 7,
+            "median_hits": null
+          },
+          "ppr": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 4,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 5,
+            "median_hits": null
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.125,
+          "interval_95": [
+            -0.375,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 8,
+            "mean_rank": 2.5
+          },
+          "handler": {
+            "found": 8,
+            "mean_rank": 2.5
+          }
+        }
+      },
+      {
+        "depth": 1,
+        "budget": 20,
+        "n": 8,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 7,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 7,
+            "median_hits": 7.0
+          },
+          "ppr": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 4,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 8,
+            "median_hits": 8.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.125,
+          "interval_95": [
+            -0.375,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 8,
+            "mean_rank": 2.5
+          },
+          "handler": {
+            "found": 8,
+            "mean_rank": 2.5
+          }
+        }
+      },
+      {
+        "depth": 1,
+        "budget": 40,
+        "n": 8,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 7,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 7,
+            "median_hits": 7.0
+          },
+          "ppr": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 6,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 8,
+            "median_hits": 8.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.125,
+          "interval_95": [
+            -0.375,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 8,
+            "mean_rank": 2.5
+          },
+          "handler": {
+            "found": 8,
+            "mean_rank": 2.5
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 10,
+        "n": 20,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 13,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 12,
+            "median_hits": null
+          },
+          "ppr": {
+            "seed_0_hits": 14,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 2,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 1,
+            "median_hits": null
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.05,
+          "interval_95": [
+            -0.46153846153846156,
+            0.4444444444444444
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 20,
+            "mean_rank": 3.8
+          },
+          "handler": {
+            "found": 14,
+            "mean_rank": 6.142857142857143
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 20,
+        "n": 20,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 13,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 13,
+            "median_hits": 13.0
+          },
+          "ppr": {
+            "seed_0_hits": 18,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 5,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 8,
+            "median_hits": 8.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.25,
+          "interval_95": [
+            -0.5833333333333334,
+            0.16666666666666666
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 20,
+            "mean_rank": 3.8
+          },
+          "handler": {
+            "found": 18,
+            "mean_rank": 7.444444444444445
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 40,
+        "n": 20,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 14,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 16,
+            "median_hits": 16.0
+          },
+          "ppr": {
+            "seed_0_hits": 20,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 11,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 15,
+            "median_hits": 15.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.3,
+          "interval_95": [
+            -0.5,
+            -0.1
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 20,
+            "mean_rank": 3.8
+          },
+          "handler": {
+            "found": 20,
+            "mean_rank": 9.1
+          }
+        }
+      }
+    ],
+    "dsb_media": [
+      {
+        "depth": 1,
+        "budget": 10,
+        "n": 8,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 6,
+            "median_hits": null
+          },
+          "ppr": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 2,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 4,
+            "median_hits": null
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": 0.0,
+          "interval_95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 8,
+            "mean_rank": 4.5
+          },
+          "handler": {
+            "found": 8,
+            "mean_rank": 4.0
+          }
+        }
+      },
+      {
+        "depth": 1,
+        "budget": 20,
+        "n": 8,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 6,
+            "median_hits": 6.0
+          },
+          "ppr": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 4,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 8,
+            "median_hits": 8.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": 0.0,
+          "interval_95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 8,
+            "mean_rank": 4.5
+          },
+          "handler": {
+            "found": 8,
+            "mean_rank": 4.0
+          }
+        }
+      },
+      {
+        "depth": 1,
+        "budget": 40,
+        "n": 8,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 6,
+            "median_hits": 6.0
+          },
+          "ppr": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 5,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 8,
+            "median_hits": 8.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": 0.0,
+          "interval_95": [
+            0.0,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 8,
+            "mean_rank": 4.5
+          },
+          "handler": {
+            "found": 8,
+            "mean_rank": 4.0
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 10,
+        "n": 10,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 5,
+            "median_hits": null
+          },
+          "ppr": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 2,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": 0.8,
+          "interval_95": [
+            0.5,
+            1.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 2,
+            "mean_rank": 7.0
+          },
+          "handler": {
+            "found": 0,
+            "mean_rank": null
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 20,
+        "n": 10,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 6,
+            "median_hits": 7.5
+          },
+          "ppr": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 4,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 0,
+            "median_hits": 0.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": 0.0,
+          "interval_95": [
+            -0.5,
+            0.16666666666666666
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 10,
+            "mean_rank": 11.0
+          },
+          "handler": {
+            "found": 8,
+            "mean_rank": 14.5
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 40,
+        "n": 10,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 8,
+            "median_hits": 8.5
+          },
+          "ppr": {
+            "seed_0_hits": 10,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 0,
+            "median_hits": 0.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.2,
+          "interval_95": [
+            -0.5,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 10,
+            "mean_rank": 11.0
+          },
+          "handler": {
+            "found": 10,
+            "mean_rank": 16.0
+          }
+        }
+      }
+    ],
+    "pooled": [
+      {
+        "depth": 1,
+        "budget": 10,
+        "n": 16,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 15,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 13,
+            "median_hits": null
+          },
+          "ppr": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 6,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 9,
+            "median_hits": null
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.0625,
+          "interval_95": [
+            -0.1875,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 16,
+            "mean_rank": 3.5
+          },
+          "handler": {
+            "found": 16,
+            "mean_rank": 3.25
+          }
+        }
+      },
+      {
+        "depth": 1,
+        "budget": 20,
+        "n": 16,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 15,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 13,
+            "median_hits": 13.0
+          },
+          "ppr": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 16,
+            "median_hits": 16.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.0625,
+          "interval_95": [
+            -0.1875,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 16,
+            "mean_rank": 3.5
+          },
+          "handler": {
+            "found": 16,
+            "mean_rank": 3.25
+          }
+        }
+      },
+      {
+        "depth": 1,
+        "budget": 40,
+        "n": 16,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 15,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 13,
+            "median_hits": 13.0
+          },
+          "ppr": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 16,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 11,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 16,
+            "median_hits": 16.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.0625,
+          "interval_95": [
+            -0.1875,
+            0.0
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 16,
+            "mean_rank": 3.5
+          },
+          "handler": {
+            "found": 16,
+            "mean_rank": 3.25
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 10,
+        "n": 30,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 21,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 24,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 17,
+            "median_hits": null
+          },
+          "ppr": {
+            "seed_0_hits": 14,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 4,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 1,
+            "median_hits": null
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": 0.23333333333333334,
+          "interval_95": [
+            -0.14285714285714285,
+            0.5714285714285714
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 22,
+            "mean_rank": 4.090909090909091
+          },
+          "handler": {
+            "found": 14,
+            "mean_rank": 6.142857142857143
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 20,
+        "n": 30,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 21,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 24,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 19,
+            "median_hits": 20.0
+          },
+          "ppr": {
+            "seed_0_hits": 26,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 0,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 9,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 8,
+            "median_hits": 8.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.16666666666666666,
+          "interval_95": [
+            -0.46153846153846156,
+            0.10714285714285714
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 30,
+            "mean_rank": 6.2
+          },
+          "handler": {
+            "found": 26,
+            "mean_rank": 9.615384615384615
+          }
+        }
+      },
+      {
+        "depth": 2,
+        "budget": 40,
+        "n": 30,
+        "hits": {
+          "egpot_full": {
+            "seed_0_hits": 22,
+            "median_hits": null
+          },
+          "egpot_no_pareto": {
+            "seed_0_hits": 24,
+            "median_hits": null
+          },
+          "egpot_full_mcts": {
+            "seed_0_hits": 24,
+            "median_hits": 24.5
+          },
+          "ppr": {
+            "seed_0_hits": 30,
+            "median_hits": null
+          },
+          "bfs": {
+            "seed_0_hits": 8,
+            "median_hits": null
+          },
+          "vector_topk": {
+            "seed_0_hits": 19,
+            "median_hits": null
+          },
+          "mcts_standard": {
+            "seed_0_hits": 15,
+            "median_hits": 15.0
+          }
+        },
+        "egpot_full_minus_ppr": {
+          "analysis_type": "post-hoc exploratory",
+          "difference": -0.26666666666666666,
+          "interval_95": [
+            -0.42869047619047607,
+            -0.11538461538461539
+          ]
+        },
+        "ppr_ranks": {
+          "contract": {
+            "found": 30,
+            "mean_rank": 6.2
+          },
+          "handler": {
+            "found": 30,
+            "mean_rank": 11.4
+          }
+        }
+      }
+    ]
+  },
+  "egpot_full_budget_40_misses": [
+    {
+      "app": "dsb_social",
+      "id": "sn04_indirect",
+      "link_id": "sn04",
+      "type": "indirect",
+      "gold_depth": 1,
+      "start_degree": 16,
+      "contract_degree": 10,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "UniqueId/UniqueIdHandler.h:social_network.ComposeUniqueId",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "ComposePost/ComposePostHandler.h:social_network._ComposeUniqueIdHelper",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn08_explicit",
+      "link_id": "sn08",
+      "type": "explicit",
+      "gold_depth": 2,
+      "start_degree": 47,
+      "contract_degree": 11,
+      "missing_gold_role": "contract",
+      "missing_gold_id": "contract::thrift::social_network.SocialGraphService.GetFollowers",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn08_explicit",
+      "link_id": "sn08",
+      "type": "explicit",
+      "gold_depth": 2,
+      "start_degree": 47,
+      "contract_degree": 11,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers",
+      "nearest_hops": 1,
+      "nearest_rank": 21,
+      "nearest_returned_node": "external::LOG",
+      "frontier_or_pruned": "undetermined (beam trace unavailable)"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn08_indirect",
+      "link_id": "sn08",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 47,
+      "contract_degree": 11,
+      "missing_gold_role": "contract",
+      "missing_gold_id": "contract::thrift::social_network.SocialGraphService.GetFollowers",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn08_indirect",
+      "link_id": "sn08",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 47,
+      "contract_degree": 11,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers",
+      "nearest_hops": 2,
+      "nearest_rank": 1,
+      "nearest_returned_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+      "frontier_or_pruned": "beyond returned frontier"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn09_explicit",
+      "link_id": "sn09",
+      "type": "explicit",
+      "gold_depth": 2,
+      "start_degree": 29,
+      "contract_degree": 11,
+      "missing_gold_role": "contract",
+      "missing_gold_id": "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn09_explicit",
+      "link_id": "sn09",
+      "type": "explicit",
+      "gold_depth": 2,
+      "start_degree": 29,
+      "contract_degree": 11,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "PostStorage/PostStorageHandler.h:social_network.ReadPosts",
+      "nearest_hops": 2,
+      "nearest_rank": 1,
+      "nearest_returned_node": "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+      "frontier_or_pruned": "beyond returned frontier"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn10_explicit",
+      "link_id": "sn10",
+      "type": "explicit",
+      "gold_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "missing_gold_role": "contract",
+      "missing_gold_id": "contract::thrift::social_network.UrlShortenService.ComposeUrls",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "Text/TextHandler.h:social_network.ComposeText",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn10_explicit",
+      "link_id": "sn10",
+      "type": "explicit",
+      "gold_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls",
+      "nearest_hops": 2,
+      "nearest_rank": 1,
+      "nearest_returned_node": "Text/TextHandler.h:social_network.ComposeText",
+      "frontier_or_pruned": "beyond returned frontier"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn11_indirect",
+      "link_id": "sn11",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "missing_gold_role": "contract",
+      "missing_gold_id": "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "Text/TextHandler.h:social_network.ComposeText",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn11_indirect",
+      "link_id": "sn11",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 42,
+      "contract_degree": 10,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "UserMention/UserMentionHandler.h:social_network.ComposeUserMentions",
+      "nearest_hops": 2,
+      "nearest_rank": 1,
+      "nearest_returned_node": "Text/TextHandler.h:social_network.ComposeText",
+      "frontier_or_pruned": "beyond returned frontier"
+    },
+    {
+      "app": "dsb_social",
+      "id": "sn12_explicit",
+      "link_id": "sn12",
+      "type": "explicit",
+      "gold_depth": 2,
+      "start_degree": 24,
+      "contract_degree": 12,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "User/UserHandler.h:social_network.GetUserId",
+      "nearest_hops": 1,
+      "nearest_rank": 7,
+      "nearest_returned_node": "contract::thrift::social_network.UserService.GetUserId",
+      "frontier_or_pruned": "undetermined (beam trace unavailable)"
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm02_indirect",
+      "link_id": "mm02",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 9,
+      "missing_gold_role": "contract",
+      "missing_gold_id": "contract::thrift::media_service.UserReviewService.UploadUserReview",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm02_indirect",
+      "link_id": "mm02",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 53,
+      "contract_degree": 9,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "UserReview/UserReviewHandler.h:media_service.UploadUserReview",
+      "nearest_hops": 1,
+      "nearest_rank": 7,
+      "nearest_returned_node": "external::num_reviews.get",
+      "frontier_or_pruned": "undetermined (beam trace unavailable)"
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm05_indirect",
+      "link_id": "mm05",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 56,
+      "contract_degree": 12,
+      "missing_gold_role": "contract",
+      "missing_gold_id": "contract::thrift::media_service.RatingService.UploadRating",
+      "nearest_hops": 1,
+      "nearest_rank": 1,
+      "nearest_returned_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "frontier_or_pruned": "pruned at root"
+    },
+    {
+      "app": "dsb_media",
+      "id": "mm05_indirect",
+      "link_id": "mm05",
+      "type": "indirect",
+      "gold_depth": 2,
+      "start_degree": 56,
+      "contract_degree": 12,
+      "missing_gold_role": "handler",
+      "missing_gold_id": "Rating/RatingHandler.h:media_service.UploadRating",
+      "nearest_hops": 2,
+      "nearest_rank": 1,
+      "nearest_returned_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "frontier_or_pruned": "beyond returned frontier"
+    }
+  ],
+  "neighborhoods": [
+    {
+      "app": "dsb_social",
+      "nodes": 663,
+      "queries": 28,
+      "unique_starts": 13,
+      "mean_within_two_hops_per_start": 97.23076923076923,
+      "mean_within_two_hops_per_query": 97.35714285714286,
+      "budget_40_graph_fraction": 0.06033182503770739
+    },
+    {
+      "app": "dsb_media",
+      "nodes": 576,
+      "queries": 18,
+      "unique_starts": 6,
+      "mean_within_two_hops_per_start": 96.66666666666667,
+      "mean_within_two_hops_per_query": 104.66666666666667,
+      "budget_40_graph_fraction": 0.06944444444444445
+    }
+  ]
+}
