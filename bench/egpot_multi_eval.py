@@ -35,6 +35,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = ROOT / "bench/results/test_final_41d61e11.json"
 SCRATCH = Path(r"C:\dev\triage_out\step27")
 DSB_DATASETS = ("dsb_social", "dsb_media")
+DATAHUB = "datahub"
+DATAHUB_BUILDER_TAG = ("egpot-bench-builder-v3", "ea3f50e25f22e141495569207a8b16cbbd79e319")
+DATAHUB_PLAN_TAG = "egpot-datahub-prereg-v1"
 DSB_RESULT_SCHEMA = 2
 DSB_BUILDER_TAG = ("egpot-bench-builder-v1", "94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce")
 DSB_EGPOT_TAG = ("egpot-tiebreak-v1", "f3d3163eec15c3e814302fb8269cd3fbca6430a1")
@@ -64,6 +67,11 @@ class Repo:
 
 
 REGISTRY = {
+    DATAHUB: Repo(ROOT / "bench/results/datahub_graph_v3.graphml",
+                 ROOT / "bench/results/datahub_coverage_v3.json",
+                 ROOT / "bench/labels/datahub_egpot_queries.json",
+                 ROOT / "bench/labels/datahub_egpot_queries.provenance.json",
+                 ROOT / "bench/preregistration_datahub.md"),
     "online_boutique": Repo(
         ROOT / "bench/results/online_boutique_graph_fresh.graphml",
         ROOT / "bench/results/online_boutique_graph_fresh.provenance.json",
@@ -147,7 +155,11 @@ def verify_inputs(repo: Repo, *, labels=True):
 
 def verify_dsb_frozen_code(commit, *, root=ROOT):
     """Compare committed file bytes with the pinned builder and EG-POT trees."""
-    for (tag, pin), paths in ((DSB_BUILDER_TAG, DSB_BUILDER_PATHS), (DSB_EGPOT_TAG, ("eg_pot.py",))):
+    verify_frozen_code(commit, DSB_BUILDER_TAG, root=root)
+
+
+def verify_frozen_code(commit, builder, *, root=ROOT):
+    for (tag, pin), paths in ((builder, DSB_BUILDER_PATHS), (DSB_EGPOT_TAG, ("eg_pot.py",))):
         if git("rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}", root=root) != pin:
             raise ValueError(f"Frozen tag {tag} does not resolve to {pin}")
         changed = git("diff", "--name-only", "--no-ext-diff", "--no-textconv", "--no-renames",
@@ -163,11 +175,13 @@ def locked_preflight(name, repo, output_dir, *, acknowledge=False, root=ROOT):
         raise ValueError("Tracked git tree is dirty:\n" + dirty)
     commit = git("rev-parse", "HEAD", root=root)
     previous = sorted(Path(output_dir).glob(f"{name}_final_*.json"))
+    if name == DATAHUB and (previous or acknowledge):
+        raise ValueError("DataHub permits one locked run and no second-look option")
     if previous and not acknowledge:
         raise ValueError("Run already consumed: " + ", ".join(p.name for p in previous)
                          + "; --acknowledge-second-look is required (suffix _secondlook)")
     preregistration_hash = None
-    if name == "train_ticket" or name in DSB_DATASETS:
+    if name in {"train_ticket", DATAHUB, *DSB_DATASETS}:
         title = "Train-Ticket" if name == "train_ticket" else name
         if repo.preregistration is None or not repo.preregistration.is_file():
             raise ValueError(f"Missing {title} preregistration")
@@ -178,6 +192,19 @@ def locked_preflight(name, repo, output_dir, *, acknowledge=False, root=ROOT):
         preregistration_hash = sha256(repo.preregistration)
     if name in DSB_DATASETS:
         verify_dsb_frozen_code(commit, root=root)
+    if name == DATAHUB:
+        if "Status: FROZEN" not in repo.preregistration.read_text(encoding="utf8").splitlines():
+            raise ValueError("DataHub preregistration is a draft; no graph or labels opened")
+        try:
+            freeze = git("rev-parse", "--verify", f"refs/tags/{DATAHUB_PLAN_TAG}^{{commit}}", root=root)
+        except subprocess.CalledProcessError as exc:
+            raise ValueError("DataHub requires a tagged frozen preregistration") from exc
+        pinned = (repo.preregistration, repo.labels, repo.label_provenance, repo.graph, repo.provenance)
+        for path in pinned:
+            git("ls-files", "--error-unmatch", str(path), root=root)
+        if git("diff", "--name-only", freeze, commit, "--", *(str(p) for p in pinned), root=root):
+            raise ValueError("DataHub inputs or protocol differ from the freeze tag")
+        verify_frozen_code(commit, DATAHUB_BUILDER_TAG, root=root)
     hashes = verify_inputs(repo)
     if preregistration_hash is not None:
         hashes["preregistration"] = preregistration_hash
@@ -221,7 +248,7 @@ def plan_locked(labels, configs):
         for seed, spec in seeds.items():
             add("seeds", name, spec, int(seed))
     if "pareto_reference" in configs:
-        add("pareto_reference", "egpot_full", configs["pareto_reference"])
+        add("pareto_reference", configs.get("pareto_reference_method", "egpot_full"), configs["pareto_reference"])
     return list(jobs.values()), aliases
 
 
@@ -334,9 +361,16 @@ _VIEW = _SCORER = None
 _ENGINES = {}
 
 
-def initialize_worker(graph_path, edge_policy=LEGACY):
+def initialize_worker(graph_path, edge_policy=LEGACY, datahub=False):
     global _VIEW, _SCORER, _ENGINES
-    graph = nx.read_graphml(graph_path, force_multigraph=True)
+    if datahub:
+        from bench.egpot_width_sweep_dev import guard
+        from bench.time_datahub_pilot import load_graph
+
+        sys.addaudithook(guard)
+        graph = load_graph(graph_path)
+    else:
+        graph = nx.read_graphml(graph_path, force_multigraph=True)
     _VIEW = GraphView(graph, edge_policy=edge_policy)
     _SCORER = QueryScorer(_VIEW)
     _ENGINES = {}
@@ -396,7 +430,7 @@ def evaluate_locked_job(task, engine, *, include_returned_nodes):
     return row
 
 
-def execute_job(task, *, include_returned_nodes=False, width12=False):
+def execute_job(task, *, include_returned_nodes=False, width12=False, datahub=False):
     key = digest({"method": task["method"], "spec": task["spec"]})
     if key not in _ENGINES:
         _ENGINES[key] = make_engine(task["method"], task["spec"])
@@ -408,6 +442,11 @@ def execute_job(task, *, include_returned_nodes=False, width12=False):
     if width12:
         row["beam_width"] = engine.config.beam_width
         verify_width12_row(row, task)
+    if datahub:
+        width = engine.config.beam_width if isinstance(engine, EGPOTRetriever) else None
+        if width is not None and task["method"].endswith(("_w4", "_w12")) and not task["method"].endswith(f"_w{width}"):
+            raise ValueError("DataHub method name and effective beam width differ")
+        row["beam_width"] = width
     latency = row.pop("latency_s")
     return task["key"], {"deterministic": row, "latency_s": latency}
 
@@ -420,7 +459,7 @@ def atomic_json(path, value):
 
 
 def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False, edge_policy=LEGACY,
-             include_returned_nodes=False):
+             include_returned_nodes=False, datahub=False):
     if type(workers) is not int or workers < 1:
         raise ValueError("workers must be a positive integer")
     checkpoint = Path(checkpoint)
@@ -449,8 +488,8 @@ def run_jobs(graph_path, jobs, checkpoint, identity, *, workers=1, resume=False,
         context = multiprocessing.get_context("spawn")
         with ProcessPoolExecutor(max_workers=workers, mp_context=context,
                                  initializer=initialize_worker,
-                                 initargs=(str(graph_path), edge_policy)) as pool:
-            futures = [pool.submit(execute_job, task, include_returned_nodes=include_returned_nodes)
+                                 initargs=(str(graph_path), edge_policy, datahub)) as pool:
+            futures = [pool.submit(execute_job, task, include_returned_nodes=include_returned_nodes, datahub=datahub)
                        for task in pending]
             for index, future in enumerate(as_completed(futures), 1):
                 key, result = future.result()
@@ -515,6 +554,8 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
     repo = registry[name]
     output_dir = Path(output_dir) if output_dir else ROOT / "bench/results"
     is_dsb = name in DSB_DATASETS
+    is_datahub = name == DATAHUB
+    enriched_rows = is_dsb or is_datahub
     settings_path = SETTINGS
     if beam_width == 12:
         if not is_dsb or resume or acknowledge:
@@ -527,11 +568,16 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
         commit, hashes, target, previous = locked_preflight(name, repo, output_dir, acknowledge=acknowledge)
         if is_dsb:
             configs = dsb_settings(load_settings())
-        identity = input_identity(repo)
+        if is_datahub:
+            from bench.datahub_protocol import settings
+
+            configs = settings()
+            settings_path = repo.preregistration
+        identity = input_identity(repo, settings_path=settings_path) if is_datahub else input_identity(repo)
     else:
         raise ValueError("Unsupported locked beam width")
     identity["verified_hashes"] = hashes
-    if is_dsb:
+    if enriched_rows:
         identity["protocol_sha256"] = digest(configs)
     labels = read_json(repo.labels)  # locks have passed; whole set, no split
     jobs, aliases = plan_locked(labels, configs)
@@ -541,9 +587,10 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
         print(f"{WIDTH12_STATUS}: {name}, beam width 12, {len(jobs)} jobs", flush=True)
         results = run_width12_jobs(repo.graph, jobs, workers=workers)
     else:
+        options = {"datahub": True} if is_datahub else {}
         results = run_jobs(repo.graph, jobs, checkpoint, identity, workers=workers, resume=resume,
-                           edge_policy=DSB_EDGE_POLICY if is_dsb else LEGACY,
-                           include_returned_nodes=is_dsb)
+                           edge_policy=DSB_EDGE_POLICY if enriched_rows else LEGACY,
+                           include_returned_nodes=enriched_rows, **options)
     rows, latencies = [], []
     for alias in aliases:
         result = results[alias["key"]]
@@ -556,7 +603,7 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
     summary = []
     for (experiment, method, budget, seed), records in sorted(grouped.items()):
         stats = summarize(records)
-        if is_dsb:
+        if enriched_rows:
             stats["n"] = len(records)
             for field in ("precision", "ordered_path_match"):
                 stats[field] = fmean(row[field] for row in records)
@@ -564,7 +611,7 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
             del stats["latency_s"]
         summary.append({"experiment": experiment, "method": method, "budget": budget,
                         "seed": seed, **stats})
-    payload = {"schema": DSB_RESULT_SCHEMA if is_dsb else 1, "repo": name, "split": "all", "commit": commit,
+    payload = {"schema": DSB_RESULT_SCHEMA if enriched_rows else 1, "repo": name, "split": "all", "commit": commit,
                "identity": identity, "configs": configs, "worker_count": workers,
                "utc_timestamp": datetime.now(timezone.utc).isoformat(),
                "versions": {"python": platform.python_version(), **{p: version(p) for p in
@@ -572,11 +619,13 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
                "second_look": bool(previous), "previous_results": previous,
                "rows": rows, "latencies": latencies, "summary": summary,
                "deterministic_sha256": digest(rows)}
-    if is_dsb:
+    if enriched_rows:
         payload["seed_summary"] = dsb_seed_summary(summary)
     if beam_width == 12:
         payload.update(beam_width=12, analysis_type=WIDTH12_STATUS,
                        preregistration_commit=WIDTH12_FREEZE)
+        current_identity = input_identity(repo, settings_path=settings_path)
+    elif is_datahub:
         current_identity = input_identity(repo, settings_path=settings_path)
     else:
         current_identity = input_identity(repo)
@@ -789,7 +838,7 @@ def main(argv=None):
         return 0
     if args.beam_width == 12 and (args.mode != "run-locked" or args.repo not in DSB_DATASETS):
         parser.error("Width 12 is available only for the DeathStarBench locked follow-up")
-    if args.repo in DSB_DATASETS:
+    if args.repo in (*DSB_DATASETS, DATAHUB):
         if args.mode != "run-locked":
             parser.error(f"{args.repo} is available only in --mode run-locked")
         options = {"beam_width": 12} if args.beam_width == 12 else {}

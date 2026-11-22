@@ -1,0 +1,444 @@
+{
+  "builder_tag": "egpot-bench-builder-v3",
+  "graphml_sha256": "041015fba8ab3baa7cc883955fcc700e344839b50d72359e072b2bcf43ebfeb0",
+  "leak_audit_source_identifiers": [
+    {
+      "caller": [
+        "datahub-web-react/src/app/domainV2/CreateDomainModal.tsx",
+        152,
+        "onCreateDomain"
+      ],
+      "contract_name": "Mutation.createDomain",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/domain/CreateDomainResolver.java",
+        49,
+        "CreateDomainResolver.get"
+      ],
+      "hook": "useCreateDomainMutation",
+      "id": "DH01",
+      "operation": [
+        "datahub-web-react/src/graphql/domain.graphql",
+        "createDomain"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/domainV2/DomainItemMenu.tsx",
+        28,
+        "deleteDomain"
+      ],
+      "contract_name": "Mutation.deleteDomain",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/domain/DeleteDomainResolver.java",
+        26,
+        "DeleteDomainResolver.get"
+      ],
+      "hook": "useDeleteDomainMutation",
+      "id": "DH02",
+      "operation": [
+        "datahub-web-react/src/graphql/domain.graphql",
+        "deleteDomain"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/domainV2/DomainsList.tsx",
+        46,
+        "DomainsList"
+      ],
+      "contract_name": "Query.listDomains",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/domain/ListDomainsResolver.java",
+        60,
+        "ListDomainsResolver.get"
+      ],
+      "hook": "useListDomainsQuery",
+      "id": "DH03",
+      "operation": [
+        "datahub-web-react/src/graphql/domain.graphql",
+        "listDomains"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/tags/CreateNewTagModal/CreateNewTagModal.tsx",
+        53,
+        "onOk"
+      ],
+      "contract_name": "Mutation.createTag",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/tag/CreateTagResolver.java",
+        40,
+        "CreateTagResolver.get"
+      ],
+      "hook": "useCreateTagMutation",
+      "id": "DH04",
+      "operation": [
+        "datahub-web-react/src/graphql/tag.graphql",
+        "createTag"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/tags/TagsTable.tsx",
+        113,
+        "handleDeleteTag"
+      ],
+      "contract_name": "Mutation.deleteTag",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/tag/DeleteTagResolver.java",
+        26,
+        "DeleteTagResolver.get"
+      ],
+      "hook": "useDeleteTagMutation",
+      "id": "DH05",
+      "operation": [
+        "datahub-web-react/src/graphql/tag.graphql",
+        "deleteTag"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/permissions/roles/ManageRoles.tsx",
+        73,
+        "ManageRoles"
+      ],
+      "contract_name": "Query.listRoles",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/role/ListRolesResolver.java",
+        41,
+        "ListRolesResolver.get"
+      ],
+      "hook": "useListRolesQuery",
+      "id": "DH06",
+      "operation": [
+        "datahub-web-react/src/graphql/role.graphql",
+        "listRoles"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/permissions/policy/usePolicy.ts",
+        137,
+        "handleDeleteConfirm"
+      ],
+      "contract_name": "Mutation.deletePolicy",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/policy/DeletePolicyResolver.java",
+        23,
+        "DeletePolicyResolver.get"
+      ],
+      "hook": "useDeletePolicyMutation",
+      "id": "DH07",
+      "operation": [
+        "datahub-web-react/src/graphql/policy.graphql",
+        "deletePolicy"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/identity/user/UserListV2.hooks.ts",
+        65,
+        "useUserListData"
+      ],
+      "contract_name": "Query.searchUsers",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/user/SearchUsersResolver.java",
+        50,
+        "SearchUsersResolver.get"
+      ],
+      "hook": "useSearchUsersQuery",
+      "id": "DH08",
+      "operation": [
+        "datahub-web-react/src/graphql/user.graphql",
+        "searchUsers"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/ingestV2/source/IngestionSourceList.tsx",
+        112,
+        "IngestionSourceList"
+      ],
+      "contract_name": "Query.listIngestionSources",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/ingest/source/ListIngestionSourcesResolver.java",
+        50,
+        "ListIngestionSourcesResolver.get"
+      ],
+      "hook": "useListIngestionSourcesQuery",
+      "id": "DH09",
+      "operation": [
+        "datahub-web-react/src/graphql/ingestion.graphql",
+        "listIngestionSources"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/ingestV2/source/IngestionSourceList.tsx",
+        354,
+        "handleConfirmDelete"
+      ],
+      "contract_name": "Mutation.deleteIngestionSource",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/ingest/source/DeleteIngestionSourceResolver.java",
+        26,
+        "DeleteIngestionSourceResolver.get"
+      ],
+      "hook": "useDeleteIngestionSourceMutation",
+      "id": "DH10",
+      "operation": [
+        "datahub-web-react/src/graphql/ingestion.graphql",
+        "deleteIngestionSource"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/entityV2/view/builder/ViewBuilder.tsx",
+        98,
+        "upsertView"
+      ],
+      "contract_name": "Mutation.createView",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/view/CreateViewResolver.java",
+        35,
+        "CreateViewResolver.get"
+      ],
+      "hook": "useCreateViewMutation",
+      "id": "DH11",
+      "operation": [
+        "datahub-web-react/src/graphql/view.graphql",
+        "createView"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/entityV2/view/menu/ViewDropdownMenu.tsx",
+        160,
+        "deleteView"
+      ],
+      "contract_name": "Mutation.deleteView",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/view/DeleteViewResolver.java",
+        26,
+        "DeleteViewResolver.get"
+      ],
+      "hook": "useDeleteViewMutation",
+      "id": "DH12",
+      "operation": [
+        "datahub-web-react/src/graphql/view.graphql",
+        "deleteView"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/sharedV2/owners/useOwnershipTypes.ts",
+        6,
+        "useOwnershipTypes"
+      ],
+      "contract_name": "Query.listOwnershipTypes",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/ownership/ListOwnershipTypesResolver.java",
+        60,
+        "ListOwnershipTypesResolver.get"
+      ],
+      "hook": "useListOwnershipTypesQuery",
+      "id": "DH13",
+      "operation": [
+        "datahub-web-react/src/graphql/ownership.graphql",
+        "listOwnershipTypes"
+      ]
+    },
+    {
+      "caller": [
+        "datahub-web-react/src/app/lineageV3/manualLineage/ManageLineageModal.tsx",
+        114,
+        "saveLineageChanges"
+      ],
+      "contract_name": "Mutation.updateLineage",
+      "handler": [
+        "datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/lineage/UpdateLineageResolver.java",
+        42,
+        "UpdateLineageResolver.get"
+      ],
+      "hook": "useUpdateLineageMutation",
+      "id": "DH14",
+      "operation": [
+        "datahub-web-react/src/graphql/mutations.graphql",
+        "updateLineage"
+      ]
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/openapi.py",
+        651,
+        "get_entities"
+      ],
+      "contract_name": "POST /openapi/v3/entity/{entityName}/batchGet",
+      "handler": [
+        "metadata-service/openapi-servlet/src/main/java/io/datahubproject/openapi/v3/controller/EntityController.java",
+        130,
+        "EntityController.getEntityBatch"
+      ],
+      "id": "DH15"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/openapi.py",
+        230,
+        "scroll_entities"
+      ],
+      "contract_name": "POST /openapi/v3/entity/scroll",
+      "handler": [
+        "metadata-service/openapi-servlet/src/main/java/io/datahubproject/openapi/v3/controller/EntityController.java",
+        170,
+        "EntityController.scrollEntities"
+      ],
+      "id": "DH16"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/openapi.py",
+        338,
+        "scroll_relationships"
+      ],
+      "contract_name": "POST /openapi/v3/relationship/scroll",
+      "handler": [
+        "metadata-service/openapi-servlet/src/main/java/io/datahubproject/openapi/controller/GenericRelationshipController.java",
+        292,
+        "GenericRelationshipController.scrollRelationships"
+      ],
+      "id": "DH17"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/openapi.py",
+        414,
+        "scroll_lineage"
+      ],
+      "contract_name": "POST /openapi/v3/lineage/scroll",
+      "handler": [
+        "metadata-service/openapi-servlet/src/main/java/io/datahubproject/openapi/v3/controller/LineageController.java",
+        72,
+        "LineageController.scrollLineage"
+      ],
+      "id": "DH18"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/client.py",
+        549,
+        "get_entity_aspect_specs"
+      ],
+      "contract_name": "GET /openapi/v1/registry/models/entity/specifications",
+      "handler": [
+        "metadata-service/openapi-servlet/src/main/java/io/datahubproject/openapi/v1/registry/EntityRegistryController.java",
+        56,
+        "EntityRegistryController.getEntitySpecs"
+      ],
+      "id": "DH19"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/client.py",
+        483,
+        "get_aspect"
+      ],
+      "contract_name": "GET /aspects/{urn}",
+      "handler": [
+        "metadata-service/restli-servlet-impl/src/main/java/com/linkedin/metadata/resources/entity/AspectResource.java",
+        149,
+        "AspectResource.get"
+      ],
+      "id": "DH20"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/client.py",
+        633,
+        "get_usage_aspects_from_urn"
+      ],
+      "contract_name": "POST /aspects?action=getTimeseriesAspectValues",
+      "handler": [
+        "metadata-service/restli-servlet-impl/src/main/java/com/linkedin/metadata/resources/entity/AspectResource.java",
+        192,
+        "AspectResource.getTimeseriesAspectValues"
+      ],
+      "id": "DH21"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/client.py",
+        669,
+        "list_all_entity_urns"
+      ],
+      "contract_name": "POST /entities?action=listUrns",
+      "handler": [
+        "metadata-service/restli-servlet-impl/src/main/java/com/linkedin/metadata/resources/entity/EntityResource.java",
+        1354,
+        "EntityResource.listUrns"
+      ],
+      "id": "DH22"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/client.py",
+        745,
+        "get_entity_raw"
+      ],
+      "contract_name": "GET /entitiesV2/{urn}",
+      "handler": [
+        "metadata-service/restli-servlet-impl/src/main/java/com/linkedin/metadata/resources/entity/EntityV2Resource.java",
+        83,
+        "EntityV2Resource.get"
+      ],
+      "id": "DH23"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/client.py",
+        1774,
+        "delete_references_to_urn"
+      ],
+      "contract_name": "POST /entities?action=deleteReferences",
+      "handler": [
+        "metadata-service/restli-servlet-impl/src/main/java/com/linkedin/metadata/resources/entity/EntityResource.java",
+        1254,
+        "EntityResource.deleteReferencesTo"
+      ],
+      "id": "DH24"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/ingestion/graph/client.py",
+        1805,
+        "_restore_index_call"
+      ],
+      "contract_name": "POST /operations?action=restoreIndices",
+      "handler": [
+        "metadata-service/restli-servlet-impl/src/main/java/com/linkedin/metadata/resources/operations/OperationsResource.java",
+        99,
+        "OperationsResource.restoreIndices"
+      ],
+      "id": "DH25"
+    },
+    {
+      "caller": [
+        "metadata-ingestion/src/datahub/emitter/rest_emitter.py",
+        1106,
+        "_emit_restli_mcps"
+      ],
+      "contract_name": "POST /aspects?action=ingestProposalBatch",
+      "handler": [
+        "metadata-service/restli-servlet-impl/src/main/java/com/linkedin/metadata/resources/entity/AspectResource.java",
+        279,
+        "AspectResource.ingestProposalBatch"
+      ],
+      "id": "DH26"
+    }
+  ],
+  "mapping": "source path, line and qualified declaration name; no graph edges read",
+  "query_draft_sha256": "abde31afbe262e53cf3d70492c13e2fab3bc15bdb99f6287e80a8259f3fea48d",
+  "query_file_sha256": "69e72fde97c6d7c32fc1809f74b45d960af11ac1566da57059a783af25bde6e0",
+  "source_evidence_sha256": "c1ff8a532c5cf830952e60b2cb974c1cafd2d8b67d4bf6a063173c7e62fb2cb2"
+}

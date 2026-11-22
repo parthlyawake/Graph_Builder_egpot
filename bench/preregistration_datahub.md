@@ -1,0 +1,58 @@
+# DataHub preregistration draft
+
+Status: FROZEN
+
+Draft date `2026-11-20`. Freeze date `2026-11-20`. Final benchmark commit `c15abdcb7b990c94223670d45119eb59b6218b7e`. Analysis script `bench/analyze_datahub_final.py` at commit `c15abdcb7b990c94223670d45119eb59b6218b7e`. This draft authorizes no retrieval on the labeled cohort.
+
+## Data and coverage
+
+Use DataHub source `c2a82c97f0faf73c266d6525aead90557615147f`, builder `egpot-bench-builder-v3` at `ea3f50e25f22e141495569207a8b16cbbd79e319`, and engine `egpot-tiebreak-v1` at `f3d3163eec15c3e814302fb8269cd3fbca6430a1`. The graph has 314,219 nodes and 1,032,832 edges. The v3 coverage sidecar records the guarded production workspace and build revision.
+
+| Input | SHA-256 |
+|---|---|
+| `bench/results/datahub_graph_v3.graphml` | `041015fba8ab3baa7cc883955fcc700e344839b50d72359e072b2bcf43ebfeb0` |
+| `bench/labels/datahub_egpot_queries.json` | `69e72fde97c6d7c32fc1809f74b45d960af11ac1566da57059a783af25bde6e0` |
+
+The whole set comprises 26 links and 52 queries, one explicit and one indirect per link. There is no dev split. Report the pooled cohort and descriptive results for React → GraphQL (14 links), Python → OpenAPI (5), and Python → Rest.li (7). Labels and lookalikes were verified through second-model checks and pinned source citations, without human review. Exact IDs came from cited file, line and qualified declaration name. Report builder-coverage failures separately and exclude them from the denominators of every method. Excluded links receive no evaluation or score.
+
+The builder was modified after the 26 links were identified, with those links in view. The four rules apply across the production workspace. Their repo-wide additions and independent source audits are documented in `datahub_edge_audit.md` and `datahub_edge_audit_v3.md`. The labeled cohort was unseen by retrieval during preparation. Confirmatory inference is conditional on the eventual frozen cohort and graph. All 52 required edges verified again after the rebuild and the label bytes stayed the same.
+
+## Evaluation plan
+
+Use policy D for every method. This is `LEGACY` with contract-match credit withheld for `ACCEPTS_SCHEMA`, `RETURNS_SCHEMA`, `INVOKES`, and `POSSIBLE_HTTP_TARGET`. Keep legacy traversal eligibility, entropy denominator, and the RPC choke point, with the specified choke-off exceptions.
+
+- Main budgets are 10, 20 and 40, including the start. Run `egpot_full`, `egpot_no_pareto`, and `egpot_full_tiebreak` with `_w4` and `_w12` method IDs. Run `egpot_full_mcts_w4` and `egpot_no_pareto_mcts_w4` with blend weight 0.5, and `egpot_no_entropy_w4`, `egpot_no_contracts_w4`, and `egpot_no_choke_point_w4`.
+- Baselines are `vector_topk`, `bfs`, `greedy_walk`, `vector_bfs_k2` through `vector_bfs_k5`, `ppr`, `scalar_beam`, `community_graphrag`, and `mcts_standard`. At budgets 20 and 40 run choke-off variants of BFS, VectorBFS k2, PPR, scalar beam, standard MCTS, and greedy walk.
+- Use seed 0 for primary comparisons. Run seeds 0–5 for the tiebreak and blended MCTS variants and standard MCTS at all main budgets, and for choke-off standard MCTS at its two budgets. Report minimum, median and maximum by seed. Deterministic methods run once per budget. The matched controls for lookahead comparisons are the no-lookahead methods with the same width and Pareto setting.
+- At budgets 10 and 20 run the 54-vector scalar weight study at width 4 without lookahead. Use 50 `RandomState(0)` Dirichlet(1,1,1,1) vectors rounded to four decimals and renormalized, plus four 0.7/0.1 emphasis vectors. Report equal weights separately. Use `egpot_full_w4` as the Pareto reference. Report the distribution and counts below, equal to, and above that reference. Select no weight for later use.
+
+## Outcomes and inference
+
+A full hit requires both exact gold IDs. Report full hits as counts and rates, gold recall, precision, path coverage, ordered path match, nodes returned, nodes-to-hit, precision-at-hit, and latency. Accepted alternatives receive no credit. Report hits-only compactness and the paired subset that both methods hit, with its size. Lookalike failure analysis is descriptive.
+
+The four confirmatory contrasts use pooled full-hit-rate differences at seed 0. In each contrast the predicted direction is positive.
+
+| ID | Budget | First method minus comparator |
+|---|---:|---|
+| C1 | 10 | `egpot_full_w4` minus the strongest baseline |
+| C2 | 40 | `egpot_full_w12` minus the strongest baseline |
+| C3 | 10 | `egpot_full_w4` minus `egpot_full_w12` |
+| C4 | 40 | `egpot_full_w4` minus `egpot_no_contracts_w4` |
+
+Use 10,000 paired cluster bootstrap resamples over start nodes with NumPy `RandomState(0)`. Keep all queries and paired method outcomes for a sampled start together. Compute query-weighted rates. In C1 and C2, re-select the strongest baseline in every resample by highest full-hit rate, then lowest mean nodes-to-hit, then name. Undefined nodes-to-hit sorts last. Apply Bonferroni-adjusted percentile intervals at `1 − 0.05/4` with `0.05/8` in each tail. An interval above zero supports the specified direction, one below zero indicates the first method was significantly worse, and one including zero leaves the claim unsupported. Label every other analysis exploratory and use unadjusted 95% intervals where reported.
+
+For an exploratory sensitivity check on C1–C4, repeat the paired bootstrap with clusters keyed by the source-qualified Java handler class. Keep every query whose gold handler belongs to the sampled class together, including both wordings and all links sharing that class. Use 10,000 resamples and a fresh NumPy `RandomState(0)`, with the same query weights and strongest-baseline selection rule. Report unadjusted 95% intervals and cluster counts. The sensitivity check has no role in confirmatory verdicts.
+
+## Predictions made before the run
+
+PPR will lose ground because 40 nodes cover a tiny share of this graph. Width-4 EG-POT will retain its tight-budget advantage. Width 12 will cost hits at budget 10. Contract consistency will matter at budget 40. Report failed predictions as plainly as successful ones.
+
+## Freeze and deviations
+
+Use the DataHub-only locked runner. It must verify a clean Git state, a tracked frozen preregistration and its tag, the input hashes, and the pinned engine and builder code. Any label change after freeze invalidates the locked run. A run on changed labels is a separate new analysis.
+
+The whole cohort has no dev/test split. This draft uses two widths and four adjusted comparisons and retires the earlier scorecard thresholds. The builder changes and lack of human label review are disclosed above. Three synthetic queries on off-cohort graph nodes were used for timing only, with returned results discarded.
+
+The v2 audit found 21 incorrect edges in a sample of 30 OpenAPI edges. The later census identified 88 incorrect v2 client `CONSUMES` bindings, including calls to external services. V3 requires provenance from the configured DataHub SDK server base, at least one matching literal route segment, an exact verb and segment match, and a unique most-specific route. It respects Spring parameter constraints and retains separate inherited prefixes. One guarded rebuild produced graph SHA-256 `041015fba8ab3baa7cc883955fcc700e344839b50d72359e072b2bcf43ebfeb0`.
+
+The client census found 88 incorrect `CONSUMES` edges before the fix and zero after it. The broader OpenAPI census found 102 incorrect edges in v2 and 14 in v3. The remaining 14 are pre-existing native Spring `IMPLEMENTS` edges, outside the client-binding change. The 14 edges are kept in the v3 graph proposed for evaluation. One edge (`w_openapi_e16558`, the unprefixed `POST /scroll`) touches the DH17 gold handler, which is also a DH18 lookalike. None touches a gold contract. Across the 26 starts, seven distinct incorrect edges have an endpoint within two hops of nine starts (17 start-edge pairs): DH02 (2), DH05 (2), DH07 (1), DH09 (2), DH10 (1), DH12 (2), DH17 (1), DH20 (5), and DH24 (1). The same counts hold for undirected graph distance and Policy D traversal eligibility. Only two of these edges can be crossed within two hops, both from DH20 (`w_openapi_e16488` and `w_openapi_e16490`). The others can first be offered in hop three, including the unprefixed route as an extra candidate after reaching the DH17 handler. The DH18 lookalike overlap has no endpoint within two hops of its start. These edges can introduce competing candidates if reached. No labeled query was run to measure that effect. The earlier off-cohort method timings used v2. The v3 timing check measured graph loading and TF-IDF setup only.

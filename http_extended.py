@@ -7,6 +7,8 @@ runtime-unknown values do not become fabricated cross-service dependencies.
 from __future__ import annotations
 
 import ast
+from bisect import bisect_right
+from collections import defaultdict
 import json
 import os
 import re
@@ -35,6 +37,10 @@ def literal_python(node):
 
 
 def _function_node(builder, file, name):
+    index = getattr(builder, '_http_source_index', None)
+    if index is not None and file.endswith(('.py', '.java')):
+        hits = index.names.get((file, name), ())
+        return hits[0] if len(hits) == 1 else None
     prefix = builder.repo_prefix + file + ":"
     matching = [
         nid for nid, data in builder.graph.nodes(data=True)
@@ -42,6 +48,31 @@ def _function_node(builder, file, name):
         and (nid[len(prefix):] == name or nid.rsplit(".", 1)[-1] == name)
     ]
     return matching[0] if len(matching) == 1 else None
+
+
+class HTTPSourceIndex:
+    """One ordered source index for the workspace's read-only Python/Java scans."""
+    def __init__(self, builder):
+        self.names = defaultdict(list)
+        self.lines = defaultdict(list)
+        prefix = builder.repo_prefix
+        for node, attrs in builder.graph.nodes(data=True):
+            if not node.startswith(prefix) or attrs.get('type') not in {'function', 'method'}:
+                continue
+            file, _, scope = node[len(prefix):].partition(':')
+            if not scope or not file.endswith(('.py', '.java')):
+                continue
+            for name in {scope, node.rsplit('.', 1)[-1]}:
+                self.names[file, name].append(node)
+            if attrs.get('type') == 'function':
+                self.lines[file].append((int(attrs.get('line_no', 0)), node))
+        for values in self.lines.values():
+            values.sort()
+
+    def caller(self, file, line):
+        candidates = self.lines.get(file, ())
+        index = bisect_right(candidates, line, key=lambda entry: entry[0])
+        return candidates[index - 1][1] if index else None
 
 
 def _register(workspace, builder, method, path, handler, raw_path=None):
