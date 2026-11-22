@@ -774,7 +774,19 @@ def main(argv=None):
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--acknowledge-second-look", action="store_true")
     parser.add_argument("--beam-width", type=int, choices=(4, 12), default=4)
+    parser.add_argument("--test-split", action="store_true",
+                        help="Use the separately frozen test-only second-look protocol")
     args = parser.parse_args(argv)
+    if args.test_split:
+        from bench import egpot_test_splits
+
+        if (args.mode != "run-locked" or args.repo not in egpot_test_splits.PRIOR
+                or args.beam_width != 4 or args.resume or not args.acknowledge_second_look):
+            parser.error("The locked test protocol requires an eligible dataset, "
+                         "--mode run-locked and --acknowledge-second-look")
+        egpot_test_splits.run(args.repo, workers=args.workers,
+                              acknowledge=args.acknowledge_second_look)
+        return 0
     if args.beam_width == 12 and (args.mode != "run-locked" or args.repo not in DSB_DATASETS):
         parser.error("Width 12 is available only for the DeathStarBench locked follow-up")
     if args.repo in DSB_DATASETS:
