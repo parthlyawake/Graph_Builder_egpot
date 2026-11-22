@@ -19,6 +19,7 @@ from pathlib import Path
 import platform
 from statistics import fmean, median
 import subprocess
+import sys
 import tempfile
 from time import perf_counter
 
@@ -41,6 +42,16 @@ DSB_BUILDER_PATHS = (":(top,glob)*.py", ":(top,exclude)eg_pot.py", "contracts/",
                      "pyproject.toml", ":(top,glob)requirements*.txt")
 DSB_EDGE_POLICY = replace(LEGACY, no_contract_match_relations=frozenset(
     {"ACCEPTS_SCHEMA", "RETURNS_SCHEMA", "INVOKES", "POSSIBLE_HTTP_TARGET"}))
+WIDTH12_PLAN = Path("bench/preregistration_dsb_width12.md")
+WIDTH12_TAG = "egpot-dsb-w12-prereg-v1"
+WIDTH12_FREEZE = "59ebfcfc736d3f4ad805397a428fecbed2922d13"
+WIDTH12_RESULT_TAG = "egpot-dsb-w12-locked-v1"
+WIDTH12_STATUS = "post-hoc exploratory"
+WIDTH12_METHODS = ("egpot_full", "egpot_no_pareto", "egpot_full_tiebreak")
+DSB_WIDTH4_SHA256 = {
+    "dsb_social": "f6d4d0bda72161da2d3ff27d80738e70819650d1396530f6ab22d17cfc21ca50",
+    "dsb_media": "518da8e6b92296e3e67634f0b04d650b0735182aa2a7b4edf8f74363ae9b375c",
+}
 
 
 @dataclass(frozen=True)
@@ -242,6 +253,63 @@ def dsb_settings(locked):
                             "entropy_over_eligible_only": DSB_EDGE_POLICY.entropy_over_eligible_only}}
 
 
+def width12_settings(original):
+    """Inherit the frozen DSB specs while changing only width and method IDs."""
+    tiebreak = "egpot_full_tiebreak"
+    return {
+        "main": {f"{name}_w12": _override_config(original["main"][name], beam_width=12)
+                 for name in WIDTH12_METHODS},
+        "seeds": {f"{tiebreak}_w12": {
+            seed: _override_config(spec, beam_width=12)
+            for seed, spec in original["seeds"][tiebreak].items()}},
+        "edge_policy": original["edge_policy"],
+        "choke": {},
+        "weights": {},
+    }
+
+
+def width12_record_options(name, repo, *, root=ROOT):
+    """Validate frozen reference bytes without reading any other benchmark."""
+    original = root / "bench/results" / f"{name}_final_6ba6e1cf.json"
+    if sha256(original) != DSB_WIDTH4_SHA256[name]:
+        raise ValueError(f"{name}: original width-4 record hash mismatch")
+    data = read_json(original)
+    if verify_inputs(repo) != {key: data["identity"]["verified_hashes"][key]
+                               for key in ("graph", "labels")}:
+        raise ValueError(f"{name}: input hashes differ from the original run")
+    return original, width12_settings(data["configs"])
+
+
+def width12_preflight(name, repo, output_dir, *, root=ROOT):
+    commit = git("rev-parse", "HEAD", root=root)
+    target = output_dir / f"{name}_w12_{commit[:8]}.json"
+    if any(output_dir.glob(f"{name}_w12_*.json")):
+        raise ValueError(f"Width-12 run already consumed for {name}")
+    sibling = next(app for app in DSB_DATASETS if app != name)
+    sibling_output = f"?? bench/results/{sibling}_w12_{commit[:8]}.json"
+    changes = git("status", "--porcelain", "--untracked-files=all", root=root).splitlines()
+    if any(line != sibling_output for line in changes):
+        raise ValueError("Width-12 run requires a clean Git tree")
+    verify_dsb_frozen_code(commit, root=root)
+    if git("diff", "--name-only", "egpot-dsb-locked-v1", commit, "--", "eg_pot.py", root=root):
+        raise ValueError("Engine differs from egpot-dsb-locked-v1")
+    if git("rev-parse", f"{WIDTH12_TAG}^{{commit}}", root=root) != WIDTH12_FREEZE:
+        raise ValueError("Unexpected width-12 preregistration tag")
+    git("ls-files", "--error-unmatch", str(WIDTH12_PLAN), root=root)
+    if git("diff", "--name-only", WIDTH12_FREEZE, commit, "--", str(WIDTH12_PLAN), root=root):
+        raise ValueError("Width-12 preregistration differs from the frozen plan")
+    original, configs = width12_record_options(name, repo, root=root)
+    hashes = {**verify_inputs(repo), "preregistration": sha256(repo.preregistration)}
+    return commit, hashes, target, original, configs
+
+
+def verify_width12_row(row, task):
+    if (task["method"] not in {f"{name}_w12" for name in WIDTH12_METHODS}
+            or task["spec"]["config"]["beam_width"] != 12
+            or row["method"] != task["method"] or row.get("beam_width") != 12):
+        raise ValueError("Expected a width-12 method ID, effective config and result row")
+
+
 def dsb_seed_summary(summary):
     """Summarize each reported metric over seeds, skipping undefined hit-only means."""
     groups = defaultdict(list)
@@ -328,7 +396,7 @@ def evaluate_locked_job(task, engine, *, include_returned_nodes):
     return row
 
 
-def execute_job(task, *, include_returned_nodes=False):
+def execute_job(task, *, include_returned_nodes=False, width12=False):
     key = digest({"method": task["method"], "spec": task["spec"]})
     if key not in _ENGINES:
         _ENGINES[key] = make_engine(task["method"], task["spec"])
@@ -337,6 +405,9 @@ def execute_job(task, *, include_returned_nodes=False):
     if isinstance(engine, StandardMCTS):
         engine.query_ids = {(task["label"]["query"], task["label"]["start_node"]): task["label"]["id"]}
     row = evaluate_locked_job(task, engine, include_returned_nodes=include_returned_nodes)
+    if width12:
+        row["beam_width"] = engine.config.beam_width
+        verify_width12_row(row, task)
     latency = row.pop("latency_s")
     return task["key"], {"deterministic": row, "latency_s": latency}
 
@@ -400,6 +471,30 @@ def input_identity(repo, *, settings_path=SETTINGS):
                      ("eg_pot.py", "bench/egpot_eval.py", "bench/egpot_multi_eval.py")}}
 
 
+def initialize_width12_worker(graph_path):
+    from bench.egpot_width_sweep_dev import guard
+
+    sys.addaudithook(guard)
+    initialize_worker(graph_path, DSB_EDGE_POLICY)
+
+
+def run_width12_jobs(graph_path, jobs, *, workers):
+    """Keep the exploratory jobs in memory. Only completed runs are published."""
+    context = multiprocessing.get_context("spawn")
+    with ProcessPoolExecutor(max_workers=workers, mp_context=context,
+                             initializer=initialize_width12_worker,
+                             initargs=(str(graph_path),)) as pool:
+        futures = [pool.submit(execute_job, task, include_returned_nodes=True, width12=True)
+                   for task in jobs]
+        results = {}
+        for index, future in enumerate(as_completed(futures), 1):
+            key, record = future.result()
+            results[key] = record
+            if index % 100 == 0 or index == len(futures):
+                print(f"WIDTH-12 {index}/{len(futures)} jobs", flush=True)
+    return results
+
+
 def publish(path, payload):
     """Publish only a complete JSON, atomically and without replacing a result."""
     path = Path(path)
@@ -416,22 +511,39 @@ def publish(path, payload):
 
 
 def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=False,
-               registry=REGISTRY, output_dir=None):
+               registry=REGISTRY, output_dir=None, beam_width=4):
     repo = registry[name]
     output_dir = Path(output_dir) if output_dir else ROOT / "bench/results"
-    commit, hashes, target, previous = locked_preflight(name, repo, output_dir, acknowledge=acknowledge)
     is_dsb = name in DSB_DATASETS
-    if is_dsb:
-        configs = dsb_settings(load_settings())
-    identity = input_identity(repo)
+    settings_path = SETTINGS
+    if beam_width == 12:
+        if not is_dsb or resume or acknowledge:
+            raise ValueError("Width 12 is a one-time DeathStarBench follow-up")
+        repo = replace(repo, preregistration=ROOT / WIDTH12_PLAN)
+        commit, hashes, target, settings_path, configs = width12_preflight(name, repo, output_dir)
+        previous = [str(settings_path.relative_to(ROOT))]
+        identity = input_identity(repo, settings_path=settings_path)
+    elif beam_width == 4:
+        commit, hashes, target, previous = locked_preflight(name, repo, output_dir, acknowledge=acknowledge)
+        if is_dsb:
+            configs = dsb_settings(load_settings())
+        identity = input_identity(repo)
+    else:
+        raise ValueError("Unsupported locked beam width")
     identity["verified_hashes"] = hashes
     if is_dsb:
         identity["protocol_sha256"] = digest(configs)
     labels = read_json(repo.labels)  # locks have passed; whole set, no split
     jobs, aliases = plan_locked(labels, configs)
-    results = run_jobs(repo.graph, jobs, checkpoint, identity, workers=workers, resume=resume,
-                       edge_policy=DSB_EDGE_POLICY if is_dsb else LEGACY,
-                       include_returned_nodes=is_dsb)
+    if beam_width == 12:
+        for task in jobs:
+            verify_width12_row({"method": task["method"], "beam_width": beam_width}, task)
+        print(f"{WIDTH12_STATUS}: {name}, beam width 12, {len(jobs)} jobs", flush=True)
+        results = run_width12_jobs(repo.graph, jobs, workers=workers)
+    else:
+        results = run_jobs(repo.graph, jobs, checkpoint, identity, workers=workers, resume=resume,
+                           edge_policy=DSB_EDGE_POLICY if is_dsb else LEGACY,
+                           include_returned_nodes=is_dsb)
     rows, latencies = [], []
     for alias in aliases:
         result = results[alias["key"]]
@@ -462,8 +574,14 @@ def run_locked(name, configs, *, workers, checkpoint, resume=False, acknowledge=
                "deterministic_sha256": digest(rows)}
     if is_dsb:
         payload["seed_summary"] = dsb_seed_summary(summary)
-    if input_identity(repo) != {k: v for k, v in identity.items()
-                                if k not in {"verified_hashes", "protocol_sha256"}}:
+    if beam_width == 12:
+        payload.update(beam_width=12, analysis_type=WIDTH12_STATUS,
+                       preregistration_commit=WIDTH12_FREEZE)
+        current_identity = input_identity(repo, settings_path=settings_path)
+    else:
+        current_identity = input_identity(repo)
+    if current_identity != {k: v for k, v in identity.items()
+                            if k not in {"verified_hashes", "protocol_sha256"}}:
         raise ValueError("Inputs/code/commit changed during run; final result not consumed")
     if verify_inputs(repo) != {k: v for k, v in hashes.items() if k != "preregistration"}:
         raise ValueError("Input provenance changed during run")
@@ -655,12 +773,16 @@ def main(argv=None):
     parser.add_argument("--checkpoint", type=Path, default=SCRATCH / "checkpoint")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--acknowledge-second-look", action="store_true")
+    parser.add_argument("--beam-width", type=int, choices=(4, 12), default=4)
     args = parser.parse_args(argv)
+    if args.beam_width == 12 and (args.mode != "run-locked" or args.repo not in DSB_DATASETS):
+        parser.error("Width 12 is available only for the DeathStarBench locked follow-up")
     if args.repo in DSB_DATASETS:
         if args.mode != "run-locked":
             parser.error(f"{args.repo} is available only in --mode run-locked")
+        options = {"beam_width": 12} if args.beam_width == 12 else {}
         run_locked(args.repo, None, workers=args.workers, checkpoint=args.checkpoint,
-                   resume=args.resume, acknowledge=args.acknowledge_second_look)
+                   resume=args.resume, acknowledge=args.acknowledge_second_look, **options)
         return 0
     configs = load_settings()
     print_settings(configs)
