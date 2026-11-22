@@ -436,20 +436,25 @@ NEW_BASELINES = (*[f"vector_bfs_k{k}" for k in (2, 3, 4, 5)], "ppr", "scalar_bea
 TIEBREAK_METHOD = "egpot_full_tiebreak"
 
 
-def make_comparison_retrievers(view, scorer, *, query_ids=None, method_names=None):
+def make_comparison_retrievers(view, scorer, *, query_ids=None, method_names=None, beam_width=4):
     """Construct the default comparison methods or an explicitly requested subset."""
     factories = {
-        "egpot_full": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=False), view, scorer),
-        "egpot_full_mcts": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=True), view, scorer),
-        TIEBREAK_METHOD: lambda: EGPOTRetriever(EGPOTConfig(lookahead_mode="tiebreak"), view, scorer),
-        "egpot_no_pareto": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=False, use_pareto=False), view, scorer),
+        "egpot_full": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=False, beam_width=beam_width), view, scorer),
+        "egpot_full_mcts": lambda: EGPOTRetriever(EGPOTConfig(use_mcts=True, beam_width=beam_width), view, scorer),
+        TIEBREAK_METHOD: lambda: EGPOTRetriever(
+            EGPOTConfig(lookahead_mode="tiebreak", beam_width=beam_width), view, scorer),
+        "egpot_no_pareto": lambda: EGPOTRetriever(
+            EGPOTConfig(use_mcts=False, use_pareto=False, beam_width=beam_width), view, scorer),
+        "egpot_no_contracts": lambda: EGPOTRetriever(
+            EGPOTConfig(use_mcts=False, use_contracts=False, beam_width=beam_width), view, scorer),
         "vector_topk": lambda: VectorTopK(view, scorer), "bfs": lambda: BFS(view, scorer),
         "greedy_walk": lambda: GreedyWalk(view, scorer),
         **{f"vector_bfs_k{k}": lambda k=k: VectorBFS(view, scorer, k) for k in (2, 3, 4, 5)},
         "ppr": lambda: PersonalizedPageRank(view, scorer), "scalar_beam": lambda: ScalarBeam(view, scorer),
         "community_graphrag": lambda: CommunityGraphRAG(view, scorer),
         "mcts_standard": lambda: StandardMCTS(view, scorer, seed=0, query_ids=query_ids)}
-    names = (name for name in factories if name != TIEBREAK_METHOD) if method_names is None else method_names
+    names = (name for name in factories if name not in {TIEBREAK_METHOD, "egpot_no_contracts"}
+             ) if method_names is None else method_names
     methods = {}
     for name in names:
         began = perf_counter()
@@ -1393,7 +1398,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--confirm-test", action="store_true")
     parser.add_argument("--mode", choices=("all", "ablations", "sweep", "comparison", "fairness", "weights", "test-final"), default="all")
     parser.add_argument("--methods", nargs="+",
-                        choices=("egpot_full", "egpot_full_mcts", TIEBREAK_METHOD, "egpot_no_pareto",
+                        choices=("egpot_full", "egpot_full_mcts", TIEBREAK_METHOD, "egpot_no_pareto", "egpot_no_contracts",
                                  "vector_topk", "bfs", "greedy_walk", *NEW_BASELINES),
                         help="Select methods for --mode comparison")
     parser.add_argument("--acknowledge-second-look", action="store_true")
@@ -1403,11 +1408,19 @@ def main(argv: list[str] | None = None) -> int:
                         help="Exclude an additional relation from development traversal; repeatable")
     parser.add_argument("--no-contract-match-relation", action="append", default=[], metavar="REL",
                         help="Withhold the contract-match score for this relation; repeatable")
+    parser.add_argument("--beam-width", type=int, default=4,
+                        help="EG-POT beam width for DEV comparison (default: 4)")
     args = parser.parse_args(argv)
+    if args.beam_width < 1:
+        parser.error("--beam-width must be positive")
+    if args.beam_width != 4 and (args.mode != "comparison" or args.split != "dev"):
+        parser.error("Non-default --beam-width requires DEV comparison")
     if args.methods and args.mode != "comparison":
         parser.error("--methods requires --mode comparison")
     if TIEBREAK_METHOD in (args.methods or ()) and args.split != "dev":
         parser.error(f"{TIEBREAK_METHOD} is DEV only")
+    if "egpot_no_contracts" in (args.methods or ()) and args.split != "dev":
+        parser.error("egpot_no_contracts is DEV only in comparison mode")
     edge_policy = _selected_edge_policy(args)
     if edge_policy != LEGACY and (args.split == "test" or args.mode == "test-final"):
         parser.error("Non-legacy edge policies are DEV only; no test queries were evaluated")
@@ -1464,7 +1477,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Community partition uses undirected, unweighted simple adjacency; setup/partition cost reported separately.")
         print("ScalarBeam is width four, path-score sum; StandardMCTS uses query-ID/start seeds and ranks tree occurrences before deduplication.")
         methods = make_comparison_retrievers(view, scorer, query_ids=query_ids,
-                                             method_names=args.methods)
+                                             method_names=args.methods, beam_width=args.beam_width)
         run_comparison(tasks, methods)
         return 0
     ablations = make_ablations(view, scorer)
