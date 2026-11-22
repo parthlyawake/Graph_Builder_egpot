@@ -1,0 +1,926 @@
+[
+  {
+    "id": "sn01_explicit",
+    "link_id": "sn01",
+    "type": "explicit",
+    "query": "Which UserService handler serves the ComposeCreatorWithUserId call made by the creator helper in ComposePostService?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeCreaterHelper",
+    "contract_node": "contract::thrift::social_network.UserService.ComposeCreatorWithUserId",
+    "handler_node": "User/UserHandler.h:social_network.ComposeCreatorWithUserId",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserService.ComposeCreatorWithUserId",
+      "User/UserHandler.h:social_network.ComposeCreatorWithUserId"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeCreaterHelper",
+      "contract::thrift::social_network.UserService.ComposeCreatorWithUserId",
+      "User/UserHandler.h:social_network.ComposeCreatorWithUserId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "User",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:110",
+      "handler": "socialNetwork/src/UserService/UserHandler.h:538",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_client.ComposeCreatorWithUserId"
+    ]
+  },
+  {
+    "id": "sn01_indirect",
+    "link_id": "sn01",
+    "type": "indirect",
+    "query": "When someone assembles a post, which function packages the author's supplied account ID and username into the post's author record?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeCreaterHelper",
+    "contract_node": "contract::thrift::social_network.UserService.ComposeCreatorWithUserId",
+    "handler_node": "User/UserHandler.h:social_network.ComposeCreatorWithUserId",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserService.ComposeCreatorWithUserId",
+      "User/UserHandler.h:social_network.ComposeCreatorWithUserId"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeCreaterHelper",
+      "contract::thrift::social_network.UserService.ComposeCreatorWithUserId",
+      "User/UserHandler.h:social_network.ComposeCreatorWithUserId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "User",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:110",
+      "handler": "socialNetwork/src/UserService/UserHandler.h:538",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_client.ComposeCreatorWithUserId"
+    ]
+  },
+  {
+    "id": "sn02_explicit",
+    "link_id": "sn02",
+    "type": "explicit",
+    "query": "Which TextService handler serves the ComposeText call made by the text helper in ComposePostService?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeTextHelper",
+    "contract_node": "contract::thrift::social_network.TextService.ComposeText",
+    "handler_node": "Text/TextHandler.h:social_network.ComposeText",
+    "gold_nodes": [
+      "contract::thrift::social_network.TextService.ComposeText",
+      "Text/TextHandler.h:social_network.ComposeText"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeTextHelper",
+      "contract::thrift::social_network.TextService.ComposeText",
+      "Text/TextHandler.h:social_network.ComposeText"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "Text",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:147",
+      "handler": "socialNetwork/src/TextService/TextHandler.h:41",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::text_client.ComposeText"
+    ]
+  },
+  {
+    "id": "sn02_indirect",
+    "link_id": "sn02",
+    "type": "indirect",
+    "query": "While a post is being composed, which function processes the raw post text and returns the finished text?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeTextHelper",
+    "contract_node": "contract::thrift::social_network.TextService.ComposeText",
+    "handler_node": "Text/TextHandler.h:social_network.ComposeText",
+    "gold_nodes": [
+      "contract::thrift::social_network.TextService.ComposeText",
+      "Text/TextHandler.h:social_network.ComposeText"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeTextHelper",
+      "contract::thrift::social_network.TextService.ComposeText",
+      "Text/TextHandler.h:social_network.ComposeText"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "Text",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:147",
+      "handler": "socialNetwork/src/TextService/TextHandler.h:41",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::text_client.ComposeText"
+    ]
+  },
+  {
+    "id": "sn03_explicit",
+    "link_id": "sn03",
+    "type": "explicit",
+    "query": "Which MediaService handler serves the ComposeMedia call made by the media helper in ComposePostService?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeMediaHelper",
+    "contract_node": "contract::thrift::social_network.MediaService.ComposeMedia",
+    "handler_node": "Media/MediaHandler.h:social_network.ComposeMedia",
+    "gold_nodes": [
+      "contract::thrift::social_network.MediaService.ComposeMedia",
+      "Media/MediaHandler.h:social_network.ComposeMedia"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeMediaHelper",
+      "contract::thrift::social_network.MediaService.ComposeMedia",
+      "Media/MediaHandler.h:social_network.ComposeMedia"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "Media",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:184",
+      "handler": "socialNetwork/src/MediaService/MediaHandler.h:30",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::media_client.ComposeMedia"
+    ]
+  },
+  {
+    "id": "sn03_indirect",
+    "link_id": "sn03",
+    "type": "indirect",
+    "query": "When a post is assembled, which function turns the attached media ids and types into media records?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeMediaHelper",
+    "contract_node": "contract::thrift::social_network.MediaService.ComposeMedia",
+    "handler_node": "Media/MediaHandler.h:social_network.ComposeMedia",
+    "gold_nodes": [
+      "contract::thrift::social_network.MediaService.ComposeMedia",
+      "Media/MediaHandler.h:social_network.ComposeMedia"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeMediaHelper",
+      "contract::thrift::social_network.MediaService.ComposeMedia",
+      "Media/MediaHandler.h:social_network.ComposeMedia"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "Media",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:184",
+      "handler": "socialNetwork/src/MediaService/MediaHandler.h:30",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::media_client.ComposeMedia"
+    ]
+  },
+  {
+    "id": "sn04_explicit",
+    "link_id": "sn04",
+    "type": "explicit",
+    "query": "Which UniqueIdService handler serves the ComposeUniqueId call made by the unique-id helper in ComposePostService?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeUniqueIdHelper",
+    "contract_node": "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+    "handler_node": "UniqueId/UniqueIdHandler.h:social_network.ComposeUniqueId",
+    "gold_nodes": [
+      "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+      "UniqueId/UniqueIdHandler.h:social_network.ComposeUniqueId"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeUniqueIdHelper",
+      "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+      "UniqueId/UniqueIdHandler.h:social_network.ComposeUniqueId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "UniqueId",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:223",
+      "handler": "socialNetwork/src/UniqueIdService/UniqueIdHandler.h:61",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::unique_id_client.ComposeUniqueId"
+    ]
+  },
+  {
+    "id": "sn04_indirect",
+    "link_id": "sn04",
+    "type": "indirect",
+    "query": "While composing a post, which function generates the identifier that the new post will carry?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._ComposeUniqueIdHelper",
+    "contract_node": "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+    "handler_node": "UniqueId/UniqueIdHandler.h:social_network.ComposeUniqueId",
+    "gold_nodes": [
+      "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+      "UniqueId/UniqueIdHandler.h:social_network.ComposeUniqueId"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._ComposeUniqueIdHelper",
+      "contract::thrift::social_network.UniqueIdService.ComposeUniqueId",
+      "UniqueId/UniqueIdHandler.h:social_network.ComposeUniqueId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "UniqueId",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:223",
+      "handler": "socialNetwork/src/UniqueIdService/UniqueIdHandler.h:61",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::unique_id_client.ComposeUniqueId"
+    ]
+  },
+  {
+    "id": "sn05_explicit",
+    "link_id": "sn05",
+    "type": "explicit",
+    "query": "Which PostStorageService handler serves the StorePost call made by the upload-post helper in ComposePostService?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadPostHelper",
+    "contract_node": "contract::thrift::social_network.PostStorageService.StorePost",
+    "handler_node": "PostStorage/PostStorageHandler.h:social_network.StorePost",
+    "gold_nodes": [
+      "contract::thrift::social_network.PostStorageService.StorePost",
+      "PostStorage/PostStorageHandler.h:social_network.StorePost"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._UploadPostHelper",
+      "contract::thrift::social_network.PostStorageService.StorePost",
+      "PostStorage/PostStorageHandler.h:social_network.StorePost"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "PostStorage",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:260",
+      "handler": "socialNetwork/src/PostStorageService/PostStorageHandler.h:48",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::post_storage_client.StorePost"
+    ]
+  },
+  {
+    "id": "sn05_indirect",
+    "link_id": "sn05",
+    "type": "indirect",
+    "query": "Once a post is fully assembled, which function persists it?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadPostHelper",
+    "contract_node": "contract::thrift::social_network.PostStorageService.StorePost",
+    "handler_node": "PostStorage/PostStorageHandler.h:social_network.StorePost",
+    "gold_nodes": [
+      "contract::thrift::social_network.PostStorageService.StorePost",
+      "PostStorage/PostStorageHandler.h:social_network.StorePost"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._UploadPostHelper",
+      "contract::thrift::social_network.PostStorageService.StorePost",
+      "PostStorage/PostStorageHandler.h:social_network.StorePost"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "PostStorage",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:260",
+      "handler": "socialNetwork/src/PostStorageService/PostStorageHandler.h:48",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::post_storage_client.StorePost"
+    ]
+  },
+  {
+    "id": "sn06_explicit",
+    "link_id": "sn06",
+    "type": "explicit",
+    "query": "Which UserTimelineService handler serves the WriteUserTimeline call made by the user-timeline helper in ComposePostService?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadUserTimelineHelper",
+    "contract_node": "contract::thrift::social_network.UserTimelineService.WriteUserTimeline",
+    "handler_node": "UserTimeline/UserTimelineHandler.h:social_network.WriteUserTimeline",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserTimelineService.WriteUserTimeline",
+      "UserTimeline/UserTimelineHandler.h:social_network.WriteUserTimeline"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._UploadUserTimelineHelper",
+      "contract::thrift::social_network.UserTimelineService.WriteUserTimeline",
+      "UserTimeline/UserTimelineHandler.h:social_network.WriteUserTimeline"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "UserTimeline",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:293",
+      "handler": "socialNetwork/src/UserTimelineService/UserTimelineHandler.h:90",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_timeline_client.WriteUserTimeline"
+    ]
+  },
+  {
+    "id": "sn06_indirect",
+    "link_id": "sn06",
+    "type": "indirect",
+    "query": "After a post is stored, which function records it on the author's own timeline?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadUserTimelineHelper",
+    "contract_node": "contract::thrift::social_network.UserTimelineService.WriteUserTimeline",
+    "handler_node": "UserTimeline/UserTimelineHandler.h:social_network.WriteUserTimeline",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserTimelineService.WriteUserTimeline",
+      "UserTimeline/UserTimelineHandler.h:social_network.WriteUserTimeline"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._UploadUserTimelineHelper",
+      "contract::thrift::social_network.UserTimelineService.WriteUserTimeline",
+      "UserTimeline/UserTimelineHandler.h:social_network.WriteUserTimeline"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "UserTimeline",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:293",
+      "handler": "socialNetwork/src/UserTimelineService/UserTimelineHandler.h:90",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_timeline_client.WriteUserTimeline"
+    ]
+  },
+  {
+    "id": "sn07_explicit",
+    "link_id": "sn07",
+    "type": "explicit",
+    "query": "Which HomeTimelineService handler serves the WriteHomeTimeline call made by the home-timeline helper in ComposePostService?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadHomeTimelineHelper",
+    "contract_node": "contract::thrift::social_network.HomeTimelineService.WriteHomeTimeline",
+    "handler_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+    "gold_nodes": [
+      "contract::thrift::social_network.HomeTimelineService.WriteHomeTimeline",
+      "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._UploadHomeTimelineHelper",
+      "contract::thrift::social_network.HomeTimelineService.WriteHomeTimeline",
+      "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "HomeTimeline",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:326",
+      "handler": "socialNetwork/src/HomeTimelineService/HomeTimelineHandler.h:99",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::home_timeline_client.WriteHomeTimeline"
+    ]
+  },
+  {
+    "id": "sn07_indirect",
+    "link_id": "sn07",
+    "type": "indirect",
+    "query": "After a post is stored, which function pushes it into the timelines of the author's audience?",
+    "start_node": "ComposePost/ComposePostHandler.h:social_network._UploadHomeTimelineHelper",
+    "contract_node": "contract::thrift::social_network.HomeTimelineService.WriteHomeTimeline",
+    "handler_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+    "gold_nodes": [
+      "contract::thrift::social_network.HomeTimelineService.WriteHomeTimeline",
+      "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline"
+    ],
+    "gold_path": [
+      "ComposePost/ComposePostHandler.h:social_network._UploadHomeTimelineHelper",
+      "contract::thrift::social_network.HomeTimelineService.WriteHomeTimeline",
+      "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposePost",
+    "service_handler": "HomeTimeline",
+    "evidence": {
+      "caller": "socialNetwork/src/ComposePostService/ComposePostHandler.h:326",
+      "handler": "socialNetwork/src/HomeTimelineService/HomeTimelineHandler.h:99",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::home_timeline_client.WriteHomeTimeline"
+    ]
+  },
+  {
+    "id": "sn08_explicit",
+    "link_id": "sn08",
+    "type": "explicit",
+    "query": "Which SocialGraphService handler serves the GetFollowers call made inside HomeTimelineHandler::WriteHomeTimeline?",
+    "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+    "contract_node": "contract::thrift::social_network.SocialGraphService.GetFollowers",
+    "handler_node": "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers",
+    "gold_nodes": [
+      "contract::thrift::social_network.SocialGraphService.GetFollowers",
+      "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers"
+    ],
+    "gold_path": [
+      "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+      "contract::thrift::social_network.SocialGraphService.GetFollowers",
+      "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "HomeTimeline",
+    "service_handler": "SocialGraph",
+    "evidence": {
+      "caller": "socialNetwork/src/HomeTimelineService/HomeTimelineHandler.h:99",
+      "handler": "socialNetwork/src/SocialGraphService/SocialGraphHandler.h:485",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::social_graph_client.GetFollowers"
+    ]
+  },
+  {
+    "id": "sn08_indirect",
+    "link_id": "sn08",
+    "type": "indirect",
+    "query": "When a post is fanned out to home timelines, which function supplies the ids of the author's followers?",
+    "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+    "contract_node": "contract::thrift::social_network.SocialGraphService.GetFollowers",
+    "handler_node": "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers",
+    "gold_nodes": [
+      "contract::thrift::social_network.SocialGraphService.GetFollowers",
+      "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers"
+    ],
+    "gold_path": [
+      "HomeTimeline/HomeTimelineHandler.h:social_network.WriteHomeTimeline",
+      "contract::thrift::social_network.SocialGraphService.GetFollowers",
+      "SocialGraph/SocialGraphHandler.h:social_network.GetFollowers"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "HomeTimeline",
+    "service_handler": "SocialGraph",
+    "evidence": {
+      "caller": "socialNetwork/src/HomeTimelineService/HomeTimelineHandler.h:99",
+      "handler": "socialNetwork/src/SocialGraphService/SocialGraphHandler.h:485",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::social_graph_client.GetFollowers"
+    ]
+  },
+  {
+    "id": "sn09_explicit",
+    "link_id": "sn09",
+    "type": "explicit",
+    "query": "Which PostStorageService handler serves the ReadPosts call made by HomeTimelineHandler::ReadHomeTimeline?",
+    "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+    "contract_node": "contract::thrift::social_network.PostStorageService.ReadPosts",
+    "handler_node": "PostStorage/PostStorageHandler.h:social_network.ReadPosts",
+    "gold_nodes": [
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "gold_path": [
+      "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "HomeTimeline",
+    "service_handler": "PostStorage",
+    "evidence": {
+      "caller": "socialNetwork/src/HomeTimelineService/HomeTimelineHandler.h:214",
+      "handler": "socialNetwork/src/PostStorageService/PostStorageHandler.h:353",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::post_client.ReadPosts"
+    ]
+  },
+  {
+    "id": "sn09_indirect",
+    "link_id": "sn09",
+    "type": "indirect",
+    "query": "When a user reads their home timeline, which function loads the actual posts for the selected ids?",
+    "start_node": "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+    "contract_node": "contract::thrift::social_network.PostStorageService.ReadPosts",
+    "handler_node": "PostStorage/PostStorageHandler.h:social_network.ReadPosts",
+    "gold_nodes": [
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "gold_path": [
+      "HomeTimeline/HomeTimelineHandler.h:social_network.ReadHomeTimeline",
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "HomeTimeline",
+    "service_handler": "PostStorage",
+    "evidence": {
+      "caller": "socialNetwork/src/HomeTimelineService/HomeTimelineHandler.h:214",
+      "handler": "socialNetwork/src/PostStorageService/PostStorageHandler.h:353",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::post_client.ReadPosts"
+    ]
+  },
+  {
+    "id": "sn10_explicit",
+    "link_id": "sn10",
+    "type": "explicit",
+    "query": "Which UrlShortenService handler serves the ComposeUrls call made by TextHandler::ComposeText?",
+    "start_node": "Text/TextHandler.h:social_network.ComposeText",
+    "contract_node": "contract::thrift::social_network.UrlShortenService.ComposeUrls",
+    "handler_node": "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls",
+    "gold_nodes": [
+      "contract::thrift::social_network.UrlShortenService.ComposeUrls",
+      "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls"
+    ],
+    "gold_path": [
+      "Text/TextHandler.h:social_network.ComposeText",
+      "contract::thrift::social_network.UrlShortenService.ComposeUrls",
+      "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Text",
+    "service_handler": "UrlShorten",
+    "evidence": {
+      "caller": "socialNetwork/src/TextService/TextHandler.h:41",
+      "handler": "socialNetwork/src/UrlShortenService/UrlShortenHandler.h:68",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::url_client.ComposeUrls"
+    ]
+  },
+  {
+    "id": "sn10_indirect",
+    "link_id": "sn10",
+    "type": "indirect",
+    "query": "While a post is being prepared, which function generates shortened versions of the web addresses it receives?",
+    "start_node": "Text/TextHandler.h:social_network.ComposeText",
+    "contract_node": "contract::thrift::social_network.UrlShortenService.ComposeUrls",
+    "handler_node": "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls",
+    "gold_nodes": [
+      "contract::thrift::social_network.UrlShortenService.ComposeUrls",
+      "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls"
+    ],
+    "gold_path": [
+      "Text/TextHandler.h:social_network.ComposeText",
+      "contract::thrift::social_network.UrlShortenService.ComposeUrls",
+      "UrlShorten/UrlShortenHandler.h:social_network.ComposeUrls"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Text",
+    "service_handler": "UrlShorten",
+    "evidence": {
+      "caller": "socialNetwork/src/TextService/TextHandler.h:41",
+      "handler": "socialNetwork/src/UrlShortenService/UrlShortenHandler.h:68",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::url_client.ComposeUrls"
+    ]
+  },
+  {
+    "id": "sn11_explicit",
+    "link_id": "sn11",
+    "type": "explicit",
+    "query": "Which UserMentionService handler serves the ComposeUserMentions call made by TextHandler::ComposeText?",
+    "start_node": "Text/TextHandler.h:social_network.ComposeText",
+    "contract_node": "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+    "handler_node": "UserMention/UserMentionHandler.h:social_network.ComposeUserMentions",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+      "UserMention/UserMentionHandler.h:social_network.ComposeUserMentions"
+    ],
+    "gold_path": [
+      "Text/TextHandler.h:social_network.ComposeText",
+      "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+      "UserMention/UserMentionHandler.h:social_network.ComposeUserMentions"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Text",
+    "service_handler": "UserMention",
+    "evidence": {
+      "caller": "socialNetwork/src/TextService/TextHandler.h:41",
+      "handler": "socialNetwork/src/UserMentionService/UserMentionHandler.h:39",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_mention_client.ComposeUserMentions"
+    ]
+  },
+  {
+    "id": "sn11_indirect",
+    "link_id": "sn11",
+    "type": "indirect",
+    "query": "While processing post text, which function resolves the people tagged in the text into user records?",
+    "start_node": "Text/TextHandler.h:social_network.ComposeText",
+    "contract_node": "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+    "handler_node": "UserMention/UserMentionHandler.h:social_network.ComposeUserMentions",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+      "UserMention/UserMentionHandler.h:social_network.ComposeUserMentions"
+    ],
+    "gold_path": [
+      "Text/TextHandler.h:social_network.ComposeText",
+      "contract::thrift::social_network.UserMentionService.ComposeUserMentions",
+      "UserMention/UserMentionHandler.h:social_network.ComposeUserMentions"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Text",
+    "service_handler": "UserMention",
+    "evidence": {
+      "caller": "socialNetwork/src/TextService/TextHandler.h:41",
+      "handler": "socialNetwork/src/UserMentionService/UserMentionHandler.h:39",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_mention_client.ComposeUserMentions"
+    ]
+  },
+  {
+    "id": "sn12_explicit",
+    "link_id": "sn12",
+    "type": "explicit",
+    "query": "Which UserService handler serves the GetUserId call made by SocialGraphHandler::FollowWithUsername?",
+    "start_node": "SocialGraph/SocialGraphHandler.h:social_network.FollowWithUsername",
+    "contract_node": "contract::thrift::social_network.UserService.GetUserId",
+    "handler_node": "User/UserHandler.h:social_network.GetUserId",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserService.GetUserId",
+      "User/UserHandler.h:social_network.GetUserId"
+    ],
+    "gold_path": [
+      "SocialGraph/SocialGraphHandler.h:social_network.FollowWithUsername",
+      "contract::thrift::social_network.UserService.GetUserId",
+      "User/UserHandler.h:social_network.GetUserId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "SocialGraph",
+    "service_handler": "User",
+    "evidence": {
+      "caller": "socialNetwork/src/SocialGraphService/SocialGraphHandler.h:824",
+      "handler": "socialNetwork/src/UserService/UserHandler.h:749",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_client.GetUserId"
+    ]
+  },
+  {
+    "id": "sn12_indirect",
+    "link_id": "sn12",
+    "type": "indirect",
+    "query": "When someone follows another account by name, which function converts a username into the numeric id?",
+    "start_node": "SocialGraph/SocialGraphHandler.h:social_network.FollowWithUsername",
+    "contract_node": "contract::thrift::social_network.UserService.GetUserId",
+    "handler_node": "User/UserHandler.h:social_network.GetUserId",
+    "gold_nodes": [
+      "contract::thrift::social_network.UserService.GetUserId",
+      "User/UserHandler.h:social_network.GetUserId"
+    ],
+    "gold_path": [
+      "SocialGraph/SocialGraphHandler.h:social_network.FollowWithUsername",
+      "contract::thrift::social_network.UserService.GetUserId",
+      "User/UserHandler.h:social_network.GetUserId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "SocialGraph",
+    "service_handler": "User",
+    "evidence": {
+      "caller": "socialNetwork/src/SocialGraphService/SocialGraphHandler.h:824",
+      "handler": "socialNetwork/src/UserService/UserHandler.h:749",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_client.GetUserId"
+    ]
+  },
+  {
+    "id": "sn13_explicit",
+    "link_id": "sn13",
+    "type": "explicit",
+    "query": "Which PostStorageService handler serves the ReadPosts call made by UserTimelineHandler::ReadUserTimeline?",
+    "start_node": "UserTimeline/UserTimelineHandler.h:social_network.ReadUserTimeline",
+    "contract_node": "contract::thrift::social_network.PostStorageService.ReadPosts",
+    "handler_node": "PostStorage/PostStorageHandler.h:social_network.ReadPosts",
+    "gold_nodes": [
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "gold_path": [
+      "UserTimeline/UserTimelineHandler.h:social_network.ReadUserTimeline",
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "UserTimeline",
+    "service_handler": "PostStorage",
+    "evidence": {
+      "caller": "socialNetwork/src/UserTimelineService/UserTimelineHandler.h:186",
+      "handler": "socialNetwork/src/PostStorageService/PostStorageHandler.h:353",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::post_client.ReadPosts"
+    ]
+  },
+  {
+    "id": "sn13_indirect",
+    "link_id": "sn13",
+    "type": "indirect",
+    "query": "When someone opens the list of posts they authored, which function loads the full posts for the IDs already selected for that list?",
+    "start_node": "UserTimeline/UserTimelineHandler.h:social_network.ReadUserTimeline",
+    "contract_node": "contract::thrift::social_network.PostStorageService.ReadPosts",
+    "handler_node": "PostStorage/PostStorageHandler.h:social_network.ReadPosts",
+    "gold_nodes": [
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "gold_path": [
+      "UserTimeline/UserTimelineHandler.h:social_network.ReadUserTimeline",
+      "contract::thrift::social_network.PostStorageService.ReadPosts",
+      "PostStorage/PostStorageHandler.h:social_network.ReadPosts"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "UserTimeline",
+    "service_handler": "PostStorage",
+    "evidence": {
+      "caller": "socialNetwork/src/UserTimelineService/UserTimelineHandler.h:186",
+      "handler": "socialNetwork/src/PostStorageService/PostStorageHandler.h:353",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::post_client.ReadPosts"
+    ]
+  },
+  {
+    "id": "sn14_explicit",
+    "link_id": "sn14",
+    "type": "explicit",
+    "query": "Which SocialGraphService handler serves the InsertUser call made by UserHandler::RegisterUser?",
+    "start_node": "User/UserHandler.h:social_network.RegisterUser",
+    "contract_node": "contract::thrift::social_network.SocialGraphService.InsertUser",
+    "handler_node": "SocialGraph/SocialGraphHandler.h:social_network.InsertUser",
+    "gold_nodes": [
+      "contract::thrift::social_network.SocialGraphService.InsertUser",
+      "SocialGraph/SocialGraphHandler.h:social_network.InsertUser"
+    ],
+    "gold_path": [
+      "User/UserHandler.h:social_network.RegisterUser",
+      "contract::thrift::social_network.SocialGraphService.InsertUser",
+      "SocialGraph/SocialGraphHandler.h:social_network.InsertUser"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "User",
+    "service_handler": "SocialGraph",
+    "evidence": {
+      "caller": "socialNetwork/src/UserService/UserHandler.h:232",
+      "handler": "socialNetwork/src/SocialGraphService/SocialGraphHandler.h:768",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::social_graph_client.InsertUser"
+    ]
+  },
+  {
+    "id": "sn14_indirect",
+    "link_id": "sn14",
+    "type": "indirect",
+    "query": "When a brand-new account is created, which function creates its entry in the follower graph?",
+    "start_node": "User/UserHandler.h:social_network.RegisterUser",
+    "contract_node": "contract::thrift::social_network.SocialGraphService.InsertUser",
+    "handler_node": "SocialGraph/SocialGraphHandler.h:social_network.InsertUser",
+    "gold_nodes": [
+      "contract::thrift::social_network.SocialGraphService.InsertUser",
+      "SocialGraph/SocialGraphHandler.h:social_network.InsertUser"
+    ],
+    "gold_path": [
+      "User/UserHandler.h:social_network.RegisterUser",
+      "contract::thrift::social_network.SocialGraphService.InsertUser",
+      "SocialGraph/SocialGraphHandler.h:social_network.InsertUser"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "User",
+    "service_handler": "SocialGraph",
+    "evidence": {
+      "caller": "socialNetwork/src/UserService/UserHandler.h:232",
+      "handler": "socialNetwork/src/SocialGraphService/SocialGraphHandler.h:768",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::social_graph_client.InsertUser"
+    ]
+  }
+]

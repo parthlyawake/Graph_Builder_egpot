@@ -1,0 +1,131 @@
+{
+  "source_repository": "https://github.com/delimitrou/DeathStarBench",
+  "source_commit": "6ecb09706140f8730b5385c08f1386c654c3c526",
+  "graph_builder_tag": "egpot-bench-builder-v1",
+  "graph_builder_commit": "94aae7b8aef08ac2beddcbc7fc37a7e2b2cc69ce",
+  "graphml_sha256": "96868d204874b6c2bbbba6c3b0399b45b74857f61e472b0ef19ef7ea23efb671",
+  "nodes": 576,
+  "edges": 2174,
+  "build_date": "2026-11-19",
+  "label_draft_sha256": "2824117d02311d45b8b700c8aa7c93c7c1db20e1b2b04d2cb9e52118803e3945",
+  "build_config": "bench/results/dsb_media_graph.build_config.json",
+  "build_config_sha256": "fafb6be2fe525b45c527d2616dc7e504fecc561e74e79f18e0e4ca92c3b07a62",
+  "workspace": {
+    "name": "dsb_media",
+    "version": "1.0",
+    "base_dir": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices",
+    "repositories": [
+      {
+        "id": "CastInfo",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\CastInfoService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "ComposeReview",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\ComposeReviewService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "MovieId",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\MovieIdService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "MovieInfo",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\MovieInfoService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "MovieReview",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\MovieReviewService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "Page",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\PageService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "Plot",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\PlotService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "Rating",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\RatingService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "ReviewStorage",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\ReviewStorageService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "Text",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\TextService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "UniqueId",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\UniqueIdService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "UserReview",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\UserReviewService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "User",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices\\src\\UserService",
+        "language": null,
+        "role": null
+      },
+      {
+        "id": "mediaMicroservices-idl",
+        "path": "C:\\dev\\egpot_repos\\DeathStarBench\\mediaMicroservices",
+        "language": null,
+        "role": "thrift_idl",
+        "only_files": [
+          "media_service.thrift"
+        ]
+      }
+    ],
+    "shared_contracts": [],
+    "ignore_patterns": [],
+    "strict_http_source_evidence": false,
+    "exclude_nonproduction": true
+  },
+  "flags": {
+    "protobuf": "source_fallback",
+    "python_hash_seed": 0,
+    "omp_num_threads": 1,
+    "audit_guard": [
+      "deny_writes",
+      "deny_subprocesses",
+      "deny_network"
+    ]
+  },
+  "independent_builds": 2,
+  "python": "3.13.6",
+  "versions": {
+    "networkx": "3.7",
+    "numpy": "2.5.5",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "tree-sitter": "0.25.2",
+    "tree-sitter-cpp": "0.23.4"
+  }
+}

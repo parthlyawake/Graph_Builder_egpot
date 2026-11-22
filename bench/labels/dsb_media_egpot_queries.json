@@ -1,0 +1,620 @@
+[
+  {
+    "id": "mm01_explicit",
+    "link_id": "mm01",
+    "type": "explicit",
+    "query": "Which ReviewStorageService handler serves the StoreReview call made by ComposeReviewHandler::_ComposeAndUpload?",
+    "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+    "contract_node": "contract::thrift::media_service.ReviewStorageService.StoreReview",
+    "handler_node": "ReviewStorage/ReviewStorageHandler.h:media_service.StoreReview",
+    "gold_nodes": [
+      "contract::thrift::media_service.ReviewStorageService.StoreReview",
+      "ReviewStorage/ReviewStorageHandler.h:media_service.StoreReview"
+    ],
+    "gold_path": [
+      "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "contract::thrift::media_service.ReviewStorageService.StoreReview",
+      "ReviewStorage/ReviewStorageHandler.h:media_service.StoreReview"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposeReview",
+    "service_handler": "ReviewStorage",
+    "evidence": {
+      "caller": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:76",
+      "handler": "mediaMicroservices/src/ReviewStorageService/ReviewStorageHandler.h:40",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::review_storage_client.StoreReview"
+    ]
+  },
+  {
+    "id": "mm01_indirect",
+    "link_id": "mm01",
+    "type": "indirect",
+    "query": "Once all parts of a review have arrived, which function saves the complete review itself?",
+    "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+    "contract_node": "contract::thrift::media_service.ReviewStorageService.StoreReview",
+    "handler_node": "ReviewStorage/ReviewStorageHandler.h:media_service.StoreReview",
+    "gold_nodes": [
+      "contract::thrift::media_service.ReviewStorageService.StoreReview",
+      "ReviewStorage/ReviewStorageHandler.h:media_service.StoreReview"
+    ],
+    "gold_path": [
+      "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "contract::thrift::media_service.ReviewStorageService.StoreReview",
+      "ReviewStorage/ReviewStorageHandler.h:media_service.StoreReview"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposeReview",
+    "service_handler": "ReviewStorage",
+    "evidence": {
+      "caller": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:76",
+      "handler": "mediaMicroservices/src/ReviewStorageService/ReviewStorageHandler.h:40",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::review_storage_client.StoreReview"
+    ]
+  },
+  {
+    "id": "mm02_explicit",
+    "link_id": "mm02",
+    "type": "explicit",
+    "query": "Which UserReviewService handler serves the UploadUserReview call made by ComposeReviewHandler::_ComposeAndUpload?",
+    "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+    "contract_node": "contract::thrift::media_service.UserReviewService.UploadUserReview",
+    "handler_node": "UserReview/UserReviewHandler.h:media_service.UploadUserReview",
+    "gold_nodes": [
+      "contract::thrift::media_service.UserReviewService.UploadUserReview",
+      "UserReview/UserReviewHandler.h:media_service.UploadUserReview"
+    ],
+    "gold_path": [
+      "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "contract::thrift::media_service.UserReviewService.UploadUserReview",
+      "UserReview/UserReviewHandler.h:media_service.UploadUserReview"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposeReview",
+    "service_handler": "UserReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:76",
+      "handler": "mediaMicroservices/src/UserReviewService/UserReviewHandler.h:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_review_client.UploadUserReview"
+    ]
+  },
+  {
+    "id": "mm02_indirect",
+    "link_id": "mm02",
+    "type": "indirect",
+    "query": "Once all parts of a review have arrived, which function files the review under the reviewer's own list?",
+    "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+    "contract_node": "contract::thrift::media_service.UserReviewService.UploadUserReview",
+    "handler_node": "UserReview/UserReviewHandler.h:media_service.UploadUserReview",
+    "gold_nodes": [
+      "contract::thrift::media_service.UserReviewService.UploadUserReview",
+      "UserReview/UserReviewHandler.h:media_service.UploadUserReview"
+    ],
+    "gold_path": [
+      "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "contract::thrift::media_service.UserReviewService.UploadUserReview",
+      "UserReview/UserReviewHandler.h:media_service.UploadUserReview"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposeReview",
+    "service_handler": "UserReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:76",
+      "handler": "mediaMicroservices/src/UserReviewService/UserReviewHandler.h:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::user_review_client.UploadUserReview"
+    ]
+  },
+  {
+    "id": "mm03_explicit",
+    "link_id": "mm03",
+    "type": "explicit",
+    "query": "Which MovieReviewService handler serves the UploadMovieReview call made by ComposeReviewHandler::_ComposeAndUpload?",
+    "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+    "contract_node": "contract::thrift::media_service.MovieReviewService.UploadMovieReview",
+    "handler_node": "MovieReview/MovieReviewHandler.h:media_service.UploadMovieReview",
+    "gold_nodes": [
+      "contract::thrift::media_service.MovieReviewService.UploadMovieReview",
+      "MovieReview/MovieReviewHandler.h:media_service.UploadMovieReview"
+    ],
+    "gold_path": [
+      "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "contract::thrift::media_service.MovieReviewService.UploadMovieReview",
+      "MovieReview/MovieReviewHandler.h:media_service.UploadMovieReview"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposeReview",
+    "service_handler": "MovieReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:76",
+      "handler": "mediaMicroservices/src/MovieReviewService/MovieReviewHandler.h:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::movie_review_client.UploadMovieReview"
+    ]
+  },
+  {
+    "id": "mm03_indirect",
+    "link_id": "mm03",
+    "type": "indirect",
+    "query": "Once all parts of a review have arrived, which function files the review under the movie it is about?",
+    "start_node": "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+    "contract_node": "contract::thrift::media_service.MovieReviewService.UploadMovieReview",
+    "handler_node": "MovieReview/MovieReviewHandler.h:media_service.UploadMovieReview",
+    "gold_nodes": [
+      "contract::thrift::media_service.MovieReviewService.UploadMovieReview",
+      "MovieReview/MovieReviewHandler.h:media_service.UploadMovieReview"
+    ],
+    "gold_path": [
+      "ComposeReview/ComposeReviewHandler.h:media_service._ComposeAndUpload",
+      "contract::thrift::media_service.MovieReviewService.UploadMovieReview",
+      "MovieReview/MovieReviewHandler.h:media_service.UploadMovieReview"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "ComposeReview",
+    "service_handler": "MovieReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:76",
+      "handler": "mediaMicroservices/src/MovieReviewService/MovieReviewHandler.h:47",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::movie_review_client.UploadMovieReview"
+    ]
+  },
+  {
+    "id": "mm04_explicit",
+    "link_id": "mm04",
+    "type": "explicit",
+    "query": "Which ComposeReviewService handler serves the UploadMovieId call made by MovieIdHandler::UploadMovieId?",
+    "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadMovieId",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadMovieId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId"
+    ],
+    "gold_path": [
+      "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "contract::thrift::media_service.ComposeReviewService.UploadMovieId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "MovieId",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/MovieIdService/MovieIdHandler.h:55",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:254",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "contract::thrift::media_service.MovieIdService.UploadMovieId",
+      "external::compose_client.UploadMovieId"
+    ]
+  },
+  {
+    "id": "mm04_indirect",
+    "link_id": "mm04",
+    "type": "indirect",
+    "query": "After a movie title has been resolved to an id, which function in the review-assembly component receives that id?",
+    "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadMovieId",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadMovieId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId"
+    ],
+    "gold_path": [
+      "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "contract::thrift::media_service.ComposeReviewService.UploadMovieId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadMovieId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "MovieId",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/MovieIdService/MovieIdHandler.h:55",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:254",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "contract::thrift::media_service.MovieIdService.UploadMovieId",
+      "external::compose_client.UploadMovieId"
+    ]
+  },
+  {
+    "id": "mm05_explicit",
+    "link_id": "mm05",
+    "type": "explicit",
+    "query": "Which RatingService handler serves the UploadRating call made by MovieIdHandler::UploadMovieId?",
+    "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+    "contract_node": "contract::thrift::media_service.RatingService.UploadRating",
+    "handler_node": "Rating/RatingHandler.h:media_service.UploadRating",
+    "gold_nodes": [
+      "contract::thrift::media_service.RatingService.UploadRating",
+      "Rating/RatingHandler.h:media_service.UploadRating"
+    ],
+    "gold_path": [
+      "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "contract::thrift::media_service.RatingService.UploadRating",
+      "Rating/RatingHandler.h:media_service.UploadRating"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "MovieId",
+    "service_handler": "Rating",
+    "evidence": {
+      "caller": "mediaMicroservices/src/MovieIdService/MovieIdHandler.h:55",
+      "handler": "mediaMicroservices/src/RatingService/RatingHandler.h:39",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating",
+      "contract::thrift::media_service.ComposeReviewService.UploadRating",
+      "external::compose_client.UploadRating",
+      "external::rating_client.UploadRating"
+    ]
+  },
+  {
+    "id": "mm05_indirect",
+    "link_id": "mm05",
+    "type": "indirect",
+    "query": "After a movie title has been resolved to an id, which function receives the review's score together with that id?",
+    "start_node": "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+    "contract_node": "contract::thrift::media_service.RatingService.UploadRating",
+    "handler_node": "Rating/RatingHandler.h:media_service.UploadRating",
+    "gold_nodes": [
+      "contract::thrift::media_service.RatingService.UploadRating",
+      "Rating/RatingHandler.h:media_service.UploadRating"
+    ],
+    "gold_path": [
+      "MovieId/MovieIdHandler.h:media_service.UploadMovieId",
+      "contract::thrift::media_service.RatingService.UploadRating",
+      "Rating/RatingHandler.h:media_service.UploadRating"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "MovieId",
+    "service_handler": "Rating",
+    "evidence": {
+      "caller": "mediaMicroservices/src/MovieIdService/MovieIdHandler.h:55",
+      "handler": "mediaMicroservices/src/RatingService/RatingHandler.h:39",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating",
+      "contract::thrift::media_service.ComposeReviewService.UploadRating",
+      "external::compose_client.UploadRating",
+      "external::rating_client.UploadRating"
+    ]
+  },
+  {
+    "id": "mm06_explicit",
+    "link_id": "mm06",
+    "type": "explicit",
+    "query": "Which ComposeReviewService handler serves the UploadRating call made by RatingHandler::UploadRating?",
+    "start_node": "Rating/RatingHandler.h:media_service.UploadRating",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadRating",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadRating",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating"
+    ],
+    "gold_path": [
+      "Rating/RatingHandler.h:media_service.UploadRating",
+      "contract::thrift::media_service.ComposeReviewService.UploadRating",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Rating",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/RatingService/RatingHandler.h:39",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:692",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "Rating/RatingHandler.h:media_service.UploadRating",
+      "contract::thrift::media_service.RatingService.UploadRating",
+      "external::compose_client.UploadRating",
+      "external::rating_client.UploadRating"
+    ]
+  },
+  {
+    "id": "mm06_indirect",
+    "link_id": "mm06",
+    "type": "indirect",
+    "query": "After the score for a review is accepted, which function in the review-assembly component receives it?",
+    "start_node": "Rating/RatingHandler.h:media_service.UploadRating",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadRating",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadRating",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating"
+    ],
+    "gold_path": [
+      "Rating/RatingHandler.h:media_service.UploadRating",
+      "contract::thrift::media_service.ComposeReviewService.UploadRating",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadRating"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Rating",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/RatingService/RatingHandler.h:39",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:692",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "Rating/RatingHandler.h:media_service.UploadRating",
+      "contract::thrift::media_service.RatingService.UploadRating",
+      "external::compose_client.UploadRating",
+      "external::rating_client.UploadRating"
+    ]
+  },
+  {
+    "id": "mm07_explicit",
+    "link_id": "mm07",
+    "type": "explicit",
+    "query": "Which ComposeReviewService handler serves the UploadText call made by TextHandler::UploadText in TextService?",
+    "start_node": "Text/TextHandler.h:media_service.UploadText",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadText",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadText",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadText",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadText"
+    ],
+    "gold_path": [
+      "Text/TextHandler.h:media_service.UploadText",
+      "contract::thrift::media_service.ComposeReviewService.UploadText",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadText"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Text",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/TextService/TextHandler.h:32",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:584",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "Text/TextHandler.h:media_service.UploadText",
+      "contract::thrift::media_service.TextService.UploadText",
+      "external::compose_client.UploadText"
+    ]
+  },
+  {
+    "id": "mm07_indirect",
+    "link_id": "mm07",
+    "type": "indirect",
+    "query": "After the written part of a review is received, which function in the review-assembly component stores it?",
+    "start_node": "Text/TextHandler.h:media_service.UploadText",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadText",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadText",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadText",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadText"
+    ],
+    "gold_path": [
+      "Text/TextHandler.h:media_service.UploadText",
+      "contract::thrift::media_service.ComposeReviewService.UploadText",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadText"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "Text",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/TextService/TextHandler.h:32",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:584",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "Text/TextHandler.h:media_service.UploadText",
+      "contract::thrift::media_service.TextService.UploadText",
+      "external::compose_client.UploadText"
+    ]
+  },
+  {
+    "id": "mm08_explicit",
+    "link_id": "mm08",
+    "type": "explicit",
+    "query": "Which ComposeReviewService handler serves the UploadUniqueId call made by UniqueIdHandler::UploadUniqueId?",
+    "start_node": "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadUniqueId",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadUniqueId",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadUniqueId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUniqueId"
+    ],
+    "gold_path": [
+      "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+      "contract::thrift::media_service.ComposeReviewService.UploadUniqueId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUniqueId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "UniqueId",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/UniqueIdService/UniqueIdHandler.h:74",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:473",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+      "contract::thrift::media_service.UniqueIdService.UploadUniqueId",
+      "external::compose_client.UploadUniqueId"
+    ]
+  },
+  {
+    "id": "mm08_indirect",
+    "link_id": "mm08",
+    "type": "indirect",
+    "query": "After an identifier for a new review is generated, which function in the review-assembly component receives it?",
+    "start_node": "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadUniqueId",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadUniqueId",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadUniqueId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUniqueId"
+    ],
+    "gold_path": [
+      "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+      "contract::thrift::media_service.ComposeReviewService.UploadUniqueId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUniqueId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "UniqueId",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/UniqueIdService/UniqueIdHandler.h:74",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:473",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "UniqueId/UniqueIdHandler.h:media_service.UploadUniqueId",
+      "contract::thrift::media_service.UniqueIdService.UploadUniqueId",
+      "external::compose_client.UploadUniqueId"
+    ]
+  },
+  {
+    "id": "mm09_explicit",
+    "link_id": "mm09",
+    "type": "explicit",
+    "query": "Which ComposeReviewService handler serves the UploadUserId call made by UserHandler::UploadUserWithUsername?",
+    "start_node": "User/UserHandler.h:media_service.UploadUserWithUsername",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadUserId",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadUserId",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadUserId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUserId"
+    ],
+    "gold_path": [
+      "User/UserHandler.h:media_service.UploadUserWithUsername",
+      "contract::thrift::media_service.ComposeReviewService.UploadUserId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUserId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "User",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/UserService/UserHandler.h:360",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:363",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::compose_client.UploadUserId"
+    ]
+  },
+  {
+    "id": "mm09_indirect",
+    "link_id": "mm09",
+    "type": "indirect",
+    "query": "After the reviewer's username is turned into a user id, which function in the review-assembly component receives it?",
+    "start_node": "User/UserHandler.h:media_service.UploadUserWithUsername",
+    "contract_node": "contract::thrift::media_service.ComposeReviewService.UploadUserId",
+    "handler_node": "ComposeReview/ComposeReviewHandler.h:media_service.UploadUserId",
+    "gold_nodes": [
+      "contract::thrift::media_service.ComposeReviewService.UploadUserId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUserId"
+    ],
+    "gold_path": [
+      "User/UserHandler.h:media_service.UploadUserWithUsername",
+      "contract::thrift::media_service.ComposeReviewService.UploadUserId",
+      "ComposeReview/ComposeReviewHandler.h:media_service.UploadUserId"
+    ],
+    "path_relations": [
+      "CONSUMES->",
+      "<-IMPLEMENTS"
+    ],
+    "service_start": "User",
+    "service_handler": "ComposeReview",
+    "evidence": {
+      "caller": "mediaMicroservices/src/UserService/UserHandler.h:360",
+      "handler": "mediaMicroservices/src/ComposeReviewService/ComposeReviewHandler.h:363",
+      "basis": "source"
+    },
+    "accepted_alternatives": [],
+    "lookalike_nodes": [
+      "external::compose_client.UploadUserId"
+    ]
+  }
+]
